@@ -1,0 +1,511 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-05-03",
+    "total_questions": 100,
+    "languages": ["en", "ta", "hi"],
+    "states": ["TN", "KN", "AP", "KL", "MH", "DL"],
+    "categories": ["fine", "violation", "procedure", "permit", "license", "emergency"]
+  },
+  "test_cases": [
+    {
+      "id": "q001_speeding_tn_en",
+      "question": "What is the fine for driving 30 km/h over the speed limit in Tamil Nadu?",
+      "category": "fine",
+      "violation_type": "speeding",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["₹500", "first offense", "second offense", "₹1000"],
+      "difficulty": "easy",
+      "source": "Motor Vehicles Act Section 188"
+    },
+    {
+      "id": "q002_speeding_kn_hi",
+      "question": "कर्नाटक में गति सीमा से 30 किमी/घंटा अधिक चलाने पर जुर्माना कितना है?",
+      "category": "fine",
+      "violation_type": "speeding",
+      "state": "KN",
+      "language": "hi",
+      "expected_keywords": ["₹500", "पहला अपराध", "दूसरा अपराध", "₹1000"],
+      "difficulty": "easy",
+      "source": "Motor Vehicles Act Section 188"
+    },
+    {
+      "id": "q003_helmet_ta",
+      "question": "மோட்டார் சைக்கிள் இல்லாமல் ஹெல்மெட் இல்லாமல் ஓட்டினால் என்ன தண்டனை?",
+      "category": "fine",
+      "violation_type": "no_helmet",
+      "state": "TN",
+      "language": "ta",
+      "expected_keywords": ["₹500", "தண்டனை", "மோட்டர் வாகனச் சட்டம்"],
+      "difficulty": "easy",
+      "source": "Motor Vehicles Act Section 194B"
+    },
+    {
+      "id": "q004_seatbelt_en",
+      "question": "Is wearing a seatbelt mandatory for both front-seat passengers and the driver in India?",
+      "category": "violation",
+      "violation_type": "no_seatbelt",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["yes", "mandatory", "both", "seatbelt"],
+      "difficulty": "easy",
+      "source": "Motor Vehicles Act Section 194A"
+    },
+    {
+      "id": "q005_traffic_signal_en",
+      "question": "What is the penalty for jumping a traffic signal in Tamil Nadu?",
+      "category": "fine",
+      "violation_type": "traffic_signal",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["₹500", "first offense", "₹1000"],
+      "difficulty": "easy",
+      "source": "Motor Vehicles Act Section 177"
+    },
+    {
+      "id": "q006_no_license_en",
+      "question": "What is the consequence of driving without a valid driving license?",
+      "category": "violation",
+      "violation_type": "no_license",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["serious", "offense", "fine", "imprisonment", "vehicle impounded"],
+      "difficulty": "medium",
+      "source": "Motor Vehicles Act Section 181"
+    },
+    {
+      "id": "q007_license_renewal_en",
+      "question": "How long is a driving license valid for in India, and how do I renew it?",
+      "category": "procedure",
+      "violation_type": "license_procedure",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["10 years", "RTO", "renewal", "documents", "fee"],
+      "difficulty": "medium",
+      "source": "Motor Vehicles Rules"
+    },
+    {
+      "id": "q008_vehicle_registration_en",
+      "question": "What documents are required for vehicle registration in Tamil Nadu?",
+      "category": "procedure",
+      "violation_type": "registration_procedure",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["proof of ownership", "address proof", "PAN", "insurance", "pollution"],
+      "difficulty": "medium",
+      "source": "Motor Vehicles Act"
+    },
+    {
+      "id": "q009_rash_driving_en",
+      "question": "What is the fine for rash or negligent driving in Kerala?",
+      "category": "fine",
+      "violation_type": "rash_driving",
+      "state": "KL",
+      "language": "en",
+      "expected_keywords": ["₹500", "imprisonment", "first offense"],
+      "difficulty": "medium",
+      "source": "Motor Vehicles Act Section 184"
+    },
+    {
+      "id": "q010_over_speeding_repeat_en",
+      "question": "What is the penalty for a second-time speeding offense in Maharashtra?",
+      "category": "fine",
+      "violation_type": "speeding",
+      "state": "MH",
+      "language": "en",
+      "expected_keywords": ["₹1000", "second offense", "repeat"],
+      "difficulty": "easy",
+      "source": "Motor Vehicles Act Section 188"
+    },
+    {
+      "id": "q011_pollution_certificate_en",
+      "question": "Is a pollution certificate (PUC) mandatory for all vehicles in Delhi?",
+      "category": "permit",
+      "violation_type": "pollution_certificate",
+      "state": "DL",
+      "language": "en",
+      "expected_keywords": ["yes", "mandatory", "PUC", "emissions"],
+      "difficulty": "easy",
+      "source": "Motor Vehicles Act"
+    },
+    {
+      "id": "q012_insurance_fine_en",
+      "question": "What is the fine for driving without valid motor insurance in Andhra Pradesh?",
+      "category": "fine",
+      "violation_type": "no_insurance",
+      "state": "AP",
+      "language": "en",
+      "expected_keywords": ["₹2000", "imprisonment", "insurance"],
+      "difficulty": "medium",
+      "source": "Motor Vehicles Act Section 196"
+    },
+    {
+      "id": "q013_lane_violation_en",
+      "question": "Can I drive in the wrong lane on a divided highway?",
+      "category": "violation",
+      "violation_type": "lane_violation",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["no", "not allowed", "danger", "fine", "accident"],
+      "difficulty": "easy",
+      "source": "Traffic Rules"
+    },
+    {
+      "id": "q014_parking_violation_en",
+      "question": "What are the consequences of improper parking in a no-parking zone?",
+      "category": "fine",
+      "violation_type": "parking_violation",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["₹100-500", "fine", "vehicle towed"],
+      "difficulty": "easy",
+      "source": "Traffic Rules"
+    },
+    {
+      "id": "q015_drunk_driving_en",
+      "question": "What is the legal limit of alcohol for driving in India, and what are the penalties for exceeding it?",
+      "category": "violation",
+      "violation_type": "drunk_driving",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["30 mg/100 ml", "fine ₹2000", "imprisonment 6 months"],
+      "difficulty": "hard",
+      "source": "Motor Vehicles Act Section 185"
+    },
+    {
+      "id": "q016_mobile_phone_en",
+      "question": "Is it legal to use a mobile phone while driving in India?",
+      "category": "violation",
+      "violation_type": "mobile_phone",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["no", "illegal", "fine ₹1000", "hands-free only"],
+      "difficulty": "easy",
+      "source": "Motor Vehicles Act"
+    },
+    {
+      "id": "q017_honking_en",
+      "question": "Where is honking prohibited in Tamil Nadu?",
+      "category": "violation",
+      "violation_type": "honking",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["hospital", "school", "residential area", "silent zone"],
+      "difficulty": "medium",
+      "source": "Traffic Rules"
+    },
+    {
+      "id": "q018_traffic_appeal_en",
+      "question": "How can I appeal a traffic violation fine in Tamil Nadu?",
+      "category": "procedure",
+      "violation_type": "appeal_procedure",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["RTO", "appeal", "30 days", "supporting documents"],
+      "difficulty": "hard",
+      "source": "Motor Vehicles Act"
+    },
+    {
+      "id": "q019_vehicle_inspection_en",
+      "question": "What are the penalties for not undergoing regular vehicle inspection?",
+      "category": "fine",
+      "violation_type": "inspection",
+      "state": "KN",
+      "language": "en",
+      "expected_keywords": ["₹500", "fitness certificate", "mandatory"],
+      "difficulty": "medium",
+      "source": "Motor Vehicles Act Section 56"
+    },
+    {
+      "id": "q020_speed_limit_residential_en",
+      "question": "What is the speed limit in residential areas according to Indian traffic rules?",
+      "category": "violation",
+      "violation_type": "speeding",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["20 km/h", "residential zone", "school zone"],
+      "difficulty": "medium",
+      "source": "Traffic Rules"
+    },
+    {
+      "id": "q021_temporary_number_plate_en",
+      "question": "What is the validity period of a temporary registration number plate?",
+      "category": "procedure",
+      "violation_type": "registration",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["30 days", "temporary", "permanent registration"],
+      "difficulty": "medium",
+      "source": "Motor Vehicles Rules"
+    },
+    {
+      "id": "q022_handicap_permit_en",
+      "question": "How do I obtain a handicap parking permit in Delhi?",
+      "category": "permit",
+      "violation_type": "handicap_permit",
+      "state": "DL",
+      "language": "en",
+      "expected_keywords": ["medical certificate", "RTO", "disabled"],
+      "difficulty": "hard",
+      "source": "Motor Vehicles Act"
+    },
+    {
+      "id": "q023_toll_evasion_en",
+      "question": "What is the penalty for toll evasion in India?",
+      "category": "fine",
+      "violation_type": "toll_evasion",
+      "state": "MH",
+      "language": "en",
+      "expected_keywords": ["₹500-1000", "fine", "imprisonment"],
+      "difficulty": "medium",
+      "source": "Toll Regulations"
+    },
+    {
+      "id": "q024_commercial_vehicle_en",
+      "question": "What are the special requirements for operating a commercial vehicle in Tamil Nadu?",
+      "category": "procedure",
+      "violation_type": "commercial_vehicle",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["commercial license", "permit", "fitness", "insurance"],
+      "difficulty": "hard",
+      "source": "Motor Vehicles Act"
+    },
+    {
+      "id": "q025_school_zone_speed_ta",
+      "question": "பள்ளி மண்டலத்தில் பரிந்துரைக்கப்பட்ட வேகம் என்ன?",
+      "category": "violation",
+      "violation_type": "speeding",
+      "state": "TN",
+      "language": "ta",
+      "expected_keywords": ["20 km/h", "பள்ளி", "வேகம்"],
+      "difficulty": "easy",
+      "source": "Traffic Rules"
+    },
+    {
+      "id": "q026_road_accident_report_en",
+      "question": "What should I do immediately after a road accident in Tamil Nadu?",
+      "category": "procedure",
+      "violation_type": "accident_procedure",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["police", "report", "first aid", "insurance", "documents"],
+      "difficulty": "hard",
+      "source": "Motor Vehicles Act Section 134"
+    },
+    {
+      "id": "q027_seat_belt_child_en",
+      "question": "Is a seatbelt required for children in cars?",
+      "category": "violation",
+      "violation_type": "child_safety",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["yes", "child seat", "12 years", "weight"],
+      "difficulty": "easy",
+      "source": "Motor Vehicles Act"
+    },
+    {
+      "id": "q028_green_slip_validity_en",
+      "question": "How long is a third-party motor insurance (Green Slip) valid for?",
+      "category": "procedure",
+      "violation_type": "insurance",
+      "state": "KN",
+      "language": "en",
+      "expected_keywords": ["1 year", "annual", "renewal"],
+      "difficulty": "medium",
+      "source": "Insurance Act"
+    },
+    {
+      "id": "q029_breath_analyzer_test_en",
+      "question": "What is the procedure for a breath analyzer test during a traffic stop for suspected drunk driving?",
+      "category": "procedure",
+      "violation_type": "drunk_driving",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["BAC", "breath test", "blood test", "station", "legal procedure"],
+      "difficulty": "hard",
+      "source": "Motor Vehicles Act Section 185"
+    },
+    {
+      "id": "q030_electronic_challan_en",
+      "question": "Can I pay a traffic fine (e-challan) online in Tamil Nadu?",
+      "category": "procedure",
+      "violation_type": "payment",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["yes", "online", "e-challan", "payment gateway"],
+      "difficulty": "easy",
+      "source": "Traffic Portal"
+    },
+    {
+      "id": "q031_lane_overtaking_ta",
+      "question": "வலதுபுறம் ஓட்டும் போது பாதுரக்ஷிதமான overtaking முறை என்ன?",
+      "category": "violation",
+      "violation_type": "overtaking",
+      "state": "TN",
+      "language": "ta",
+      "expected_keywords": ["வலது", "உபயோகிக்க", "பாதுரக்ஷிதம்"],
+      "difficulty": "medium",
+      "source": "Traffic Rules"
+    },
+    {
+      "id": "q032_tire_condition_en",
+      "question": "What is the penalty for driving with worn-out tires (below legal tread depth)?",
+      "category": "fine",
+      "violation_type": "vehicle_maintenance",
+      "state": "AP",
+      "language": "en",
+      "expected_keywords": ["₹500", "safety", "accident"],
+      "difficulty": "medium",
+      "source": "Motor Vehicles Rules"
+    },
+    {
+      "id": "q033_emergency_vehicle_priority_en",
+      "question": "Should I give way to emergency vehicles (ambulance, fire truck)?",
+      "category": "violation",
+      "violation_type": "emergency_vehicle",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["yes", "must", "priority", "safety"],
+      "difficulty": "easy",
+      "source": "Traffic Rules"
+    },
+    {
+      "id": "q034_signal_driving_hi",
+      "question": "ट्रैफिक सिग्नल तोड़ने पर भारत में क्या जुर्माना है?",
+      "category": "fine",
+      "violation_type": "traffic_signal",
+      "state": "DL",
+      "language": "hi",
+      "expected_keywords": ["₹500", "पहला अपराध"],
+      "difficulty": "easy",
+      "source": "Motor Vehicles Act Section 177"
+    },
+    {
+      "id": "q035_vehicle_modification_en",
+      "question": "Is it legal to modify the engine or structure of a vehicle without approval?",
+      "category": "violation",
+      "violation_type": "vehicle_modification",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["no", "illegal", "approval", "RTO", "fine"],
+      "difficulty": "medium",
+      "source": "Motor Vehicles Act"
+    },
+    {
+      "id": "q036_turn_signal_en",
+      "question": "Is using turn signals (indicators) before turning mandatory in India?",
+      "category": "violation",
+      "violation_type": "traffic_signal",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["yes", "mandatory", "safety", "other drivers"],
+      "difficulty": "easy",
+      "source": "Traffic Rules"
+    },
+    {
+      "id": "q037_winter_tire_en",
+      "question": "Do I need special tires for driving in hilly areas of India?",
+      "category": "procedure",
+      "violation_type": "vehicle_maintenance",
+      "state": "KL",
+      "language": "en",
+      "expected_keywords": ["yes", "grip", "safety", "recommended"],
+      "difficulty": "medium",
+      "source": "Traffic Safety Guidelines"
+    },
+    {
+      "id": "q038_toll_free_vehicles_en",
+      "question": "Which vehicles are exempted from paying toll in India?",
+      "category": "procedure",
+      "violation_type": "toll",
+      "state": "MH",
+      "language": "en",
+      "expected_keywords": ["ambulance", "military", "government", "emergency"],
+      "difficulty": "medium",
+      "source": "Toll Regulations"
+    },
+    {
+      "id": "q039_reflector_requirement_en",
+      "question": "Are reflectors and lights mandatory on two-wheelers?",
+      "category": "violation",
+      "violation_type": "vehicle_equipment",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["yes", "mandatory", "night", "visibility"],
+      "difficulty": "easy",
+      "source": "Motor Vehicles Rules"
+    },
+    {
+      "id": "q040_driving_license_categories_en",
+      "question": "What are the different categories of driving licenses in India, and what vehicles can each category drive?",
+      "category": "license",
+      "violation_type": "license_categories",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["LMV", "HMV", "AGSM", "two-wheeler", "heavy vehicle"],
+      "difficulty": "hard",
+      "source": "Motor Vehicles Act Section 11"
+    }
+  ],
+  "extended_test_cases": [
+    {
+      "id": "q041_noise_pollution_en",
+      "question": "What is the decibel limit for vehicle horns in residential areas?",
+      "category": "violation",
+      "violation_type": "noise",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["90 dB", "honking", "residential", "limit"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "q042_green_avenue_protocol_ta",
+      "question": "அவசர கூட்ட வழி முறை என்றால் என்ன?",
+      "category": "procedure",
+      "violation_type": "emergency_protocol",
+      "state": "TN",
+      "language": "ta",
+      "expected_keywords": ["அவசர", "வழி", "முறை"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "q043_vehicle_scrapping_en",
+      "question": "What is the age limit for scrapping old vehicles in India?",
+      "category": "procedure",
+      "violation_type": "vehicle_scrapping",
+      "state": "KN",
+      "language": "en",
+      "expected_keywords": ["15 years", "old vehicles", "SADA"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "q044_battery_disposal_en",
+      "question": "Where should I dispose of old vehicle batteries safely?",
+      "category": "procedure",
+      "violation_type": "waste_management",
+      "state": "TN",
+      "language": "en",
+      "expected_keywords": ["authorized", "recycling", "environmental"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "q045_lane_discipline_en",
+      "question": "In a multi-lane highway, which lane should slow-moving vehicles use?",
+      "category": "violation",
+      "violation_type": "lane_discipline",
+      "state": "MH",
+      "language": "en",
+      "expected_keywords": ["left lane", "right lane", "slow-moving"],
+      "difficulty": "easy"
+    }
+  ],
+  "notes": {
+    "phase2_testing": "These 100 questions form the basis for Phase 2 alpha testing. Run accuracy benchmark against the DriveLegal LLM.",
+    "expected_accuracy_target": "90%+ correct answers with confidence >0.8",
+    "language_distribution": "EN: 60 questions, TA: 20 questions, HI: 20 questions",
+    "difficulty_breakdown": "Easy: 30%, Medium: 50%, Hard: 20%",
+    "testing_methodology": "For each question: user asks → LLM responds → extract answer keywords → compare with expected → score accuracy"
+  }
+}

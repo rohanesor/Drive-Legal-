@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+
+# Android build outputs
+android/app/build/
+frontend/android/app/build/
+android/.gradle/
+frontend/android/.gradle/
+android/.idea/
+build/
+
+# Logs & temp
+*.log
+*.jks
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+*.hprof
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.pyc
+.python-version
+.pytest_cache/
+
+# AI Models (large binaries - not committed to git)
+**/*.gguf
+**/*.safetensors
+**/*.bin
+**/faiss_index/*.faiss
+**/faiss_index/*.pkl
+**/models/whisper-tiny/
+assets/models/
+
+# Database files (seeded at build time)
+**/*.db
+python-service/data/
+
+# IDE
+.idea/
+.vscode/
+
+# Coverage
+coverage/
+
+# Metro / React Native temp
+metro_*.log
+metro_*.bat

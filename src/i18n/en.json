@@ -1,0 +1,36 @@
+{
+  "chat": {
+    "placeholder": "Ask about traffic laws...",
+    "title": "DriveLegal",
+    "clear": "Clear Chat",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "state": "State",
+    "locationAlerts": "Location Alerts",
+    "darkMode": "Dark Mode",
+    "showDisclaimer": "Show Disclaimer Every Response",
+    "about": "About",
+    "aboutText": "DriveLegal v1.0.0\nAI-powered traffic law assistant\nFully offline - no internet required\n\nThis information is for educational purposes only.\nFor official advice, contact your local RTO."
+  },
+  "location": {
+    "title": "Location",
+    "detectButton": "Detect My Location",
+    "detecting": "Detecting...",
+    "manualSelect": "Or Select Manually",
+    "detected": "Detected: ",
+    "error": "Location detection failed. Please select manually."
+  },
+  "disclaimer": "This information is for educational purposes only. For official advice, contact your local RTO or legal professional.",
+  "alerts": {
+    "learnMore": "Learn More",
+    "dismiss": "Dismiss"
+  },
+  "confidence": {
+    "high": "High confidence",
+    "medium": "Medium confidence",
+    "low": "Low confidence — verify with your RTO"
+  }
+}

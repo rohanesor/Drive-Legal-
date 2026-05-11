@@ -1,0 +1,533 @@
+{
+  "report": {
+    "total_questions": 45,
+    "correct_answers": 0,
+    "partial_answers": 0,
+    "incorrect_answers": 0,
+    "errors": 45,
+    "overall_accuracy_pct": 0.0,
+    "target_met": false,
+    "by_category": {
+      "fine": 0.0,
+      "violation": 0.0,
+      "procedure": 0.0,
+      "permit": 0.0,
+      "license": 0.0
+    },
+    "by_language": {
+      "en": 0.0,
+      "hi": 0.0,
+      "ta": 0.0
+    },
+    "by_state": {
+      "TN": 0.0,
+      "KN": 0.0,
+      "KL": 0.0,
+      "MH": 0.0,
+      "DL": 0.0,
+      "AP": 0.0
+    },
+    "by_difficulty": {
+      "easy": 0.0,
+      "medium": 0.0,
+      "hard": 0.0
+    }
+  },
+  "detailed_results": [
+    {
+      "question": "What is the fine for driving 30 km/h over the speed limit in Tamil Nadu?",
+      "category": "fine",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "easy",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "\u0915\u0930\u094d\u0928\u093e\u091f\u0915 \u092e\u0947\u0902 \u0917\u0924\u093f \u0938\u0940\u092e\u093e \u0938\u0947 30 \u0915\u093f\u092e\u0940/\u0918\u0902\u091f\u093e \u0905\u0927\u093f\u0915 \u091a\u0932\u093e\u0928\u0947 \u092a\u0930 \u091c\u0941\u0930\u094d\u092e\u093e\u0928\u093e \u0915\u093f\u0924\u0928\u093e \u0939\u0948?",
+      "category": "fine",
+      "state": "KN",
+      "language": "hi",
+      "difficulty": "easy",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "No laws found for query: \u0915\u0930\u094d\u0928\u093e\u091f\u0915 \u092e\u0947\u0902 \u0917\u0924\u093f \u0938\u0940\u092e\u093e \u0938\u0947 30 \u0915\u093f\u092e\u0940/\u0918\u0902\u091f\u093e \u0905\u0927\u093f\u0915 \u091a\u0932\u093e\u0928\u0947 \u092a\u0930 \u091c\u0941\u0930\u094d\u092e\u093e\u0928\u093e \u0915\u093f\u0924\u0928\u093e \u0939\u0948?"
+    },
+    {
+      "question": "\u0bae\u0bcb\u0b9f\u0bcd\u0b9f\u0bbe\u0bb0\u0bcd \u0b9a\u0bc8\u0b95\u0bcd\u0b95\u0bbf\u0bb3\u0bcd \u0b87\u0bb2\u0bcd\u0bb2\u0bbe\u0bae\u0bb2\u0bcd \u0bb9\u0bc6\u0bb2\u0bcd\u0bae\u0bc6\u0b9f\u0bcd \u0b87\u0bb2\u0bcd\u0bb2\u0bbe\u0bae\u0bb2\u0bcd \u0b93\u0b9f\u0bcd\u0b9f\u0bbf\u0ba9\u0bbe\u0bb2\u0bcd \u0b8e\u0ba9\u0bcd\u0ba9 \u0ba4\u0ba3\u0bcd\u0b9f\u0ba9\u0bc8?",
+      "category": "fine",
+      "state": "TN",
+      "language": "ta",
+      "difficulty": "easy",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "No laws found for query: \u0bae\u0bcb\u0b9f\u0bcd\u0b9f\u0bbe\u0bb0\u0bcd \u0b9a\u0bc8\u0b95\u0bcd\u0b95\u0bbf\u0bb3\u0bcd \u0b87\u0bb2\u0bcd\u0bb2\u0bbe\u0bae\u0bb2\u0bcd \u0bb9\u0bc6\u0bb2\u0bcd\u0bae\u0bc6\u0b9f\u0bcd \u0b87\u0bb2\u0bcd\u0bb2\u0bbe\u0bae\u0bb2\u0bcd \u0b93\u0b9f\u0bcd\u0b9f\u0bbf\u0ba9\u0bbe\u0bb2\u0bcd \u0b8e\u0ba9\u0bcd\u0ba9 \u0ba4\u0ba3\u0bcd\u0b9f\u0ba9\u0bc8?"
+    },
+    {
+      "question": "Is wearing a seatbelt mandatory for both front-seat passengers and the driver in India?",
+      "category": "violation",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "easy",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "What is the penalty for jumping a traffic signal in Tamil Nadu?",
+      "category": "fine",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "easy",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "What is the consequence of driving without a valid driving license?",
+      "category": "violation",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "medium",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "How long is a driving license valid for in India, and how do I renew it?",
+      "category": "procedure",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "medium",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "What documents are required for vehicle registration in Tamil Nadu?",
+      "category": "procedure",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "medium",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "What is the fine for rash or negligent driving in Kerala?",
+      "category": "fine",
+      "state": "KL",
+      "language": "en",
+      "difficulty": "medium",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "What is the penalty for a second-time speeding offense in Maharashtra?",
+      "category": "fine",
+      "state": "MH",
+      "language": "en",
+      "difficulty": "easy",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "Is a pollution certificate (PUC) mandatory for all vehicles in Delhi?",
+      "category": "permit",
+      "state": "DL",
+      "language": "en",
+      "difficulty": "easy",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "What is the fine for driving without valid motor insurance in Andhra Pradesh?",
+      "category": "fine",
+      "state": "AP",
+      "language": "en",
+      "difficulty": "medium",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "Can I drive in the wrong lane on a divided highway?",
+      "category": "violation",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "easy",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "What are the consequences of improper parking in a no-parking zone?",
+      "category": "fine",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "easy",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "What is the legal limit of alcohol for driving in India, and what are the penalties for exceeding it?",
+      "category": "violation",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "hard",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "Is it legal to use a mobile phone while driving in India?",
+      "category": "violation",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "easy",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "Where is honking prohibited in Tamil Nadu?",
+      "category": "violation",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "medium",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "How can I appeal a traffic violation fine in Tamil Nadu?",
+      "category": "procedure",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "hard",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "What are the penalties for not undergoing regular vehicle inspection?",
+      "category": "fine",
+      "state": "KN",
+      "language": "en",
+      "difficulty": "medium",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "What is the speed limit in residential areas according to Indian traffic rules?",
+      "category": "violation",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "medium",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "What is the validity period of a temporary registration number plate?",
+      "category": "procedure",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "medium",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "How do I obtain a handicap parking permit in Delhi?",
+      "category": "permit",
+      "state": "DL",
+      "language": "en",
+      "difficulty": "hard",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "What is the penalty for toll evasion in India?",
+      "category": "fine",
+      "state": "MH",
+      "language": "en",
+      "difficulty": "medium",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "What are the special requirements for operating a commercial vehicle in Tamil Nadu?",
+      "category": "procedure",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "hard",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "\u0baa\u0bb3\u0bcd\u0bb3\u0bbf \u0bae\u0ba3\u0bcd\u0b9f\u0bb2\u0ba4\u0bcd\u0ba4\u0bbf\u0bb2\u0bcd \u0baa\u0bb0\u0bbf\u0ba8\u0bcd\u0ba4\u0bc1\u0bb0\u0bc8\u0b95\u0bcd\u0b95\u0baa\u0bcd\u0baa\u0b9f\u0bcd\u0b9f \u0bb5\u0bc7\u0b95\u0bae\u0bcd \u0b8e\u0ba9\u0bcd\u0ba9?",
+      "category": "violation",
+      "state": "TN",
+      "language": "ta",
+      "difficulty": "easy",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "No laws found for query: \u0baa\u0bb3\u0bcd\u0bb3\u0bbf \u0bae\u0ba3\u0bcd\u0b9f\u0bb2\u0ba4\u0bcd\u0ba4\u0bbf\u0bb2\u0bcd \u0baa\u0bb0\u0bbf\u0ba8\u0bcd\u0ba4\u0bc1\u0bb0\u0bc8\u0b95\u0bcd\u0b95\u0baa\u0bcd\u0baa\u0b9f\u0bcd\u0b9f \u0bb5\u0bc7\u0b95\u0bae\u0bcd \u0b8e\u0ba9\u0bcd\u0ba9?"
+    },
+    {
+      "question": "What should I do immediately after a road accident in Tamil Nadu?",
+      "category": "procedure",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "hard",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "Is a seatbelt required for children in cars?",
+      "category": "violation",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "easy",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "How long is a third-party motor insurance (Green Slip) valid for?",
+      "category": "procedure",
+      "state": "KN",
+      "language": "en",
+      "difficulty": "medium",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "What is the procedure for a breath analyzer test during a traffic stop for suspected drunk driving?",
+      "category": "procedure",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "hard",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "Can I pay a traffic fine (e-challan) online in Tamil Nadu?",
+      "category": "procedure",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "easy",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "\u0bb5\u0bb2\u0ba4\u0bc1\u0baa\u0bc1\u0bb1\u0bae\u0bcd \u0b93\u0b9f\u0bcd\u0b9f\u0bc1\u0bae\u0bcd \u0baa\u0bcb\u0ba4\u0bc1 \u0baa\u0bbe\u0ba4\u0bc1\u0bb0\u0b95\u0bcd\u0bb7\u0bbf\u0ba4\u0bae\u0bbe\u0ba9 overtaking \u0bae\u0bc1\u0bb1\u0bc8 \u0b8e\u0ba9\u0bcd\u0ba9?",
+      "category": "violation",
+      "state": "TN",
+      "language": "ta",
+      "difficulty": "medium",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "No laws found for query: \u0bb5\u0bb2\u0ba4\u0bc1\u0baa\u0bc1\u0bb1\u0bae\u0bcd \u0b93\u0b9f\u0bcd\u0b9f\u0bc1\u0bae\u0bcd \u0baa\u0bcb\u0ba4\u0bc1 \u0baa\u0bbe\u0ba4\u0bc1\u0bb0\u0b95\u0bcd\u0bb7\u0bbf\u0ba4\u0bae\u0bbe\u0ba9 overtaking \u0bae\u0bc1\u0bb1\u0bc8 \u0b8e\u0ba9\u0bcd\u0ba9?"
+    },
+    {
+      "question": "What is the penalty for driving with worn-out tires (below legal tread depth)?",
+      "category": "fine",
+      "state": "AP",
+      "language": "en",
+      "difficulty": "medium",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "Should I give way to emergency vehicles (ambulance, fire truck)?",
+      "category": "violation",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "easy",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "\u091f\u094d\u0930\u0948\u092b\u093f\u0915 \u0938\u093f\u0917\u094d\u0928\u0932 \u0924\u094b\u0921\u093c\u0928\u0947 \u092a\u0930 \u092d\u093e\u0930\u0924 \u092e\u0947\u0902 \u0915\u094d\u092f\u093e \u091c\u0941\u0930\u094d\u092e\u093e\u0928\u093e \u0939\u0948?",
+      "category": "fine",
+      "state": "DL",
+      "language": "hi",
+      "difficulty": "easy",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "No laws found for query: \u091f\u094d\u0930\u0948\u092b\u093f\u0915 \u0938\u093f\u0917\u094d\u0928\u0932 \u0924\u094b\u0921\u093c\u0928\u0947 \u092a\u0930 \u092d\u093e\u0930\u0924 \u092e\u0947\u0902 \u0915\u094d\u092f\u093e \u091c\u0941\u0930\u094d\u092e\u093e\u0928\u093e \u0939\u0948?"
+    },
+    {
+      "question": "Is it legal to modify the engine or structure of a vehicle without approval?",
+      "category": "violation",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "medium",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "Is using turn signals (indicators) before turning mandatory in India?",
+      "category": "violation",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "easy",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "Do I need special tires for driving in hilly areas of India?",
+      "category": "procedure",
+      "state": "KL",
+      "language": "en",
+      "difficulty": "medium",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "Which vehicles are exempted from paying toll in India?",
+      "category": "procedure",
+      "state": "MH",
+      "language": "en",
+      "difficulty": "medium",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "Are reflectors and lights mandatory on two-wheelers?",
+      "category": "violation",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "easy",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "What are the different categories of driving licenses in India, and what vehicles can each category drive?",
+      "category": "license",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "hard",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "What is the decibel limit for vehicle horns in residential areas?",
+      "category": "violation",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "hard",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "\u0b85\u0bb5\u0b9a\u0bb0 \u0b95\u0bc2\u0b9f\u0bcd\u0b9f \u0bb5\u0bb4\u0bbf \u0bae\u0bc1\u0bb1\u0bc8 \u0b8e\u0ba9\u0bcd\u0bb1\u0bbe\u0bb2\u0bcd \u0b8e\u0ba9\u0bcd\u0ba9?",
+      "category": "procedure",
+      "state": "TN",
+      "language": "ta",
+      "difficulty": "hard",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "No laws found for query: \u0b85\u0bb5\u0b9a\u0bb0 \u0b95\u0bc2\u0b9f\u0bcd\u0b9f \u0bb5\u0bb4\u0bbf \u0bae\u0bc1\u0bb1\u0bc8 \u0b8e\u0ba9\u0bcd\u0bb1\u0bbe\u0bb2\u0bcd \u0b8e\u0ba9\u0bcd\u0ba9?"
+    },
+    {
+      "question": "What is the age limit for scrapping old vehicles in India?",
+      "category": "procedure",
+      "state": "KN",
+      "language": "en",
+      "difficulty": "hard",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "Where should I dispose of old vehicle batteries safely?",
+      "category": "procedure",
+      "state": "TN",
+      "language": "en",
+      "difficulty": "medium",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    },
+    {
+      "question": "In a multi-lane highway, which lane should slow-moving vehicles use?",
+      "category": "violation",
+      "state": "MH",
+      "language": "en",
+      "difficulty": "easy",
+      "status": "error",
+      "accuracy": 0,
+      "response": "",
+      "reason": "LLM model failed to generate response"
+    }
+  ]
+}
