@@ -23,17 +23,8 @@ import {
 import { useDispatch } from 'react-redux';
 import { setState } from '../store/settingsSlice';
 import { getCurrentLocation, getStateName } from '../services/location';
+import { STATES } from '../constants/states';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
-// List of supported Indian states
-const STATES = [
-  { code: 'TN', name: 'Tamil Nadu' },
-  { code: 'KN', name: 'Karnataka' },
-  { code: 'AP', name: 'Andhra Pradesh' },
-  { code: 'KL', name: 'Kerala' },
-  { code: 'MH', name: 'Maharashtra' },
-  { code: 'DL', name: 'Delhi' },
-];
 
 export const LocationScreen = ({ navigation }: any) => {
   const dispatch = useDispatch();

@@ -11,7 +11,7 @@
  * 
  * All settings are saved to AsyncStorage for persistence across app restarts.
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -45,24 +45,17 @@ const STATES = ['TN', 'KN', 'AP', 'KL', 'MH', 'DL'];
 export const SettingsScreen = () => {
   const dispatch = useDispatch();
   const settings = useSelector((state: RootState) => state.settings);
-  const [localSettings, setLocalSettings] = useState(settings);
 
-  // Save settings to AsyncStorage whenever they change
   useEffect(() => {
     saveSettings({
-      language: localSettings.language,
-      state: localSettings.state,
-      darkMode: localSettings.darkMode,
-      notificationsEnabled: localSettings.notificationsEnabled,
-      locationAlertsEnabled: localSettings.locationAlertsEnabled,
-      showDisclaimerAlways: localSettings.showDisclaimerAlways,
+      language: settings.language,
+      state: settings.state,
+      darkMode: settings.darkMode,
+      notificationsEnabled: settings.notificationsEnabled,
+      locationAlertsEnabled: settings.locationAlertsEnabled,
+      showDisclaimerAlways: settings.showDisclaimerAlways,
     });
-  }, [localSettings]);
-
-  // Helper to update a single setting
-  const updateSetting = (key: string, value: any) => {
-    setLocalSettings((prev) => ({ ...prev, [key]: value }));
-  };
+  }, [settings]);
 
   return (
     <ScrollView style={styles.container}>
@@ -74,22 +67,19 @@ export const SettingsScreen = () => {
             key={lang.code}
             style={[
               styles.option,
-              localSettings.language === lang.code && styles.optionSelected,
+              settings.language === lang.code && styles.optionSelected,
             ]}
-            onPress={() => {
-              dispatch(setLanguage(lang.code as 'en' | 'ta' | 'hi'));
-              updateSetting('language', lang.code);
-            }}
+            onPress={() => dispatch(setLanguage(lang.code as 'en' | 'ta' | 'hi'))}
           >
             <Text
               style={[
                 styles.optionText,
-                localSettings.language === lang.code && styles.optionTextSelected,
+                settings.language === lang.code && styles.optionTextSelected,
               ]}
             >
               {lang.label}
             </Text>
-            {localSettings.language === lang.code && (
+            {settings.language === lang.code && (
               <Text style={styles.checkmark}>✓</Text>
             )}
           </TouchableOpacity>
@@ -104,22 +94,19 @@ export const SettingsScreen = () => {
             key={state}
             style={[
               styles.option,
-              localSettings.state === state && styles.optionSelected,
+              settings.state === state && styles.optionSelected,
             ]}
-            onPress={() => {
-              dispatch(setState(state));
-              updateSetting('state', state);
-            }}
+            onPress={() => dispatch(setState(state))}
           >
             <Text
               style={[
                 styles.optionText,
-                localSettings.state === state && styles.optionTextSelected,
+                settings.state === state && styles.optionTextSelected,
               ]}
             >
               {getStateName(state)}
             </Text>
-            {localSettings.state === state && (
+            {settings.state === state && (
               <Text style={styles.checkmark}>✓</Text>
             )}
           </TouchableOpacity>
@@ -133,33 +120,24 @@ export const SettingsScreen = () => {
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Location Alerts</Text>
           <Switch
-            value={localSettings.locationAlertsEnabled}
-            onValueChange={(value) => {
-              dispatch(toggleLocationAlerts());
-              updateSetting('locationAlertsEnabled', value);
-            }}
+            value={settings.locationAlertsEnabled}
+            onValueChange={() => dispatch(toggleLocationAlerts())}
           />
         </View>
 
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Dark Mode</Text>
           <Switch
-            value={localSettings.darkMode}
-            onValueChange={() => {
-              dispatch(toggleDarkMode());
-              updateSetting('darkMode', !localSettings.darkMode);
-            }}
+            value={settings.darkMode}
+            onValueChange={() => dispatch(toggleDarkMode())}
           />
         </View>
 
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Show Disclaimer Every Response</Text>
           <Switch
-            value={localSettings.showDisclaimerAlways}
-            onValueChange={() => {
-              dispatch(toggleDisclaimerAlways());
-              updateSetting('showDisclaimerAlways', !localSettings.showDisclaimerAlways);
-            }}
+            value={settings.showDisclaimerAlways}
+            onValueChange={() => dispatch(toggleDisclaimerAlways())}
           />
         </View>
       </View>

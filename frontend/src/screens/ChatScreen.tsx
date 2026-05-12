@@ -29,7 +29,7 @@ import {
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState, AppDispatch } from '../store';
-import { addMessage, setLoading, clearChat, markDisclaimerShown } from '../store/chatSlice';
+import { addMessage, setLoading, clearChat } from '../store/chatSlice';
 import { executeQuery, QueryPayload, QueryResult } from '../services/pythonBridge';
 import { getCurrentLocation, getStateName } from '../services/location';
 import { isDisclaimerShown, setDisclaimerShown } from '../services/storage';
@@ -243,7 +243,6 @@ export const ChatScreen = ({ navigation }: any) => {
       sender={item.sender}
       source_sections={item.source_sections}
       confidence={item.confidence}
-      isAlert={item.is_alert}
     />
   );
 

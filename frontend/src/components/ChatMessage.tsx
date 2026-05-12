@@ -20,9 +20,8 @@ import { ConfidenceIndicator } from './ConfidenceIndicator';
 interface ChatMessageProps {
   text: string;
   sender: 'user' | 'bot';
-  source_sections?: string[];  // Law citations
-  confidence?: number;          // 0.0 to 1.0
-  isAlert?: boolean;
+  source_sections?: string[];
+  confidence?: number;
 }
 
 export const ChatMessage = ({
@@ -30,7 +29,6 @@ export const ChatMessage = ({
   sender,
   source_sections,
   confidence,
-  isAlert,
 }: ChatMessageProps) => {
   // User messages are simple text bubbles
   if (sender === 'user') {

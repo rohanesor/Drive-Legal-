@@ -11,19 +11,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../store';
 import { setState } from '../store/settingsSlice';
 import { getStateName } from '../services/location';
+import { STATES } from '../constants/states';
 
 interface LocationPickerProps {
   onSelect?: (state: string) => void;
 }
-
-const STATES = [
-  { code: 'TN', name: 'Tamil Nadu' },
-  { code: 'KN', name: 'Karnataka' },
-  { code: 'AP', name: 'Andhra Pradesh' },
-  { code: 'KL', name: 'Kerala' },
-  { code: 'MH', name: 'Maharashtra' },
-  { code: 'DL', name: 'Delhi' },
-];
 
 export const LocationPicker = ({ onSelect }: LocationPickerProps) => {
   const dispatch = useDispatch();

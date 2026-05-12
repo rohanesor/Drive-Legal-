@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AudioRecorderPlayer from 'react-native-audio-recorder-player';
+import { getAudioPath } from '../utils/audioPath';
 
 // Single instance of the audio recorder (shared across the app)
 const audioRecorderPlayer = new AudioRecorderPlayer();
@@ -79,10 +80,10 @@ export const VoiceInput = ({ onVoiceInput }: VoiceInputProps) => {
    */
   const stopRecording = async () => {
     try {
-      const path = await audioRecorderPlayer.stopRecorder();
-      setIsRecording(false); // Reset button to grey
+      const rawPath = await audioRecorderPlayer.stopRecorder();
+      setIsRecording(false);
 
-      // Send audio file path to parent for transcription
+      const path = getAudioPath(rawPath);
       if (path && path !== 'cancelled') {
         onVoiceInput(path);
       }
