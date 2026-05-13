@@ -214,7 +214,7 @@ def validate_citations(response_text: str, laws: List[Dict]) -> List[str]:
         List of validated citation strings
     """
     # Extract citation patterns (e.g., "§188", "Section 194B", "Rule 45")
-    citations = re.findall(r'(?:§|Section|section|Rule)\s*\d+', response_text)
+    citations = re.findall(r'(?:§|Section|section|Rule)\s*[\dA-Za-z]+', response_text)
     
     # Get valid section names from retrieved laws
     valid_sections = set()

@@ -92,7 +92,7 @@ export const setupLocationListener = (): void => {
           message: result.message,
           suggested_query: result.suggested_query || '',
           severity: (result.severity as 'low' | 'medium' | 'high') || 'medium',
-          timestamp: new Date(),
+          timestamp: Date.now(),
           dismissed: false,
         }));
 
@@ -110,7 +110,7 @@ export const setupLocationListener = (): void => {
                   id: Date.now().toString(),
                   text: result.suggested_query || '',
                   sender: 'user',
-                  timestamp: new Date(),
+                  timestamp: Date.now(),
                 }));
               },
             },

@@ -21,7 +21,7 @@ export interface Message {
   id: string;
   text: string;
   sender: 'user' | 'bot';
-  timestamp: Date;
+  timestamp: number;
   source_sections?: string[];
   confidence?: number;
   is_alert?: boolean;
@@ -56,13 +56,8 @@ const chatSlice = createSlice({
     clearChat: (state) => {
       state.messages = [];
     },
-    // Mark that disclaimer has been shown this session
     markDisclaimerShown: (state) => {
       state.disclaimerShown = true;
-    },
-    // Add a zone alert as a special message type
-    addAlertMessage: (state, action: PayloadAction<Message>) => {
-      state.messages.push({ ...action.payload, is_alert: true });
     },
   },
 });
@@ -72,7 +67,6 @@ export const {
   setLoading,
   clearChat,
   markDisclaimerShown,
-  addAlertMessage,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

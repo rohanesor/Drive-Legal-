@@ -14,12 +14,12 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface ZoneAlert {
   id: string;
-  zone_type: string;       // accident_prone, school_zone, state_border, speed_change
-  zone_name: string;       // Human-readable name (e.g., "Anna Salai Junction")
-  message: string;         // Alert message text
-  suggested_query: string; // Pre-filled chat query when user taps "Learn More"
+  zone_type: string;
+  zone_name: string;
+  message: string;
+  suggested_query: string;
   severity: 'low' | 'medium' | 'high';
-  timestamp: Date;
+  timestamp: number;
   dismissed: boolean;
 }
 
@@ -42,16 +42,23 @@ const alertSlice = createSlice({
   name: 'alerts',
   initialState,
   reducers: {
-    // Add a new zone alert (respects cooldown)
     addAlert: (state, action: PayloadAction<ZoneAlert>) => {
       const now = Date.now();
-      const lastTime = state.lastAlertTimes[action.payload.zone_name] || 0;
+      const key = action.payload.id;
+      const lastTime = state.lastAlertTimes[key] || 0;
 
-      // Only alert if cooldown has passed
       if (now - lastTime > ALERT_COOLDOWN_MS) {
         state.alerts.push(action.payload);
         state.activeAlert = action.payload;
-        state.lastAlertTimes[action.payload.zone_name] = now;
+        state.lastAlertTimes[key] = now;
+      }
+
+      // Evict entries older than 2x cooldown to prevent unbounded growth
+      const staleThreshold = now - 2 * ALERT_COOLDOWN_MS;
+      for (const k of Object.keys(state.lastAlertTimes)) {
+        if (state.lastAlertTimes[k] < staleThreshold) {
+          delete state.lastAlertTimes[k];
+        }
       }
     },
     dismissAlert: (state) => {
@@ -60,6 +67,7 @@ const alertSlice = createSlice({
     clearAlerts: (state) => {
       state.alerts = [];
       state.activeAlert = null;
+      state.lastAlertTimes = {};
     },
   },
 });

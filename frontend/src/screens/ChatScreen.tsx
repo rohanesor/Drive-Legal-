@@ -30,6 +30,7 @@ import {
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState, AppDispatch } from '../store';
 import { addMessage, setLoading, clearChat } from '../store/chatSlice';
+import { dismissAlert } from '../store/alertSlice';
 import { executeQuery, QueryPayload, QueryResult } from '../services/pythonBridge';
 import { getCurrentLocation, getStateName } from '../services/location';
 import { isDisclaimerShown, setDisclaimerShown } from '../services/storage';
@@ -107,12 +108,11 @@ export const ChatScreen = ({ navigation }: any) => {
     const queryText = text || inputText;
     if (!queryText.trim()) return;
 
-    // Add user's message to the chat
     dispatch(addMessage({
       id: Date.now().toString(),
       text: queryText,
       sender: 'user',
-      timestamp: new Date(),
+      timestamp: Date.now(),
     }));
 
     setInputText('');
@@ -140,7 +140,7 @@ export const ChatScreen = ({ navigation }: any) => {
           id: (Date.now() + 1).toString(),
           text: result.response_text,
           sender: 'bot',
-          timestamp: new Date(),
+          timestamp: Date.now(),
           source_sections: result.source_sections,
           confidence: result.confidence,
         }));
@@ -157,7 +157,7 @@ export const ChatScreen = ({ navigation }: any) => {
           id: (Date.now() + 1).toString(),
           text: result.fallback_response_text,
           sender: 'bot',
-          timestamp: new Date(),
+          timestamp: Date.now(),
         }));
       } 
       // Handle error
@@ -166,7 +166,7 @@ export const ChatScreen = ({ navigation }: any) => {
           id: (Date.now() + 1).toString(),
           text: 'Sorry, I could not process your request. Please try again.',
           sender: 'bot',
-          timestamp: new Date(),
+          timestamp: Date.now(),
         }));
       }
     } catch (error) {
@@ -175,7 +175,7 @@ export const ChatScreen = ({ navigation }: any) => {
         id: (Date.now() + 1).toString(),
         text: 'Error: Could not get a response. Please try again.',
         sender: 'bot',
-        timestamp: new Date(),
+        timestamp: Date.now(),
       }));
     } finally {
       dispatch(setLoading(false)); // Hide loading spinner
@@ -208,7 +208,7 @@ export const ChatScreen = ({ navigation }: any) => {
           id: Date.now().toString(),
           text: result.response_text,
           sender: 'bot',
-          timestamp: new Date(),
+          timestamp: Date.now(),
           source_sections: result.source_sections,
           confidence: result.confidence,
         }));
@@ -217,7 +217,7 @@ export const ChatScreen = ({ navigation }: any) => {
           id: Date.now().toString(),
           text: result.fallback_response_text,
           sender: 'bot',
-          timestamp: new Date(),
+          timestamp: Date.now(),
         }));
       }
     } catch (error) {
@@ -275,7 +275,7 @@ export const ChatScreen = ({ navigation }: any) => {
           message={activeAlert.message}
           severity={activeAlert.severity}
           onLearnMore={() => handleSendMessage(activeAlert.suggested_query)}
-          onDismiss={() => {}}
+          onDismiss={() => dispatch(dismissAlert())}
         />
       )}
 

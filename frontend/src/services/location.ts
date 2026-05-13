@@ -123,7 +123,7 @@ export const getCurrentLocation = async (): Promise<LocationData | null> => {
             lat: latitude,
             lng: longitude,
             state,
-            accuracy: accuracy || 0,
+            accuracy: accuracy ?? 0,
           });
         },
         (error) => {
@@ -156,7 +156,7 @@ export const watchLocation = (
         lat: latitude,
         lng: longitude,
         state,
-        accuracy: accuracy || 0,
+        accuracy: accuracy ?? 0,
       });
     },
     (error) => {
