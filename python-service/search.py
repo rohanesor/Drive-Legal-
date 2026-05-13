@@ -80,7 +80,7 @@ def search(query: str, top_k: int = 3, state: str = None) -> List[Dict]:
             row = cursor.fetchone()
             if row:
                 result = dict(row)
-                result['similarity'] = float(1 - distances[0][i])
+                result['similarity'] = max(0.0, float(1 - distances[0][i]))
                 results.append(result)
 
     conn.close()
@@ -101,10 +101,16 @@ def keyword_fallback(query: str, state: str = None) -> List[Dict]:
     for word in words:
         if len(word) < 3:
             continue
-        cursor.execute(
-            "SELECT * FROM laws WHERE title LIKE ? OR description LIKE ? OR section LIKE ?",
-            [f'%{word}%', f'%{word}%', f'%{word}%']
-        )
+        if state:
+            cursor.execute(
+                "SELECT * FROM laws WHERE (title LIKE ? OR description LIKE ? OR section LIKE ?) AND (states IS NULL OR INSTR(states, ?))",
+                [f'%{word}%', f'%{word}%', f'%{word}%', f'"{state}"']
+            )
+        else:
+            cursor.execute(
+                "SELECT * FROM laws WHERE title LIKE ? OR description LIKE ? OR section LIKE ?",
+                [f'%{word}%', f'%{word}%', f'%{word}%']
+            )
         rows = cursor.fetchall()
         for row in rows:
             result = dict(row)

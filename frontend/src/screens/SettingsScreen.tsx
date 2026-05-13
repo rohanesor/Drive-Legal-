@@ -121,7 +121,7 @@ export const SettingsScreen = () => {
           <Text style={styles.rowLabel}>Location Alerts</Text>
           <Switch
             value={settings.locationAlertsEnabled}
-            onValueChange={() => dispatch(toggleLocationAlerts())}
+            onValueChange={() => { dispatch(toggleLocationAlerts()); }}
           />
         </View>
 
@@ -129,7 +129,7 @@ export const SettingsScreen = () => {
           <Text style={styles.rowLabel}>Dark Mode</Text>
           <Switch
             value={settings.darkMode}
-            onValueChange={() => dispatch(toggleDarkMode())}
+            onValueChange={() => { dispatch(toggleDarkMode()); }}
           />
         </View>
 
@@ -137,7 +137,7 @@ export const SettingsScreen = () => {
           <Text style={styles.rowLabel}>Show Disclaimer Every Response</Text>
           <Switch
             value={settings.showDisclaimerAlways}
-            onValueChange={() => dispatch(toggleDisclaimerAlways())}
+            onValueChange={() => { dispatch(toggleDisclaimerAlways()); }}
           />
         </View>
       </View>

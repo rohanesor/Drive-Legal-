@@ -12,11 +12,11 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["frontend/src/*"]
     },
     "outDir": "./dist",
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "include": ["frontend/src/**/*.ts", "frontend/src/**/*.tsx"],
   "exclude": ["node_modules", "android", "ios", "__tests__"]
 }

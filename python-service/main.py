@@ -121,9 +121,6 @@ def execute_pipeline(payload: Dict) -> Dict:
         'amendments': enriched.get('search_results', [{}])[0].get('amendments', []),
         'disclaimer': enriched.get('disclaimer', '')
     }
-        'source_sections': source_sections,
-        'confidence': round(confidence, 2),
-    }
 
 
 def build_template_response(laws: List[Dict], penalties: List[Dict], state: str) -> str:

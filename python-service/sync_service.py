@@ -324,7 +324,7 @@ class SyncService:
                 },
                 'estimated_duration': '1 week',
                 'timestamp': datetime.now().isoformat(),
-                'source': 'mock_pwdå_feed'
+                'source': 'mock_pwd_feed'
             }
         ]
     
