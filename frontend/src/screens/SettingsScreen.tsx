@@ -31,6 +31,7 @@ import {
 } from '../store/settingsSlice';
 import { saveSettings } from '../services/storage';
 import { getStateName } from '../services/location';
+import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 
 // Available languages with native script display
 const LANGUAGES = [
@@ -160,24 +161,22 @@ export const SettingsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.background,
   },
   section: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.surface,
     marginVertical: 8,
     marginHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.medium,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.subtle,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1f2937',
+    ...TYPOGRAPHY.h3,
+    color: COLORS.textPrimary,
+    fontWeight: '700',
     marginBottom: 12,
   },
   option: {
@@ -186,22 +185,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 8,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.small,
   },
   optionSelected: {
-    backgroundColor: '#e0e7ff',
+    backgroundColor: COLORS.lightPrimary,
   },
   optionText: {
-    fontSize: 16,
-    color: '#4b5563',
+    ...TYPOGRAPHY.bodyLarge,
+    color: COLORS.textSecondary,
   },
   optionTextSelected: {
-    color: '#1e40af',
-    fontWeight: '600',
+    color: COLORS.primary,
+    fontWeight: '700',
   },
   checkmark: {
     fontSize: 18,
-    color: '#1e40af',
+    color: COLORS.primary,
+    fontWeight: 'bold',
   },
   row: {
     flexDirection: 'row',
@@ -209,17 +209,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: COLORS.border,
   },
   rowLabel: {
-    fontSize: 16,
-    color: '#4b5563',
+    ...TYPOGRAPHY.bodyLarge,
+    color: COLORS.textPrimary,
     flex: 1,
     marginRight: 16,
   },
   aboutText: {
-    fontSize: 14,
-    color: '#6b7280',
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.textSecondary,
     lineHeight: 22,
   },
 });

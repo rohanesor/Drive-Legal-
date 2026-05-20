@@ -12,6 +12,7 @@ import type { RootState } from '../store';
 import { setState } from '../store/settingsSlice';
 import { getStateName } from '../services/location';
 import { STATES } from '../constants/states';
+import { COLORS, BORDER_RADIUS } from '../constants/theme';
 
 interface LocationPickerProps {
   onSelect?: (state: string) => void;
@@ -59,12 +60,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 14,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.small,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: COLORS.border,
   },
-  stateItemSelected: { backgroundColor: '#e0e7ff' },
-  stateName: { fontSize: 16, color: '#4b5563' },
-  stateNameSelected: { color: '#1e40af', fontWeight: '600' },
-  stateCode: { fontSize: 14, color: '#9ca3af', fontWeight: '500' },
+  stateItemSelected: { backgroundColor: COLORS.lightPrimary },
+  stateName: { fontSize: 16, color: COLORS.textSecondary },
+  stateNameSelected: { color: COLORS.primary, fontWeight: '600' },
+  stateCode: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '500' },
 });

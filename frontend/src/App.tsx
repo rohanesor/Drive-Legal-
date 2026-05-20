@@ -18,35 +18,60 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Provider } from 'react-redux';
 import { store } from './store';
+import { SplashScreen } from './screens/SplashScreen';
+import { DashboardScreen } from './screens/DashboardScreen';
 import { ChatScreen } from './screens/ChatScreen';
+import { ChallanCalculatorScreen } from './screens/ChallanCalculatorScreen';
+import { EmergencyScreen } from './screens/EmergencyScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { LocationScreen } from './screens/LocationScreen';
 import { PaperProvider } from 'react-native-paper';
+import { COLORS } from './constants/theme';
 
-// Create a stack navigator (screens stack on top of each other)
 const Stack = createStackNavigator();
 
 const App = () => {
   return (
-    // Redux Provider makes store available to all child components
     <Provider store={store}>
-      {/* Material Design components from react-native-paper */}
       <PaperProvider>
-        {/* Navigation container - manages screen transitions */}
         <NavigationContainer>
           <Stack.Navigator
-            initialRouteName="Chat"
+            initialRouteName="Splash"
             screenOptions={{
-              headerStyle: { backgroundColor: '#1e40af' }, // DriveLegal blue
+              headerStyle: { backgroundColor: COLORS.navy }, // DriveLegal Navy
               headerTintColor: '#ffffff',
               headerTitleStyle: { fontWeight: 'bold' },
             }}
           >
-            {/* Main chat screen - the home screen */}
+            {/* Splash Screen */}
+            <Stack.Screen
+              name="Splash"
+              component={SplashScreen}
+              options={{ headerShown: false }}
+            />
+            {/* Home Dashboard */}
+            <Stack.Screen
+              name="Dashboard"
+              component={DashboardScreen}
+              options={{ headerShown: false }}
+            />
+            {/* Main AI chat screen */}
             <Stack.Screen
               name="Chat"
               component={ChatScreen}
-              options={{ title: 'DriveLegal' }}
+              options={{ title: 'AI Legal Assistant' }}
+            />
+            {/* Challan Calculator */}
+            <Stack.Screen
+              name="Calculator"
+              component={ChallanCalculatorScreen}
+              options={{ title: 'Challan Calculator' }}
+            />
+            {/* Emergency Contacts */}
+            <Stack.Screen
+              name="Emergency"
+              component={EmergencyScreen}
+              options={{ title: 'Emergency Services' }}
             />
             {/* Settings screen - language, state, preferences */}
             <Stack.Screen
@@ -58,7 +83,7 @@ const App = () => {
             <Stack.Screen
               name="Location"
               component={LocationScreen}
-              options={{ title: 'Location' }}
+              options={{ title: 'Select Jurisdiction' }}
             />
           </Stack.Navigator>
         </NavigationContainer>

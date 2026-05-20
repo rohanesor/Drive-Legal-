@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Shield outline -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,8L14,22v30c0,24 16,46 40,58c24,-12 40,-34 40,-58V22L54,8z"/>
+    <!-- Road (horizontal band) -->
+    <path
+        android:fillColor="#1E88E5"
+        android:pathData="M38,52L70,52L70,48L38,48Z"/>
+    <!-- Road center line -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,48L54,68"/>
+    <!-- Left road line -->
+    <path
+        android:fillColor="#1E88E5"
+        android:pathData="M36,52L36,68L38,68L38,52Z"/>
+    <!-- Right road line -->
+    <path
+        android:fillColor="#1E88E5"
+        android:pathData="M70,52L70,68L72,68L72,52Z"/>
+    <!-- Curved road bottom -->
+    <path
+        android:fillColor="#1E88E5"
+        android:pathData="M38,62C45,70 63,70 70,62L70,56C63,64 45,64 38,56Z"/>
+    <!-- AI circuit dots (small squares) -->
+    <path
+        android:fillColor="#06B6D4"
+        android:pathData="M43,37h5v5h-5z"/>
+    <path
+        android:fillColor="#06B6D4"
+        android:pathData="M43,53h5v5h-5z"/>
+    <path
+        android:fillColor="#06B6D4"
+        android:pathData="M63,37h5v5h-5z"/>
+    <path
+        android:fillColor="#06B6D4"
+        android:pathData="M63,53h5v5h-5z"/>
+    <!-- Circuit vertical lines -->
+    <path
+        android:fillColor="#06B6D4"
+        android:pathData="M45.5,42v11"/>
+    <path
+        android:fillColor="#06B6D4"
+        android:pathData="M65.5,42v11"/>
+</vector>

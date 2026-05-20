@@ -23,6 +23,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AudioRecorderPlayer from 'react-native-audio-recorder-player';
 import { getAudioPath } from '../utils/audioPath';
+import { COLORS } from '../constants/theme';
 
 // Single instance of the audio recorder (shared across the app)
 const audioRecorderPlayer = new AudioRecorderPlayer();
@@ -102,7 +103,7 @@ export const VoiceInput = ({ onVoiceInput }: VoiceInputProps) => {
       <Ionicons
         name={isRecording ? 'mic' : 'mic-outline'}
         size={22}
-        color={isRecording ? '#ffffff' : '#6b7280'}
+        color={isRecording ? COLORS.white : COLORS.textSecondary}
       />
     </TouchableOpacity>
   );
@@ -113,11 +114,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f3f4f6', // Grey when idle
+    backgroundColor: COLORS.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
   buttonRecording: {
-    backgroundColor: '#dc2626', // Red when recording
+    backgroundColor: COLORS.error,
   },
 });

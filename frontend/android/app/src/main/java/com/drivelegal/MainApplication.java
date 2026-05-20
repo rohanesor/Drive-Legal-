@@ -12,6 +12,8 @@ package com.drivelegal;
  * React Native components need to call Python functions.
  */
 import android.app.Application;
+import android.content.Context;
+import android.content.SharedPreferences;
 import com.facebook.react.PackageList;
 import com.facebook.react.ReactApplication;
 import com.facebook.react.ReactHost;
@@ -68,6 +70,9 @@ public class MainApplication extends Application implements ReactApplication {
     @Override
     public void onCreate() {
         super.onCreate();
+        // Set dev server host for USB-connected device via hotspot network
+        SharedPreferences prefs = getSharedPreferences("com.drivelegal_preferences", Context.MODE_PRIVATE);
+        prefs.edit().putString("debug_http_host", "172.24.92.118:8081").apply();
         // Load native libraries (required for RN)
         SoLoader.init(this, false);
         if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {

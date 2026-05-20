@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand Colors -->
+    <color name="ic_launcher_background">#2563EB</color>
+    <color name="ic_launcher_foreground">#FFFFFF</color>
+
+    <!-- Splash Screen -->
+    <color name="splash_background">#0F172A</color>
+    <color name="splash_statusbar">#0F172A</color>
+
+    <!-- Semantic -->
+    <color name="primary">#2563EB</color>
+    <color name="navy">#0F172A</color>
+    <color name="cyan">#06B6D4</color>
+</resources>

@@ -12,6 +12,9 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 apply plugin: "com.chaquo.python"
 
+// React Native autolinking - generates PackageList.java and adds native module dependencies
+apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
+
 react {
 }
 
@@ -62,13 +65,7 @@ android {
     }
     chaquopy {
         defaultConfig {
-            buildPython "python3"
-            pip {
-                install "faiss-cpu==1.7.4"
-                install "onnxruntime==1.17.0"
-                install "pywhispercpp==1.3.0"
-                install "numpy==1.24.3"
-            }
+            buildPython "C:/Users/kille/AppData/Local/Programs/Python/Python311/python.exe"
         }
     }
 }
@@ -76,5 +73,6 @@ android {
 dependencies {
     implementation("com.facebook.react:react-android")
     implementation("com.facebook.react:hermes-android")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
     debugImplementation("com.facebook.react:flipper-integration")
 }

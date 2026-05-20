@@ -20,6 +20,7 @@ import {
   ScrollView,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { COLORS } from '../constants/theme';
 
 interface CitationChipProps {
   section: string;   // Law section name (e.g., "Motor Vehicles Act, Section 188")
@@ -38,7 +39,7 @@ export const CitationChip = ({ section, fullText }: CitationChipProps) => {
         style={styles.chip}
         onPress={() => setShowModal(true)}
       >
-        <Ionicons name="document-text-outline" size={12} color="#1e40af" />
+        <Ionicons name="document-text-outline" size={12} color={COLORS.primary} />
         <Text style={styles.chipText}>{section}</Text>
       </TouchableOpacity>
 
@@ -54,7 +55,7 @@ export const CitationChip = ({ section, fullText }: CitationChipProps) => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{section}</Text>
               <TouchableOpacity onPress={() => setShowModal(false)}>
-                <Ionicons name="close" size={24} color="#4b5563" />
+                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
             <ScrollView>
@@ -72,14 +73,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#dbeafe',
+    backgroundColor: COLORS.lightPrimary,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
   chipText: {
     fontSize: 12,
-    color: '#1e40af',
+    color: COLORS.primary,
     fontWeight: '500',
   },
   modalOverlay: {
@@ -89,7 +90,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: 16,
     width: '85%',
@@ -104,11 +105,11 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1e40af',
+    color: COLORS.primary,
   },
   modalText: {
     fontSize: 15,
-    color: '#4b5563',
+    color: COLORS.textSecondary,
     lineHeight: 24,
   },
 });

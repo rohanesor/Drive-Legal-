@@ -15,6 +15,7 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { COLORS } from '../constants/theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 interface ConfidenceIndicatorProps {
@@ -24,16 +25,16 @@ interface ConfidenceIndicatorProps {
 export const ConfidenceIndicator = ({ confidence }: ConfidenceIndicatorProps) => {
   // Determine level based on confidence score
   let level: 'high' | 'medium' | 'low' = 'low';
-  let color = '#dc2626'; // Red
+  let color = COLORS.error;
   let label = 'Low confidence — verify with your RTO';
 
   if (confidence >= 0.7) {
     level = 'high';
-    color = '#059669'; // Green
+    color = COLORS.success;
     label = 'High confidence';
   } else if (confidence >= 0.4) {
     level = 'medium';
-    color = '#d97706'; // Yellow/Orange
+    color = COLORS.warning;
     label = 'Medium confidence';
   }
 

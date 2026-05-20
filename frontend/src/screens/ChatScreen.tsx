@@ -38,11 +38,12 @@ import { ChatMessage } from '../components/ChatMessage';
 import { VoiceInput } from '../components/VoiceInput';
 import { AlertBanner } from '../components/AlertBanner';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { COLORS, TYPOGRAPHY, BORDER_RADIUS } from '../constants/theme';
 
 // Legal disclaimer text shown at start of each session
 const DISCLAIMER_TEXT = 'This information is for educational purposes only. For official advice, contact your local RTO or legal professional.';
 
-export const ChatScreen = ({ navigation }: any) => {
+export const ChatScreen = ({ navigation, route }: any) => {
   // Redux state and dispatch
   const dispatch = useDispatch<AppDispatch>();
   const messages = useSelector((state: RootState) => state.chat.messages);
@@ -67,6 +68,13 @@ export const ChatScreen = ({ navigation }: any) => {
     checkDisclaimer();
     initPython();
   }, []);
+
+  // Process initialQuery passed from Dashboard or Calculator
+  useEffect(() => {
+    if (route?.params?.initialQuery) {
+      handleSendMessage(route.params.initialQuery);
+    }
+  }, [route?.params?.initialQuery]);
 
   /**
    * Detect user's current state from GPS
@@ -248,23 +256,30 @@ export const ChatScreen = ({ navigation }: any) => {
 
   return (
     <View style={styles.container}>
-      {/* Header: App name, state, settings button */}
+      {/* Header: AI Assistant branding */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>DriveLegal</Text>
-          <Text style={styles.headerState}>
-            State: {getStateName(currentState)} ({currentState})
-          </Text>
+          <View style={styles.headerBrandRow}>
+            <View style={styles.headerAiBadge}>
+              <Ionicons name="sparkles" size={16} color={COLORS.cyan} />
+            </View>
+            <View>
+              <Text style={styles.headerTitle}>TrafiAI</Text>
+              <Text style={styles.headerState}>
+                {getStateName(currentState)} ({currentState})
+              </Text>
+            </View>
+          </View>
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity onPress={handleClearChat} style={styles.headerButton}>
-            <Ionicons name="trash-outline" size={20} color="#ffffff" />
+            <Ionicons name="trash-outline" size={20} color={COLORS.white} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.navigate('Settings')}
             style={styles.headerButton}
           >
-            <Ionicons name="settings-outline" size={20} color="#ffffff" />
+            <Ionicons name="settings-outline" size={20} color={COLORS.white} />
           </TouchableOpacity>
         </View>
       </View>
@@ -282,7 +297,7 @@ export const ChatScreen = ({ navigation }: any) => {
       {/* Legal disclaimer (shown once per session) */}
       {showDisclaimer && (
         <View style={styles.disclaimer}>
-          <Ionicons name="information-circle" size={16} color="#92400e" />
+          <Ionicons name="information-circle" size={16} color={COLORS.textWarning} />
           <Text style={styles.disclaimerText}>{DISCLAIMER_TEXT}</Text>
         </View>
       )}
@@ -302,7 +317,7 @@ export const ChatScreen = ({ navigation }: any) => {
         />
 
         {/* Loading spinner while bot processes */}
-        {loading && <ActivityIndicator size="large" color="#1e40af" style={styles.loader} />}
+        {loading && <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />}
 
         {/* Input bar: voice button + text input + send button */}
         <View style={styles.inputContainer}>
@@ -310,20 +325,23 @@ export const ChatScreen = ({ navigation }: any) => {
           <TextInput
             style={styles.input}
             placeholder="Ask about traffic laws..."
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={COLORS.textSecondary}
             value={inputText}
             onChangeText={setInputText}
             onSubmitEditing={() => handleSendMessage()}
           />
           <TouchableOpacity
-            style={styles.sendButton}
+            style={[
+              styles.sendButton,
+              inputText.trim() ? { backgroundColor: COLORS.primary } : { backgroundColor: COLORS.border },
+            ]}
             onPress={() => handleSendMessage()}
             disabled={!inputText.trim()}
           >
             <Ionicons
               name="send"
-              size={20}
-              color={inputText.trim() ? '#ffffff' : '#9ca3af'}
+              size={18}
+              color={inputText.trim() ? COLORS.white : COLORS.textSecondary}
             />
           </TouchableOpacity>
         </View>
@@ -336,26 +354,40 @@ export const ChatScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#1e40af',
+    backgroundColor: COLORS.navy,
   },
   headerLeft: {
     flex: 1,
   },
+  headerBrandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerAiBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: {
-    color: '#ffffff',
+    color: COLORS.white,
     fontSize: 18,
     fontWeight: 'bold',
   },
   headerState: {
-    color: '#e0e7ff',
+    color: COLORS.cyan,
     fontSize: 12,
+    marginTop: 2,
   },
   headerRight: {
     flexDirection: 'row',
@@ -369,14 +401,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     padding: 12,
-    backgroundColor: '#fef3c7',
+    backgroundColor: COLORS.lightWarning,
     borderBottomWidth: 1,
-    borderBottomColor: '#fde68a',
+    borderBottomColor: COLORS.borderWarning,
   },
   disclaimerText: {
     flex: 1,
     fontSize: 12,
-    color: '#92400e',
+    color: COLORS.textWarning,
   },
   keyboardView: {
     flex: 1,
@@ -391,22 +423,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.surface,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: COLORS.border,
     gap: 8,
   },
   input: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 20,
+    backgroundColor: COLORS.background,
+    borderRadius: BORDER_RADIUS.large,
     paddingHorizontal: 16,
     paddingVertical: 8,
     fontSize: 16,
-    color: '#1f2937',
+    color: COLORS.textPrimary,
   },
   sendButton: {
-    backgroundColor: '#1e40af',
     borderRadius: 20,
     width: 40,
     height: 40,

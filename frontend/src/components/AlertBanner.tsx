@@ -18,6 +18,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { COLORS } from '../constants/theme';
 
 interface AlertBannerProps {
   message: string;
@@ -28,9 +29,9 @@ interface AlertBannerProps {
 
 // Color schemes for each severity level
 const severityColors = {
-  low: { bg: '#fef3c7', border: '#fde68a', text: '#92400e' },
-  medium: { bg: '#fed7aa', border: '#fdba74', text: '#9a3412' },
-  high: { bg: '#fecaca', border: '#fca5a5', text: '#991b1b' },
+  low: { bg: COLORS.lightWarning, border: COLORS.borderWarning, text: COLORS.textWarning },
+  medium: { bg: COLORS.orangeLight, border: COLORS.orangeBorder, text: COLORS.orangeDark },
+  high: { bg: COLORS.redLight, border: COLORS.redBorder, text: COLORS.redDark },
 };
 
 const severityIcons = {

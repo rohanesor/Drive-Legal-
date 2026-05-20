@@ -16,6 +16,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CitationChip } from './CitationChip';
 import { ConfidenceIndicator } from './ConfidenceIndicator';
+import { COLORS } from '../constants/theme';
 
 interface ChatMessageProps {
   text: string;
@@ -73,19 +74,19 @@ const styles = StyleSheet.create({
     maxWidth: '85%',
   },
   userMessage: {
-    backgroundColor: '#1e40af', // Dark blue
-    alignSelf: 'flex-end',      // Right-aligned
+    backgroundColor: COLORS.primary,
+    alignSelf: 'flex-end',
   },
   botMessage: {
-    backgroundColor: '#e0e7ff', // Light blue
-    alignSelf: 'flex-start',    // Left-aligned
+    backgroundColor: COLORS.lightPrimary,
+    alignSelf: 'flex-start',
   },
   userText: {
-    color: '#ffffff',
+    color: COLORS.white,
     fontSize: 15,
   },
   botText: {
-    color: '#1e40af',
+    color: COLORS.textPrimary,
     fontSize: 15,
     lineHeight: 22,
   },

@@ -24,6 +24,7 @@ import { useDispatch } from 'react-redux';
 import { setState } from '../store/settingsSlice';
 import { getCurrentLocation, getStateName } from '../services/location';
 import { STATES } from '../constants/states';
+import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 export const LocationScreen = ({ navigation }: any) => {
@@ -71,10 +72,10 @@ export const LocationScreen = ({ navigation }: any) => {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#ffffff" />
+            <ActivityIndicator color={COLORS.white} />
           ) : (
             <>
-              <Ionicons name="locate" size={20} color="#ffffff" />
+              <Ionicons name="locate" size={20} color={COLORS.white} />
               <Text style={styles.detectButtonText}>Detect My Location</Text>
             </>
           )}
@@ -110,7 +111,7 @@ export const LocationScreen = ({ navigation }: any) => {
               {state.name}
             </Text>
             {detectedState === state.code && (
-              <Ionicons name="checkmark-circle" size={20} color="#1e40af" />
+              <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
             )}
           </TouchableOpacity>
         ))}
@@ -122,59 +123,50 @@ export const LocationScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.background,
   },
   detectSection: {
     padding: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.surface,
     margin: 16,
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.medium,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    ...SHADOWS.subtle,
   },
   detectButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#1e40af',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.small,
   },
   detectButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
+    color: COLORS.white,
+    ...TYPOGRAPHY.bodyLarge,
     fontWeight: '600',
   },
   detectedText: {
     marginTop: 12,
-    fontSize: 14,
-    color: '#059669',
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.success,
   },
   errorText: {
     marginTop: 8,
-    fontSize: 14,
-    color: '#dc2626',
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.error,
   },
   manualSection: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.surface,
     marginHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.medium,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    ...SHADOWS.subtle,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1f2937',
+    ...TYPOGRAPHY.h3,
+    color: COLORS.textPrimary,
     marginBottom: 12,
   },
   stateButton: {
@@ -184,19 +176,19 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: COLORS.border,
   },
   stateButtonSelected: {
-    backgroundColor: '#e0e7ff',
-    borderRadius: 8,
+    backgroundColor: COLORS.lightPrimary,
+    borderRadius: BORDER_RADIUS.small,
     borderBottomWidth: 0,
   },
   stateButtonText: {
-    fontSize: 16,
-    color: '#4b5563',
+    ...TYPOGRAPHY.bodyLarge,
+    color: COLORS.textSecondary,
   },
   stateButtonTextSelected: {
-    color: '#1e40af',
+    color: COLORS.primary,
     fontWeight: '600',
   },
 });
