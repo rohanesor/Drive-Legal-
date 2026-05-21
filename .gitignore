@@ -23,6 +23,7 @@ build/
 .env
 .env.local
 .env.*.local
+local.properties
 
 # Python
 __pycache__/
