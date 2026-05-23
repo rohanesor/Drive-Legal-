@@ -25,6 +25,9 @@ build/
 .env.*.local
 local.properties
 
+# Convex generated files
+frontend/convex/_generated/
+
 # Python
 __pycache__/
 *.pyc

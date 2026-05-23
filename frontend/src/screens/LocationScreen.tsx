@@ -143,8 +143,8 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.small,
   },
   detectButtonText: {
+    fontSize: 16,
     color: COLORS.white,
-    ...TYPOGRAPHY.bodyLarge,
     fontWeight: '600',
   },
   detectedText: {

@@ -1,20 +1,3 @@
-/**
- * ChatScreen - The main screen where users interact with the DriveLegal chatbot
- * 
- * FEATURES:
- * 1. Text input for typing questions
- * 2. Voice input (press mic button to record)
- * 3. Chat history display (user messages on right, bot on left)
- * 4. Source citations and confidence indicators on bot responses
- * 5. Location-aware responses (detects user's state automatically)
- * 6. Zone alert banner (shown when user enters a traffic law zone)
- * 7. Legal disclaimer (shown once per session)
- * 8. Clear chat and settings buttons in header
- * 
- * DATA FLOW:
- * User types/speaks -> Send to Python bridge -> Python searches laws -> 
- * Python generates response -> Display in chat with citations
- */
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -28,6 +11,8 @@ import {
   Platform,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
+import { useConvex } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import type { RootState, AppDispatch } from '../store';
 import { addMessage, setLoading, clearChat } from '../store/chatSlice';
 import { dismissAlert } from '../store/alertSlice';
@@ -40,45 +25,36 @@ import { AlertBanner } from '../components/AlertBanner';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS, TYPOGRAPHY, BORDER_RADIUS } from '../constants/theme';
 
-// Legal disclaimer text shown at start of each session
 const DISCLAIMER_TEXT = 'This information is for educational purposes only. For official advice, contact your local RTO or legal professional.';
 
 export const ChatScreen = ({ navigation, route }: any) => {
-  // Redux state and dispatch
   const dispatch = useDispatch<AppDispatch>();
+  const convex = useConvex();
   const messages = useSelector((state: RootState) => state.chat.messages);
   const loading = useSelector((state: RootState) => state.chat.loading);
   const language = useSelector((state: RootState) => state.settings.language);
   const userState = useSelector((state: RootState) => state.settings.state);
   const activeAlert = useSelector((state: RootState) => state.alerts.activeAlert);
+  const isOnline = useSelector((state: RootState) => state.convex.isOnline);
 
-  // Local component state
   const [inputText, setInputText] = useState('');
   const [currentState, setCurrentState] = useState(userState);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
 
-  // Ref for scrolling to bottom of chat
   const flatListRef = useRef<FlatList>(null);
 
-  /**
-   * Initialize: detect location, check disclaimer status, preload Python models
-   */
   useEffect(() => {
     initLocation();
     checkDisclaimer();
     initPython();
   }, []);
 
-  // Process initialQuery passed from Dashboard or Calculator
   useEffect(() => {
     if (route?.params?.initialQuery) {
       handleSendMessage(route.params.initialQuery);
     }
   }, [route?.params?.initialQuery]);
 
-  /**
-   * Detect user's current state from GPS
-   */
   const initLocation = async () => {
     const location = await getCurrentLocation();
     if (location) {
@@ -86,17 +62,11 @@ export const ChatScreen = ({ navigation, route }: any) => {
     }
   };
 
-  /**
-   * Check if disclaimer has been shown this session
-   */
   const checkDisclaimer = async () => {
     const shown = await isDisclaimerShown();
     setShowDisclaimer(!shown);
   };
 
-  /**
-   * Preload Python models to reduce first-query latency
-   */
   const initPython = async () => {
     try {
       const { initializePython } = await import('../services/pythonBridge');
@@ -106,12 +76,17 @@ export const ChatScreen = ({ navigation, route }: any) => {
     }
   };
 
-  /**
-   * Handle sending a text message to the chatbot
-   * 1. Add user message to chat
-   2. Send to Python bridge
-   3. Add bot response to chat
-   */
+  const addBotMessage = (text: string, sections?: string[], confidence?: number) => {
+    dispatch(addMessage({
+      id: (Date.now() + 1).toString(),
+      text,
+      sender: 'bot',
+      timestamp: Date.now(),
+      source_sections: sections,
+      confidence,
+    }));
+  };
+
   const handleSendMessage = async (text?: string) => {
     const queryText = text || inputText;
     if (!queryText.trim()) return;
@@ -124,10 +99,31 @@ export const ChatScreen = ({ navigation, route }: any) => {
     }));
 
     setInputText('');
-    dispatch(setLoading(true)); // Show loading spinner
+    dispatch(setLoading(true));
 
     try {
-      // Build the query payload for Python
+      // Online path: Convex → Claude API (via HTTP action)
+      if (isOnline) {
+        try {
+          const result = await convex.action(api.chat.askClaude, {
+            query: queryText,
+            language,
+            locationContext: `${currentState}, India`,
+          }) as { response: string; source: string; confidence: string };
+
+          addBotMessage(result.response);
+          if (showDisclaimer) {
+            await setDisclaimerShown();
+            setShowDisclaimer(false);
+          }
+          dispatch(setLoading(false));
+          return;
+        } catch (claudeError) {
+          console.warn('Claude API failed, falling back to offline:', claudeError);
+        }
+      }
+
+      // Offline/local path: Python Chaquopy (existing flow)
       const payload: QueryPayload = {
         action: 'query',
         text: queryText,
@@ -139,61 +135,27 @@ export const ChatScreen = ({ navigation, route }: any) => {
         language,
       };
 
-      // Send to Python backend for processing
       const result: QueryResult = await executeQuery(payload);
 
-      // Handle successful response
       if (result.status === 'success' && result.response_text) {
-        dispatch(addMessage({
-          id: (Date.now() + 1).toString(),
-          text: result.response_text,
-          sender: 'bot',
-          timestamp: Date.now(),
-          source_sections: result.source_sections,
-          confidence: result.confidence,
-        }));
-
-        // Mark disclaimer as shown after first response
+        addBotMessage(result.response_text, result.source_sections, result.confidence);
         if (showDisclaimer) {
           await setDisclaimerShown();
           setShowDisclaimer(false);
         }
-      } 
-      // Handle fallback response (when LLM fails but template is available)
-      else if (result.fallback_available && result.fallback_response_text) {
-        dispatch(addMessage({
-          id: (Date.now() + 1).toString(),
-          text: result.fallback_response_text,
-          sender: 'bot',
-          timestamp: Date.now(),
-        }));
-      } 
-      // Handle error
-      else {
-        dispatch(addMessage({
-          id: (Date.now() + 1).toString(),
-          text: 'Sorry, I could not process your request. Please try again.',
-          sender: 'bot',
-          timestamp: Date.now(),
-        }));
+      } else if (result.fallback_available && result.fallback_response_text) {
+        addBotMessage(result.fallback_response_text);
+      } else {
+        addBotMessage('Sorry, I could not process your request. Please try again.');
       }
     } catch (error) {
       console.error('Error getting response:', error);
-      dispatch(addMessage({
-        id: (Date.now() + 1).toString(),
-        text: 'Error: Could not get a response. Please try again.',
-        sender: 'bot',
-        timestamp: Date.now(),
-      }));
+      addBotMessage('Error: Could not get a response. Please try again.');
     } finally {
-      dispatch(setLoading(false)); // Hide loading spinner
+      dispatch(setLoading(false));
     }
   };
 
-  /**
-   * Handle voice input from the VoiceInput component
-   * Recorded audio is sent to Python for Whisper transcription
-   */
   const handleVoiceInput = async (audioUri: string) => {
     dispatch(setLoading(true));
 
@@ -212,21 +174,9 @@ export const ChatScreen = ({ navigation, route }: any) => {
       const result: QueryResult = await executeQuery(payload);
 
       if (result.status === 'success' && result.response_text) {
-        dispatch(addMessage({
-          id: Date.now().toString(),
-          text: result.response_text,
-          sender: 'bot',
-          timestamp: Date.now(),
-          source_sections: result.source_sections,
-          confidence: result.confidence,
-        }));
+        addBotMessage(result.response_text, result.source_sections, result.confidence);
       } else if (result.fallback_available && result.fallback_response_text) {
-        dispatch(addMessage({
-          id: Date.now().toString(),
-          text: result.fallback_response_text,
-          sender: 'bot',
-          timestamp: Date.now(),
-        }));
+        addBotMessage(result.fallback_response_text);
       }
     } catch (error) {
       console.error('Voice input error:', error);
