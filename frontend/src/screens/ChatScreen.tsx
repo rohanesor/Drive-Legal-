@@ -5,31 +5,148 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
-  ActivityIndicator,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
-import { useConvex } from 'convex/react';
+import { convexClient } from '../convex/client';
 import { api } from '../../convex/_generated/api';
 import type { RootState, AppDispatch } from '../store';
 import { addMessage, setLoading, clearChat } from '../store/chatSlice';
 import { dismissAlert } from '../store/alertSlice';
 import { executeQuery, QueryPayload, QueryResult } from '../services/pythonBridge';
-import { getCurrentLocation, getStateName } from '../services/location';
+import { getCurrentLocation, getStateName, reverseGeocode } from '../services/location';
 import { isDisclaimerShown, setDisclaimerShown } from '../services/storage';
 import { ChatMessage } from '../components/ChatMessage';
 import { VoiceInput } from '../components/VoiceInput';
 import { AlertBanner } from '../components/AlertBanner';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import { COLORS, TYPOGRAPHY, BORDER_RADIUS } from '../constants/theme';
+import { Sparkles, Trash2, Settings, Info, X, Send } from 'lucide-react-native';
+import { COLORS, TYPOGRAPHY, BORDER_RADIUS, GLASS } from '../constants/theme';
 
 const DISCLAIMER_TEXT = 'This information is for educational purposes only. For official advice, contact your local RTO or legal professional.';
 
+/* ─────────────────────────────────────────────
+ *  Typing Indicator – three animated cyan dots
+ * ───────────────────────────────────────────── */
+const TypingIndicator = () => {
+  const dot1 = useRef(new Animated.Value(0.3)).current;
+  const dot2 = useRef(new Animated.Value(0.3)).current;
+  const dot3 = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const animateDot = (dot: Animated.Value, delay: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(dot, { toValue: 1, duration: 400, useNativeDriver: true }),
+          Animated.timing(dot, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+        ]),
+      );
+
+    const anim = Animated.parallel([
+      animateDot(dot1, 0),
+      animateDot(dot2, 200),
+      animateDot(dot3, 400),
+    ]);
+    anim.start();
+    return () => anim.stop();
+  }, []);
+
+  const dotStyle = (opacity: Animated.Value) => ({
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.cyan,
+    marginHorizontal: 3,
+    opacity,
+  });
+
+  return (
+    <View style={typingStyles.wrapper}>
+      <View style={typingStyles.bubble}>
+        <Animated.View style={dotStyle(dot1)} />
+        <Animated.View style={dotStyle(dot2)} />
+        <Animated.View style={dotStyle(dot3)} />
+      </View>
+    </View>
+  );
+};
+
+const typingStyles = StyleSheet.create({
+  wrapper: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    alignItems: 'flex-start',
+  },
+  bubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(6, 182, 212, 0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.18)',
+    borderRadius: BORDER_RADIUS.large,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+});
+
+/* ─────────────────────────────────────────────
+ *  Empty-state welcome card
+ * ───────────────────────────────────────────── */
+const EmptyState = () => (
+  <View style={emptyStyles.container}>
+    <View style={emptyStyles.iconWrap}>
+      <Sparkles size={48} color={COLORS.cyan} />
+    </View>
+    <Text style={emptyStyles.title}>Welcome to TrafiAI</Text>
+    <Text style={emptyStyles.subtitle}>
+      Ask me anything about Indian traffic laws
+    </Text>
+  </View>
+);
+
+const emptyStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    // FlatList is inverted so we flip the empty state to keep it upright
+    transform: [{ scaleY: -1 }],
+  },
+  iconWrap: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: 'rgba(6, 182, 212, 0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: COLORS.navy,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+});
+
+/* ─────────────────────────────────────────────
+ *  Main Chat Screen
+ * ───────────────────────────────────────────── */
 export const ChatScreen = ({ navigation, route }: any) => {
   const dispatch = useDispatch<AppDispatch>();
-  const convex = useConvex();
+  // convexClient is null when no Convex backend is configured (offline-only mode)
   const messages = useSelector((state: RootState) => state.chat.messages);
   const loading = useSelector((state: RootState) => state.chat.loading);
   const language = useSelector((state: RootState) => state.settings.language);
@@ -39,9 +156,22 @@ export const ChatScreen = ({ navigation, route }: any) => {
 
   const [inputText, setInputText] = useState('');
   const [currentState, setCurrentState] = useState(userState);
+  const [currentCity, setCurrentCity] = useState('');
+  const [currentDistrict, setCurrentDistrict] = useState('');
   const [showDisclaimer, setShowDisclaimer] = useState(false);
 
   const flatListRef = useRef<FlatList>(null);
+
+  // ── AI badge pulse animation ──
+  const badgePulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(badgePulse, { toValue: 1.18, duration: 900, useNativeDriver: true }),
+        Animated.timing(badgePulse, { toValue: 1, duration: 900, useNativeDriver: true }),
+      ]),
+    ).start();
+  }, []);
 
   useEffect(() => {
     initLocation();
@@ -50,15 +180,21 @@ export const ChatScreen = ({ navigation, route }: any) => {
   }, []);
 
   useEffect(() => {
+    setCurrentState(userState);
+  }, [userState]);
+
+  useEffect(() => {
     if (route?.params?.initialQuery) {
       handleSendMessage(route.params.initialQuery);
     }
   }, [route?.params?.initialQuery]);
 
   const initLocation = async () => {
-    const location = await getCurrentLocation();
+    const location = await getCurrentLocation(userState);
     if (location) {
       setCurrentState(location.state);
+      setCurrentCity(location.city || '');
+      setCurrentDistrict(location.district || '');
     }
   };
 
@@ -98,18 +234,34 @@ export const ChatScreen = ({ navigation, route }: any) => {
       timestamp: Date.now(),
     }));
 
+    // Extract the past 6 conversation turns to feed as context history
+    const chatHistory = messages
+      .slice(-6)
+      .map((m) => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.text,
+      }));
+
     setInputText('');
     dispatch(setLoading(true));
 
     try {
       // Online path: Convex → Claude API (via HTTP action)
-      if (isOnline) {
+      if (isOnline && convexClient) {
         try {
-          const result = await convex.action(api.chat.askClaude, {
+          const locationParts = [
+            currentCity,
+            currentDistrict,
+            getStateName(currentState),
+            'India',
+          ].filter(Boolean).join(', ');
+
+          const result = await convexClient.action(api.chat.askClaude, {
             query: queryText,
             language,
-            locationContext: `${currentState}, India`,
-          }) as { response: string; source: string; confidence: string };
+            locationContext: locationParts,
+            history: chatHistory,
+          } as any) as { response: string; source: string; confidence: string };
 
           addBotMessage(result.response);
           if (showDisclaimer) {
@@ -133,6 +285,7 @@ export const ChatScreen = ({ navigation, route }: any) => {
           state: currentState,
         },
         language,
+        history: chatHistory,
       };
 
       const result: QueryResult = await executeQuery(payload);
@@ -159,6 +312,13 @@ export const ChatScreen = ({ navigation, route }: any) => {
   const handleVoiceInput = async (audioUri: string) => {
     dispatch(setLoading(true));
 
+    const chatHistory = messages
+      .slice(-6)
+      .map((m) => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.text,
+      }));
+
     try {
       const payload: QueryPayload = {
         action: 'query',
@@ -169,6 +329,7 @@ export const ChatScreen = ({ navigation, route }: any) => {
           state: currentState,
         },
         language,
+        history: chatHistory,
       };
 
       const result: QueryResult = await executeQuery(payload);
@@ -210,26 +371,28 @@ export const ChatScreen = ({ navigation, route }: any) => {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.headerBrandRow}>
-            <View style={styles.headerAiBadge}>
-              <Ionicons name="sparkles" size={16} color={COLORS.cyan} />
-            </View>
+            <Animated.View style={[styles.headerAiBadge, { transform: [{ scale: badgePulse }] }]}>
+              <Sparkles size={16} color={COLORS.cyan} />
+            </Animated.View>
             <View>
               <Text style={styles.headerTitle}>TrafiAI</Text>
               <Text style={styles.headerState}>
-                {getStateName(currentState)} ({currentState})
+                {currentCity
+                  ? `${currentCity}, ${getStateName(currentState)}`
+                  : `${getStateName(currentState)} (${currentState})`}
               </Text>
             </View>
           </View>
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity onPress={handleClearChat} style={styles.headerButton}>
-            <Ionicons name="trash-outline" size={20} color={COLORS.white} />
+            <Trash2 size={20} color={COLORS.white} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.navigate('Settings')}
             style={styles.headerButton}
           >
-            <Ionicons name="settings-outline" size={20} color={COLORS.white} />
+            <Settings size={20} color={COLORS.white} />
           </TouchableOpacity>
         </View>
       </View>
@@ -247,8 +410,15 @@ export const ChatScreen = ({ navigation, route }: any) => {
       {/* Legal disclaimer (shown once per session) */}
       {showDisclaimer && (
         <View style={styles.disclaimer}>
-          <Ionicons name="information-circle" size={16} color={COLORS.textWarning} />
+          <Info size={16} color={COLORS.textWarning} />
           <Text style={styles.disclaimerText}>{DISCLAIMER_TEXT}</Text>
+          <TouchableOpacity
+            onPress={() => setShowDisclaimer(false)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={styles.disclaimerClose}
+          >
+            <X size={16} color={COLORS.textWarning} />
+          </TouchableOpacity>
         </View>
       )}
 
@@ -262,12 +432,16 @@ export const ChatScreen = ({ navigation, route }: any) => {
           data={messages}
           keyExtractor={(item) => item.id}
           renderItem={renderMessage}
-          contentContainerStyle={styles.messageList}
+          contentContainerStyle={[
+            styles.messageList,
+            messages.length === 0 && { flexGrow: 1 },
+          ]}
           inverted
+          ListEmptyComponent={<EmptyState />}
         />
 
-        {/* Loading spinner while bot processes */}
-        {loading && <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />}
+        {/* Animated typing indicator while bot processes */}
+        {loading && <TypingIndicator />}
 
         {/* Input bar: voice button + text input + send button */}
         <View style={styles.inputContainer}>
@@ -275,7 +449,7 @@ export const ChatScreen = ({ navigation, route }: any) => {
           <TextInput
             style={styles.input}
             placeholder="Ask about traffic laws..."
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={'rgba(255, 255, 255, 0.4)'}
             value={inputText}
             onChangeText={setInputText}
             onSubmitEditing={() => handleSendMessage()}
@@ -283,15 +457,16 @@ export const ChatScreen = ({ navigation, route }: any) => {
           <TouchableOpacity
             style={[
               styles.sendButton,
-              inputText.trim() ? { backgroundColor: COLORS.primary } : { backgroundColor: COLORS.border },
+              inputText.trim()
+                ? { backgroundColor: COLORS.cyan }
+                : { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
             ]}
             onPress={() => handleSendMessage()}
             disabled={!inputText.trim()}
           >
-            <Ionicons
-              name="send"
+            <Send
               size={18}
-              color={inputText.trim() ? COLORS.white : COLORS.textSecondary}
+              color={inputText.trim() ? COLORS.white : 'rgba(255, 255, 255, 0.35)'}
             />
           </TouchableOpacity>
         </View>
@@ -311,7 +486,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
+    paddingTop: Platform.OS === 'ios' ? 50 : 16,
     backgroundColor: COLORS.navy,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(6, 182, 212, 0.2)',
   },
   headerLeft: {
     flex: 1,
@@ -360,37 +538,39 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textWarning,
   },
+  disclaimerClose: {
+    padding: 4,
+    borderRadius: 12,
+    backgroundColor: 'rgba(146, 64, 14, 0.10)',
+  },
   keyboardView: {
     flex: 1,
   },
   messageList: {
     padding: 8,
   },
-  loader: {
-    padding: 8,
-  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: COLORS.surface,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    backgroundColor: COLORS.navy,
     gap: 8,
   },
   input: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
     borderRadius: BORDER_RADIUS.large,
     paddingHorizontal: 16,
     paddingVertical: 8,
     fontSize: 16,
-    color: COLORS.textPrimary,
+    color: COLORS.white,
   },
   sendButton: {
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+    borderRadius: 22,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
