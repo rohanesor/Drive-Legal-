@@ -13,7 +13,8 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { setState } from '../store/settingsSlice';
-import { getCurrentLocation, getStateName, detectState } from '../services/location';
+import { useLocation } from '../context/LocationContext';
+import { getJurisdictionLabel } from '../services/locationService';
 import { STATES } from '../constants/states';
 import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS, GLASS } from '../constants/theme';
 import { LocationMap } from '../components/LocationMap';
@@ -32,19 +33,29 @@ const TN_DISTRICTS = [
 
 export const LocationScreen = ({ navigation }: any) => {
   const dispatch = useDispatch();
-  const currentState = useSelector((state: any) => state.settings.state);
-  const [loading, setLoading] = useState(false);
-  const [detectedState, setDetectedState] = useState<string | null>(currentState || null);
-  const [error, setError] = useState<string | null>(null);
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const {
+    location,
+    geoInfo,
+    isLoading: loading,
+    error: locError,
+    refreshLocation,
+    setManualLocation,
+    isMocked
+  } = useLocation();
+
   const [searchQuery, setSearchQuery] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const error = locError || localError;
+  const detectedState = geoInfo?.state || null;
+  const detectedCity = geoInfo?.city || null;
+  const detectedDistrict = geoInfo?.district || null;
 
   // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const fadeIn = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    loadInitialLocation();
     // Entrance animation
     Animated.timing(fadeIn, { toValue: 1, duration: 600, useNativeDriver: true }).start();
     // Pulse animation for status indicator
@@ -56,43 +67,15 @@ export const LocationScreen = ({ navigation }: any) => {
     ).start();
   }, []);
 
-  const loadInitialLocation = async () => {
-    const loc = await getCurrentLocation(currentState);
-    if (loc) {
-      setLocation({ lat: loc.lat, lng: loc.lng });
-      if (loc.state !== 'UNKNOWN') {
-        setDetectedState(loc.state);
-      }
-    }
-  };
-
   const handleDetectLocation = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const loc = await getCurrentLocation(currentState);
-      if (loc) {
-        setLocation({ lat: loc.lat, lng: loc.lng });
-        if (loc.state !== 'UNKNOWN') {
-          setDetectedState(loc.state);
-          dispatch(setState(loc.state));
-        } else {
-          setError('Location outside India. Select a state manually.');
-        }
-      } else {
-        setError('Could not detect location. Please select manually.');
-      }
-    } catch {
-      setError('Location detection failed. Please enable GPS and try again.');
-    } finally {
-      setLoading(false);
-    }
+    setLocalError(null);
+    await refreshLocation();
   };
 
   const handleManualSelect = (stateCode: string) => {
+    setManualLocation(stateCode);
     dispatch(setState(stateCode));
-    setDetectedState(stateCode);
-    setError(null);
+    setLocalError(null);
   };
 
   const filteredStates = useMemo(() => {
@@ -106,11 +89,11 @@ export const LocationScreen = ({ navigation }: any) => {
   const stateDetail = useMemo(() => {
     if (!detectedState) return null;
     return {
-      name: getStateName(detectedState),
+      name: geoInfo?.stateName || '',
       code: detectedState,
       districtCount: detectedState === 'TN' ? TN_DISTRICTS.length : null,
     };
-  }, [detectedState]);
+  }, [detectedState, geoInfo]);
 
   const handleDistrictSelect = (district: string) => {
     dispatch(setState(detectedState || 'TN'));
@@ -148,7 +131,7 @@ export const LocationScreen = ({ navigation }: any) => {
         {/* Map Section */}
         <View style={styles.mapSection}>
           <LocationMap
-            currentLocation={location || undefined}
+            currentLocation={location ? { lat: location.latitude, lng: location.longitude } : undefined}
             height={220}
             interactive={true}
           />
@@ -185,7 +168,11 @@ export const LocationScreen = ({ navigation }: any) => {
                 <View style={styles.detectedTexts}>
                   <Text style={styles.detectedLabel}>Active Jurisdiction</Text>
                   <Text style={styles.detectedName}>
-                    {stateDetail.name}
+                    {detectedCity
+                      ? `${detectedCity}, ${stateDetail.name}`
+                      : detectedDistrict
+                      ? `${detectedDistrict}, ${stateDetail.name}`
+                      : stateDetail.name}
                   </Text>
                 </View>
                 <View style={styles.jurisdictionBadge}>
@@ -204,7 +191,7 @@ export const LocationScreen = ({ navigation }: any) => {
                   <View style={styles.metaItem}>
                     <Navigation size={14} color={COLORS.cyan} />
                     <Text style={[styles.metaText, styles.coordText]}>
-                      {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+                      {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
                     </Text>
                   </View>
                 )}

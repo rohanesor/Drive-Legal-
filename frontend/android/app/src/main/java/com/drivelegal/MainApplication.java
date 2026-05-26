@@ -70,18 +70,19 @@ public class MainApplication extends Application implements ReactApplication {
     @Override
     public void onCreate() {
         super.onCreate();
-        // Load native libraries (required for RN)
         SoLoader.init(this, false);
         if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {
             DefaultNewArchitectureEntryPoint.load();
         }
         ReactNativeFlipper.initializeFlipper(this, getReactNativeHost().getReactInstanceManager());
 
-        // Start Chaquopy Python interpreter
-        // This must happen before any Python function calls
-        if (!Python.isStarted()) {
-            Python.start(new AndroidPlatform(this));
-        }
+        // Start Chaquopy Python interpreter on a background thread
+        // to avoid ANR during cold start (first init can take 10-30s)
+        new Thread(() -> {
+            if (!Python.isStarted()) {
+                Python.start(new AndroidPlatform(this));
+            }
+        }, "chaquopy-init").start();
     }
 
     @Override

@@ -9,194 +9,139 @@ import {
   KeyboardAvoidingView,
   Platform,
   Animated,
+  ScrollView,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { convexClient } from '../convex/client';
 import { api } from '../../convex/_generated/api';
 import type { RootState, AppDispatch } from '../store';
-import { addMessage, setLoading, clearChat } from '../store/chatSlice';
+import { addMessage, setLoading, clearChat, setSuggestedPrompts } from '../store/chatSlice';
 import { dismissAlert } from '../store/alertSlice';
 import { executeQuery, QueryPayload, QueryResult } from '../services/pythonBridge';
-import { getCurrentLocation, getStateName, reverseGeocode } from '../services/location';
+import { useLocation } from '../context/LocationContext';
+import { getJurisdictionLabel } from '../services/locationService';
 import { isDisclaimerShown, setDisclaimerShown } from '../services/storage';
 import { ChatMessage } from '../components/ChatMessage';
 import { VoiceInput } from '../components/VoiceInput';
 import { AlertBanner } from '../components/AlertBanner';
-import { Sparkles, Trash2, Settings, Info, X, Send } from 'lucide-react-native';
-import { COLORS, TYPOGRAPHY, BORDER_RADIUS, GLASS } from '../constants/theme';
+import {
+  Sparkles, Trash2, Settings, Info, X, Send,
+  MapPin, Mic, MoreHorizontal, ChevronRight,
+  ShieldCheck, ArrowRight
+} from 'lucide-react-native';
+import { COLORS, TYPOGRAPHY, BORDER_RADIUS, GLASS, SHADOWS } from '../constants/theme';
 
-const DISCLAIMER_TEXT = 'This information is for educational purposes only. For official advice, contact your local RTO or legal professional.';
+const DISCLAIMER_TEXT = 'Educational info only. For official advice, contact an RTO or legal professional.';
 
 /* ─────────────────────────────────────────────
- *  Typing Indicator – three animated cyan dots
+ *  Typing Indicator - Smooth Thinking State
  * ───────────────────────────────────────────── */
-const TypingIndicator = () => {
-  const dot1 = useRef(new Animated.Value(0.3)).current;
-  const dot2 = useRef(new Animated.Value(0.3)).current;
-  const dot3 = useRef(new Animated.Value(0.3)).current;
+const ThinkingIndicator = () => {
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const animateDot = (dot: Animated.Value, delay: number) =>
+    const animate = (val: Animated.Value, delay: number) => {
       Animated.loop(
         Animated.sequence([
           Animated.delay(delay),
-          Animated.timing(dot, { toValue: 1, duration: 400, useNativeDriver: true }),
-          Animated.timing(dot, { toValue: 0.3, duration: 400, useNativeDriver: true }),
-        ]),
-      );
-
-    const anim = Animated.parallel([
-      animateDot(dot1, 0),
-      animateDot(dot2, 200),
-      animateDot(dot3, 400),
-    ]);
-    anim.start();
-    return () => anim.stop();
+          Animated.timing(val, { toValue: -8, duration: 400, useNativeDriver: true }),
+          Animated.timing(val, { toValue: 0, duration: 400, useNativeDriver: true }),
+        ])
+      ).start();
+    };
+    animate(dot1, 0);
+    animate(dot2, 150);
+    animate(dot3, 300);
   }, []);
 
-  const dotStyle = (opacity: Animated.Value) => ({
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.cyan,
-    marginHorizontal: 3,
-    opacity,
-  });
-
   return (
-    <View style={typingStyles.wrapper}>
-      <View style={typingStyles.bubble}>
-        <Animated.View style={dotStyle(dot1)} />
-        <Animated.View style={dotStyle(dot2)} />
-        <Animated.View style={dotStyle(dot3)} />
+    <View style={styles.thinkingContainer}>
+      <View style={styles.thinkingBubble}>
+        <Animated.View style={[styles.dot, { transform: [{ translateY: dot1 }] }]} />
+        <Animated.View style={[styles.dot, { transform: [{ translateY: dot2 }] }]} />
+        <Animated.View style={[styles.dot, { transform: [{ translateY: dot3 }] }]} />
       </View>
+      <Text style={styles.thinkingText}>TrafiAI is thinking...</Text>
     </View>
   );
 };
 
-const typingStyles = StyleSheet.create({
-  wrapper: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    alignItems: 'flex-start',
-  },
-  bubble: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(6, 182, 212, 0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.18)',
-    borderRadius: BORDER_RADIUS.large,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-});
+/* ─────────────────────────────────────────────
+ *  Suggested Prompt Chips
+ * ───────────────────────────────────────────── */
+const SuggestionChips = ({ suggestions, onSelect }: { suggestions: string[], onSelect: (s: string) => void }) => {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.suggestionsScroll}
+    >
+      {suggestions.map((s, i) => (
+        <TouchableOpacity
+          key={i}
+          style={styles.chip}
+          onPress={() => onSelect(s)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.chipText}>{s}</Text>
+          <ArrowRight size={12} color={COLORS.cyan} />
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+};
 
 /* ─────────────────────────────────────────────
- *  Empty-state welcome card
+ *  Empty State - Modern AI Welcome
  * ───────────────────────────────────────────── */
-const EmptyState = () => (
-  <View style={emptyStyles.container}>
-    <View style={emptyStyles.iconWrap}>
-      <Sparkles size={48} color={COLORS.cyan} />
+const WelcomeHero = ({ onSuggest }: { onSuggest: (s: string) => void }) => (
+  <View style={styles.heroContainer}>
+    <View style={styles.heroAvatar}>
+      <Sparkles size={40} color={COLORS.white} />
     </View>
-    <Text style={emptyStyles.title}>Welcome to TrafiAI</Text>
-    <Text style={emptyStyles.subtitle}>
-      Ask me anything about Indian traffic laws
+    <Text style={styles.heroTitle}>How can I help you drive safely today?</Text>
+    <Text style={styles.heroSubtitle}>
+      Ask me about traffic fines, jurisdiction rules, or parking laws. I'm your legal mobility co-pilot.
     </Text>
+    <View style={styles.heroActions}>
+      {[
+        "Helmet fine in Chennai",
+        "Speed limits in Bengaluru",
+        "Document requirements"
+      ].map((item, idx) => (
+        <TouchableOpacity key={idx} style={styles.heroActionBtn} onPress={() => onSuggest(item)}>
+          <Text style={styles.heroActionText}>{item}</Text>
+          <ChevronRight size={16} color={COLORS.textSecondary} />
+        </TouchableOpacity>
+      ))}
+    </View>
   </View>
 );
 
-const emptyStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    // FlatList is inverted so we flip the empty state to keep it upright
-    transform: [{ scaleY: -1 }],
-  },
-  iconWrap: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: 'rgba(6, 182, 212, 0.10)',
-    borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.18)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: COLORS.navy,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-});
-
-/* ─────────────────────────────────────────────
- *  Main Chat Screen
- * ───────────────────────────────────────────── */
 export const ChatScreen = ({ navigation, route }: any) => {
   const dispatch = useDispatch<AppDispatch>();
-  // convexClient is null when no Convex backend is configured (offline-only mode)
+  const { location, geoInfo, isLoading: isLocLoading } = useLocation();
   const messages = useSelector((state: RootState) => state.chat.messages);
   const loading = useSelector((state: RootState) => state.chat.loading);
+  const suggestions = useSelector((state: RootState) => state.chat.suggestedPrompts);
   const language = useSelector((state: RootState) => state.settings.language);
-  const userState = useSelector((state: RootState) => state.settings.state);
   const activeAlert = useSelector((state: RootState) => state.alerts.activeAlert);
   const isOnline = useSelector((state: RootState) => state.convex.isOnline);
 
   const [inputText, setInputText] = useState('');
-  const [currentState, setCurrentState] = useState(userState);
-  const [currentCity, setCurrentCity] = useState('');
-  const [currentDistrict, setCurrentDistrict] = useState('');
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+
+  const currentState = geoInfo?.state || 'TN';
+  const locationName = geoInfo ? getJurisdictionLabel(geoInfo) : 'Detecting...';
 
   const flatListRef = useRef<FlatList>(null);
 
-  // ── AI badge pulse animation ──
-  const badgePulse = useRef(new Animated.Value(1)).current;
   useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(badgePulse, { toValue: 1.18, duration: 900, useNativeDriver: true }),
-        Animated.timing(badgePulse, { toValue: 1, duration: 900, useNativeDriver: true }),
-      ]),
-    ).start();
-  }, []);
-
-  useEffect(() => {
-    initLocation();
     checkDisclaimer();
     initPython();
   }, []);
-
-  useEffect(() => {
-    setCurrentState(userState);
-  }, [userState]);
-
-  useEffect(() => {
-    if (route?.params?.initialQuery) {
-      handleSendMessage(route.params.initialQuery);
-    }
-  }, [route?.params?.initialQuery]);
-
-  const initLocation = async () => {
-    const location = await getCurrentLocation(userState);
-    if (location) {
-      setCurrentState(location.state);
-      setCurrentCity(location.city || '');
-      setCurrentDistrict(location.district || '');
-    }
-  };
 
   const checkDisclaimer = async () => {
     const shown = await isDisclaimerShown();
@@ -207,82 +152,61 @@ export const ChatScreen = ({ navigation, route }: any) => {
     try {
       const { initializePython } = await import('../services/pythonBridge');
       await initializePython();
-    } catch (error) {
-      console.error('Python init error:', error);
-    }
-  };
-
-  const addBotMessage = (text: string, sections?: string[], confidence?: number) => {
-    dispatch(addMessage({
-      id: (Date.now() + 1).toString(),
-      text,
-      sender: 'bot',
-      timestamp: Date.now(),
-      source_sections: sections,
-      confidence,
-    }));
+    } catch (e) {}
   };
 
   const handleSendMessage = async (text?: string) => {
-    const queryText = text || inputText;
-    if (!queryText.trim()) return;
+    const query = text || inputText;
+    if (!query.trim()) return;
 
     dispatch(addMessage({
       id: Date.now().toString(),
-      text: queryText,
+      text: query,
       sender: 'user',
       timestamp: Date.now(),
     }));
 
-    // Extract the past 6 conversation turns to feed as context history
-    const chatHistory = messages
-      .slice(-6)
-      .map((m) => ({
-        role: m.sender === 'user' ? 'user' : 'assistant',
-        content: m.text,
-      }));
-
     setInputText('');
     dispatch(setLoading(true));
 
+    const chatHistory = messages.slice(-6).map(m => ({
+      role: m.sender === 'user' ? 'user' : 'assistant',
+      content: m.text,
+    }));
+
     try {
-      // Online path: Convex → Claude API (via HTTP action)
+      // 1. Online Logic (Claude via Convex)
       if (isOnline && convexClient) {
         try {
-          const locationParts = [
-            currentCity,
-            currentDistrict,
-            getStateName(currentState),
-            'India',
-          ].filter(Boolean).join(', ');
-
           const result = await convexClient.action(api.chat.askClaude, {
-            query: queryText,
+            query,
             language,
-            locationContext: locationParts,
+            locationContext: locationName,
             history: chatHistory,
-          } as any) as { response: string; source: string; confidence: string };
+          } as any) as any;
 
-          addBotMessage(result.response);
-          if (showDisclaimer) {
-            await setDisclaimerShown();
-            setShowDisclaimer(false);
-          }
+          dispatch(addMessage({
+            id: (Date.now() + 1).toString(),
+            text: result.response,
+            sender: 'bot',
+            timestamp: Date.now(),
+            suggested_prompts: result.suggestions || []
+          }));
           dispatch(setLoading(false));
           return;
-        } catch (claudeError) {
-          console.warn('Claude API failed, falling back to offline:', claudeError);
+        } catch (e) {
+          console.warn("Claude failed, falling back...");
         }
       }
 
-      // Offline/local path: Python Chaquopy (existing flow)
+      // 2. Offline Logic (Local Python)
       const payload: QueryPayload = {
         action: 'query',
-        text: queryText,
+        text: query,
         location: {
-          lat: 0,
-          lng: 0,
-          state: currentState,
+          lat: location?.latitude || 0,
+          lng: location?.longitude || 0,
+          state: currentState
         },
         language,
         history: chatHistory,
@@ -290,288 +214,174 @@ export const ChatScreen = ({ navigation, route }: any) => {
 
       const result: QueryResult = await executeQuery(payload);
 
-      if (result.status === 'success' && result.response_text) {
-        addBotMessage(result.response_text, result.source_sections, result.confidence);
-        if (showDisclaimer) {
-          await setDisclaimerShown();
-          setShowDisclaimer(false);
-        }
-      } else if (result.fallback_available && result.fallback_response_text) {
-        addBotMessage(result.fallback_response_text);
-      } else {
-        addBotMessage('Sorry, I could not process your request. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error getting response:', error);
-      addBotMessage('Error: Could not get a response. Please try again.');
-    } finally {
-      dispatch(setLoading(false));
-    }
-  };
-
-  const handleVoiceInput = async (audioUri: string) => {
-    dispatch(setLoading(true));
-
-    const chatHistory = messages
-      .slice(-6)
-      .map((m) => ({
-        role: m.sender === 'user' ? 'user' : 'assistant',
-        content: m.text,
+      dispatch(addMessage({
+        id: (Date.now() + 1).toString(),
+        text: (result as any).response_text || 'I encountered an issue. Please try again.',
+        sender: 'bot',
+        timestamp: Date.now(),
+        source_sections: result.source_sections,
+        confidence: result.confidence,
+        suggested_prompts: (result as any).suggested_prompts || []
       }));
 
-    try {
-      const payload: QueryPayload = {
-        action: 'query',
-        audio_uri: audioUri,
-        location: {
-          lat: 0,
-          lng: 0,
-          state: currentState,
-        },
-        language,
-        history: chatHistory,
-      };
-
-      const result: QueryResult = await executeQuery(payload);
-
-      if (result.status === 'success' && result.response_text) {
-        addBotMessage(result.response_text, result.source_sections, result.confidence);
-      } else if (result.fallback_available && result.fallback_response_text) {
-        addBotMessage(result.fallback_response_text);
+      if (showDisclaimer) {
+        await setDisclaimerShown();
+        setShowDisclaimer(false);
       }
     } catch (error) {
-      console.error('Voice input error:', error);
+      console.error(error);
     } finally {
       dispatch(setLoading(false));
     }
   };
 
-  /**
-   * Clear all messages (start new conversation)
-   */
-  const handleClearChat = () => {
-    dispatch(clearChat());
+  const handleVoiceInput = (uri: string) => {
+    // Implement direct voice processing if needed,
+    // or just handle speech-to-text here
   };
-
-  /**
-   * Render a single message in the chat list
-   */
-  const renderMessage = ({ item }: { item: any }) => (
-    <ChatMessage
-      text={item.text}
-      sender={item.sender}
-      source_sections={item.source_sections}
-      confidence={item.confidence}
-    />
-  );
 
   return (
     <View style={styles.container}>
-      {/* Header: AI Assistant branding */}
+      {/* Premium Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <View style={styles.headerBrandRow}>
-            <Animated.View style={[styles.headerAiBadge, { transform: [{ scale: badgePulse }] }]}>
-              <Sparkles size={16} color={COLORS.cyan} />
-            </Animated.View>
-            <View>
-              <Text style={styles.headerTitle}>TrafiAI</Text>
-              <Text style={styles.headerState}>
-                {currentCity
-                  ? `${currentCity}, ${getStateName(currentState)}`
-                  : `${getStateName(currentState)} (${currentState})`}
-              </Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <ChevronRight size={24} color={COLORS.white} style={{ transform: [{ rotate: '180deg' }] }} />
+          </TouchableOpacity>
+          <View>
+            <Text style={styles.headerTitle}>AI Legal Assistant</Text>
+            <View style={styles.locationRow}>
+              <MapPin size={12} color={COLORS.cyan} />
+              <Text style={styles.locationTxt}>{locationName}</Text>
             </View>
           </View>
         </View>
-        <View style={styles.headerRight}>
-          <TouchableOpacity onPress={handleClearChat} style={styles.headerButton}>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => dispatch(clearChat())}>
             <Trash2 size={20} color={COLORS.white} />
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Settings')}
-            style={styles.headerButton}
-          >
-            <Settings size={20} color={COLORS.white} />
+          <TouchableOpacity style={{ marginLeft: 16 }}>
+            <MoreHorizontal size={20} color={COLORS.white} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Zone alert banner (shown when user enters a traffic law zone) */}
-      {activeAlert && (
-        <AlertBanner
-          message={activeAlert.message}
-          severity={activeAlert.severity}
-          onLearnMore={() => handleSendMessage(activeAlert.suggested_query)}
-          onDismiss={() => dispatch(dismissAlert())}
-        />
-      )}
-
-      {/* Legal disclaimer (shown once per session) */}
-      {showDisclaimer && (
-        <View style={styles.disclaimer}>
-          <Info size={16} color={COLORS.textWarning} />
-          <Text style={styles.disclaimerText}>{DISCLAIMER_TEXT}</Text>
-          <TouchableOpacity
-            onPress={() => setShowDisclaimer(false)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={styles.disclaimerClose}
-          >
-            <X size={16} color={COLORS.textWarning} />
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Chat messages list + input area */}
+      {/* Main Chat Area */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
       >
         <FlatList
           ref={flatListRef}
           data={messages}
           keyExtractor={(item) => item.id}
-          renderItem={renderMessage}
-          contentContainerStyle={[
-            styles.messageList,
-            messages.length === 0 && { flexGrow: 1 },
-          ]}
+          renderItem={({ item }) => (
+            <ChatMessage
+              text={item.text}
+              sender={item.sender}
+              source_sections={item.source_sections}
+              confidence={item.confidence}
+            />
+          )}
+          contentContainerStyle={styles.messageList}
           inverted
-          ListEmptyComponent={<EmptyState />}
+          ListHeaderComponent={loading ? <ThinkingIndicator /> : null}
+          ListFooterComponent={messages.length === 0 ? <WelcomeHero onSuggest={handleSendMessage} /> : null}
         />
 
-        {/* Animated typing indicator while bot processes */}
-        {loading && <TypingIndicator />}
+        {/* Suggested Prompts & Input */}
+        <View style={styles.footer}>
+          {!loading && suggestions.length > 0 && (
+            <SuggestionChips suggestions={suggestions} onSelect={handleSendMessage} />
+          )}
 
-        {/* Input bar: voice button + text input + send button */}
-        <View style={styles.inputContainer}>
-          <VoiceInput onVoiceInput={handleVoiceInput} />
-          <TextInput
-            style={styles.input}
-            placeholder="Ask about traffic laws..."
-            placeholderTextColor={'rgba(255, 255, 255, 0.4)'}
-            value={inputText}
-            onChangeText={setInputText}
-            onSubmitEditing={() => handleSendMessage()}
-          />
-          <TouchableOpacity
-            style={[
-              styles.sendButton,
-              inputText.trim()
-                ? { backgroundColor: COLORS.cyan }
-                : { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
-            ]}
-            onPress={() => handleSendMessage()}
-            disabled={!inputText.trim()}
-          >
-            <Send
-              size={18}
-              color={inputText.trim() ? COLORS.white : 'rgba(255, 255, 255, 0.35)'}
-            />
-          </TouchableOpacity>
+          <View style={styles.inputRow}>
+            <View style={styles.inputWrapper}>
+              <VoiceInput onVoiceInput={handleVoiceInput} />
+              <TextInput
+                style={styles.input}
+                placeholder="Message TrafiAI..."
+                placeholderTextColor={COLORS.textSecondary}
+                value={inputText}
+                onChangeText={setInputText}
+                multiline
+                maxLength={500}
+              />
+              <TouchableOpacity
+                onPress={() => handleSendMessage()}
+                disabled={!inputText.trim() || loading}
+                style={[styles.sendBtn, !inputText.trim() && { opacity: 0.5 }]}
+              >
+                <Send size={20} color={COLORS.white} />
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </View>
   );
 };
 
-// Styles for the chat screen layout
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
+  container: { flex: 1, backgroundColor: COLORS.background },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    paddingTop: Platform.OS === 'ios' ? 50 : 16,
-    backgroundColor: COLORS.navy,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(6, 182, 212, 0.2)',
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    padding: 16, paddingTop: Platform.OS === 'ios' ? 50 : 16,
+    backgroundColor: COLORS.navy, ...SHADOWS.medium
   },
-  headerLeft: {
-    flex: 1,
+  headerLeft: { flexDirection: 'row', alignItems: 'center' },
+  backBtn: { marginRight: 12 },
+  headerTitle: { ...TYPOGRAPHY.h3, color: COLORS.white, fontWeight: 'bold' },
+  locationRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2, gap: 4 },
+  locationTxt: { ...TYPOGRAPHY.caption, color: COLORS.cyan },
+  headerActions: { flexDirection: 'row', alignItems: 'center' },
+
+  messageList: { padding: 16, paddingBottom: 24 },
+
+  thinkingContainer: { flexDirection: 'row', alignItems: 'center', padding: 12, marginLeft: 8 },
+  thinkingBubble: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: 'rgba(6, 182, 212, 0.1)', padding: 12, borderRadius: 20
   },
-  headerBrandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.cyan },
+  thinkingText: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, marginLeft: 10 },
+
+  footer: { backgroundColor: COLORS.background, borderTopWidth: 1, borderTopColor: COLORS.border, paddingBottom: Platform.OS === 'ios' ? 30 : 12 },
+  suggestionsScroll: { paddingHorizontal: 16, paddingVertical: 12 },
+  chip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, marginRight: 8,
+    ...SHADOWS.subtle
   },
-  headerAiBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(6, 182, 212, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  chipText: { fontSize: 13, color: COLORS.textPrimary, fontWeight: '500' },
+
+  inputRow: { paddingHorizontal: 16, paddingVertical: 4 },
+  inputWrapper: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: COLORS.surface, borderRadius: 28,
+    borderWidth: 1, borderColor: COLORS.border,
+    paddingHorizontal: 8, ...SHADOWS.medium
   },
-  headerTitle: {
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: 'bold',
+  input: { flex: 1, paddingVertical: 10, paddingHorizontal: 12, fontSize: 16, color: COLORS.textPrimary, maxHeight: 100 },
+  sendBtn: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.navy,
+    justifyContent: 'center', alignItems: 'center'
   },
-  headerState: {
-    color: COLORS.cyan,
-    fontSize: 12,
-    marginTop: 2,
+
+  heroContainer: { padding: 24, alignItems: 'center', marginTop: 40, transform: [{ scaleY: -1 }] },
+  heroAvatar: {
+    width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.navy,
+    justifyContent: 'center', alignItems: 'center', marginBottom: 20,
+    ...SHADOWS.glow(COLORS.cyan)
   },
-  headerRight: {
-    flexDirection: 'row',
-    gap: 12,
+  heroTitle: { ...TYPOGRAPHY.h2, textAlign: 'center', color: COLORS.textPrimary },
+  heroSubtitle: { ...TYPOGRAPHY.bodyMedium, textAlign: 'center', marginTop: 12, color: COLORS.textSecondary, lineHeight: 22 },
+  heroActions: { width: '100%', marginTop: 32, gap: 12 },
+  heroActionBtn: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: COLORS.surface, padding: 16, borderRadius: 16,
+    borderWidth: 1, borderColor: COLORS.border, ...SHADOWS.subtle
   },
-  headerButton: {
-    padding: 4,
-  },
-  disclaimer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
-    backgroundColor: COLORS.lightWarning,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderWarning,
-  },
-  disclaimerText: {
-    flex: 1,
-    fontSize: 12,
-    color: COLORS.textWarning,
-  },
-  disclaimerClose: {
-    padding: 4,
-    borderRadius: 12,
-    backgroundColor: 'rgba(146, 64, 14, 0.10)',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  messageList: {
-    padding: 8,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: COLORS.navy,
-    gap: 8,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
-    borderRadius: BORDER_RADIUS.large,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    fontSize: 16,
-    color: COLORS.white,
-  },
-  sendButton: {
-    borderRadius: 22,
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  heroActionText: { ...TYPOGRAPHY.bodyMedium, fontWeight: '600', color: COLORS.textPrimary }
 });

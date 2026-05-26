@@ -16,6 +16,7 @@ import { SettingsScreen } from './screens/SettingsScreen';
 import { LocationScreen } from './screens/LocationScreen';
 import { PaperProvider } from 'react-native-paper';
 import { COLORS } from './constants/theme';
+import { LocationProvider } from './context/LocationContext';
 
 const Stack = createStackNavigator();
 
@@ -56,61 +57,71 @@ const SyncInitializer = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const AppContent = () => (
+  <PaperProvider>
+    <NavigationContainer>
+      <Stack.Navigator
+        initialRouteName="Splash"
+        screenOptions={{
+          headerStyle: { backgroundColor: COLORS.navy },
+          headerTintColor: '#ffffff',
+          headerTitleStyle: { fontWeight: 'bold' },
+        }}
+      >
+        <Stack.Screen
+          name="Splash"
+          component={SplashScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Dashboard"
+          component={DashboardScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Chat"
+          component={ChatScreen}
+          options={{ title: 'AI Legal Assistant' }}
+        />
+        <Stack.Screen
+          name="Calculator"
+          component={ChallanCalculatorScreen}
+          options={{ title: 'Challan Calculator' }}
+        />
+        <Stack.Screen
+          name="Emergency"
+          component={EmergencyScreen}
+          options={{ title: 'Emergency Services' }}
+        />
+        <Stack.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{ title: 'Settings' }}
+        />
+        <Stack.Screen
+          name="Location"
+          component={LocationScreen}
+          options={{ title: 'Select Jurisdiction' }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
+  </PaperProvider>
+);
+
 const App = () => {
   return (
     <Provider store={store}>
-      <ConvexProvider client={convexClient}>
-        <PaperProvider>
-          <SyncInitializer>
-            <NavigationContainer>
-              <Stack.Navigator
-                initialRouteName="Splash"
-                screenOptions={{
-                  headerStyle: { backgroundColor: COLORS.navy },
-                  headerTintColor: '#ffffff',
-                  headerTitleStyle: { fontWeight: 'bold' },
-                }}
-              >
-                <Stack.Screen
-                  name="Splash"
-                  component={SplashScreen}
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="Dashboard"
-                  component={DashboardScreen}
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="Chat"
-                  component={ChatScreen}
-                  options={{ title: 'AI Legal Assistant' }}
-                />
-                <Stack.Screen
-                  name="Calculator"
-                  component={ChallanCalculatorScreen}
-                  options={{ title: 'Challan Calculator' }}
-                />
-                <Stack.Screen
-                  name="Emergency"
-                  component={EmergencyScreen}
-                  options={{ title: 'Emergency Services' }}
-                />
-                <Stack.Screen
-                  name="Settings"
-                  component={SettingsScreen}
-                  options={{ title: 'Settings' }}
-                />
-                <Stack.Screen
-                  name="Location"
-                  component={LocationScreen}
-                  options={{ title: 'Select Jurisdiction' }}
-                />
-              </Stack.Navigator>
-            </NavigationContainer>
-          </SyncInitializer>
-        </PaperProvider>
-      </ConvexProvider>
+      <LocationProvider>
+        {convexClient ? (
+          <ConvexProvider client={convexClient}>
+            <SyncInitializer>
+              <AppContent />
+            </SyncInitializer>
+          </ConvexProvider>
+        ) : (
+          <AppContent />
+        )}
+      </LocationProvider>
     </Provider>
   );
 };

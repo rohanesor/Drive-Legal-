@@ -20,7 +20,7 @@ import {
   Platform,
   PermissionsAndroid,
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Mic } from 'lucide-react-native';
 import AudioRecorderPlayer from 'react-native-audio-recorder-player';
 import { getAudioPath } from '../utils/audioPath';
 import { COLORS } from '../constants/theme';
@@ -100,8 +100,7 @@ export const VoiceInput = ({ onVoiceInput }: VoiceInputProps) => {
       onPressOut={stopRecording}   // Stop on press up
       delayLongPress={100}
     >
-      <Ionicons
-        name={isRecording ? 'mic' : 'mic-outline'}
+      <Mic
         size={22}
         color={isRecording ? COLORS.white : COLORS.textSecondary}
       />

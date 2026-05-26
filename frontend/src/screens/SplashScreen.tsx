@@ -9,7 +9,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../constants/theme';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { MapPin, Calculator, MessageCircle, WifiOff, ShieldCheck, CheckCircle, ArrowRight } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -17,25 +17,25 @@ const ONBOARDING_DATA = [
   {
     title: 'Smart Location Search',
     description: 'Instantly discover state-specific traffic laws, municipal rules, and active speed zones automatically via GPS.',
-    icon: 'map-outline',
+    Icon: MapPin,
     color: COLORS.primary,
   },
   {
     title: 'Offline Challan Calculator',
     description: 'Determine exact compounding penalties, offense multipliers, and commercial surcharges without internet access.',
-    icon: 'calculator-outline',
+    Icon: Calculator,
     color: COLORS.warning,
   },
   {
     title: 'Verified AI Chatbot',
     description: 'Ask traffic law questions in English, Tamil, or Hindi and get answers backed by real, tamper-proof legal citations.',
-    icon: 'chatbubble-ellipses-outline',
+    Icon: MessageCircle,
     color: COLORS.cyan,
   },
   {
     title: 'Offline-First Operations',
     description: 'All local SQLite database rules, zone geometries, and template engines are stored locally on your device.',
-    icon: 'cloud-offline-outline',
+    Icon: WifiOff,
     color: COLORS.success,
   },
 ];
@@ -102,7 +102,7 @@ export const SplashScreen = ({ navigation }: any) => {
       <View style={styles.header}>
         <View style={styles.logoRow}>
           <View style={styles.miniLogo}>
-            <Ionicons name="shield-checkmark" size={16} color={COLORS.cyan} />
+            <ShieldCheck size={16} color={COLORS.cyan} />
           </View>
           <Text style={styles.logoText}>DriveLegal</Text>
         </View>
@@ -119,11 +119,10 @@ export const SplashScreen = ({ navigation }: any) => {
           <View style={styles.glowPulseInner} />
         </Animated.View>
         <View style={styles.shieldLogo}>
-          <Ionicons
-            name={ONBOARDING_DATA[currentSlide].icon as any}
-            size={64}
-            color={ONBOARDING_DATA[currentSlide].color}
-          />
+          {React.createElement(ONBOARDING_DATA[currentSlide].Icon, {
+            size: 64,
+            color: ONBOARDING_DATA[currentSlide].color,
+          })}
         </View>
         <View style={styles.roadLinesContainer}>
           <Animated.View style={[styles.roadLineLeft, { transform: [{ translateX: roadTranslateX }] }]} />
@@ -164,11 +163,11 @@ export const SplashScreen = ({ navigation }: any) => {
           <Text style={styles.actionButtonText}>
             {currentSlide === ONBOARDING_DATA.length - 1 ? 'Get Started' : 'Next'}
           </Text>
-          <Ionicons
-            name={currentSlide === ONBOARDING_DATA.length - 1 ? 'checkmark-circle' : 'arrow-forward'}
-            size={18}
-            color={COLORS.white}
-          />
+          {currentSlide === ONBOARDING_DATA.length - 1 ? (
+            <CheckCircle size={18} color={COLORS.white} />
+          ) : (
+            <ArrowRight size={18} color={COLORS.white} />
+          )}
         </TouchableOpacity>
       </View>
     </View>

@@ -1,20 +1,3 @@
-/**
- * Chat Slice - Redux state for the chat conversation
- * 
- * Manages:
- * - messages: Array of user and bot messages
- * - loading: Whether the bot is currently processing a response
- * - disclaimerShown: Whether the legal disclaimer has been shown this session
- * 
- * Each message contains:
- * - id: Unique timestamp-based ID
- * - text: The message content
- * - sender: 'user' or 'bot'
- * - timestamp: When the message was sent
- * - source_sections: Law citations (e.g., "MV Act §188")
- * - confidence: Search confidence score (0-1)
- * - is_alert: Whether this is a zone alert message
- */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface Message {
@@ -26,35 +9,48 @@ export interface Message {
   confidence?: number;
   is_alert?: boolean;
   zone_type?: string;
+  suggested_prompts?: string[];
 }
 
 interface ChatState {
   messages: Message[];
   loading: boolean;
   disclaimerShown: boolean;
+  suggestedPrompts: string[];
 }
 
 const initialState: ChatState = {
   messages: [],
   loading: false,
   disclaimerShown: false,
+  suggestedPrompts: [
+    "Helmet fine in TN",
+    "Speeding rules",
+    "Can I park here?",
+    "License requirements"
+  ],
 };
 
 const chatSlice = createSlice({
   name: 'chat',
   initialState,
   reducers: {
-    // Add a new message to the conversation
     addMessage: (state, action: PayloadAction<Message>) => {
       state.messages.push(action.payload);
+      // Update the current suggestions if the bot provided any
+      if (action.payload.sender === 'bot' && action.payload.suggested_prompts) {
+        state.suggestedPrompts = action.payload.suggested_prompts;
+      }
     },
-    // Toggle loading spinner while bot processes
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
     },
-    // Clear all messages (new chat)
+    setSuggestedPrompts: (state, action: PayloadAction<string[]>) => {
+      state.suggestedPrompts = action.payload;
+    },
     clearChat: (state) => {
       state.messages = [];
+      state.suggestedPrompts = initialState.suggestedPrompts;
     },
     markDisclaimerShown: (state) => {
       state.disclaimerShown = true;
@@ -65,6 +61,7 @@ const chatSlice = createSlice({
 export const {
   addMessage,
   setLoading,
+  setSuggestedPrompts,
   clearChat,
   markDisclaimerShown,
 } = chatSlice.actions;

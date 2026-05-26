@@ -17,7 +17,7 @@
  */
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Info, AlertTriangle, AlertCircle, X } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 
 interface AlertBannerProps {
@@ -34,10 +34,12 @@ const severityColors = {
   high: { bg: COLORS.redLight, border: COLORS.redBorder, text: COLORS.redDark },
 };
 
-const severityIcons = {
-  low: 'information-circle-outline',
-  medium: 'warning-outline',
-  high: 'alert-circle-outline',
+const SeverityIcon = ({ severity, color, size }: { severity: string; color: string; size: number }) => {
+  switch (severity) {
+    case 'high': return <AlertCircle size={size} color={color} />;
+    case 'medium': return <AlertTriangle size={size} color={color} />;
+    default: return <Info size={size} color={color} />;
+  }
 };
 
 export const AlertBanner = ({
@@ -51,7 +53,7 @@ export const AlertBanner = ({
   return (
     <View style={[styles.container, { backgroundColor: colors.bg, borderColor: colors.border }]}>
       {/* Warning icon */}
-      <Ionicons name={severityIcons[severity]} size={20} color={colors.text} />
+      <SeverityIcon severity={severity} color={colors.text} size={20} />
       
       {/* Alert message text */}
       <Text style={[styles.message, { color: colors.text }]}>{message}</Text>
@@ -62,7 +64,7 @@ export const AlertBanner = ({
           <Text style={[styles.learnMoreText, { color: colors.text }]}>Learn More</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={onDismiss}>
-          <Ionicons name="close" size={20} color={colors.text} />
+          <X size={20} color={colors.text} />
         </TouchableOpacity>
       </View>
     </View>

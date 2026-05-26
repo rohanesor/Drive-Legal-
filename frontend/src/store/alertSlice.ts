@@ -44,7 +44,7 @@ const alertSlice = createSlice({
   reducers: {
     addAlert: (state, action: PayloadAction<ZoneAlert>) => {
       const now = Date.now();
-      const key = action.payload.id;
+      const key = action.payload.zone_name;
       const lastTime = state.lastAlertTimes[key] || 0;
 
       if (now - lastTime > ALERT_COOLDOWN_MS) {

@@ -66,6 +66,11 @@ android {
     chaquopy {
         defaultConfig {
             buildPython "C:/Users/kille/AppData/Local/Programs/Python/Python311/python.exe"
+            pip {
+                // Use unpinned numpy so Chaquopy auto-selects its pre-built Android wheel.
+                // Pinning to 1.24.3 caused source compilation failure (no native C compiler).
+                install "numpy"
+            }
         }
     }
 }

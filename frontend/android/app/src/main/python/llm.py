@@ -29,8 +29,17 @@ the pipeline falls back to template-based responses.
 import os
 from typing import Optional, List, Dict
 
+# Helper to find models dynamically, allowing fallback to writable files directory
+def get_model_path(relative_path: str) -> str:
+    # 1. Check writable files directory (plenty of space, avoids APK bloat)
+    fallback_path = os.path.join('/data/data/com.drivelegal/files', relative_path)
+    if os.path.exists(fallback_path):
+        return fallback_path
+    # 2. Check packaged JNI assets
+    return os.path.join(os.path.dirname(__file__), relative_path)
+
 # Model file location
-MODEL_PATH = os.path.join(os.path.dirname(__file__), 'models', 'tinyllama-1.1b-q4.gguf')
+MODEL_PATH = get_model_path(os.path.join('models', 'tinyllama-1.1b-q4.gguf'))
 _model = None
 
 
@@ -80,6 +89,7 @@ def generate_response(
     state: str,
     language: str,
     max_tokens: int = 256,
+    history: List[Dict] = None,
 ) -> Optional[str]:
     """
     Generate a response using TinyLlama with law context.
@@ -90,6 +100,7 @@ def generate_response(
         state: User's state code
         language: Response language
         max_tokens: Maximum response length
+        history: Previous chat turns context
     
     Returns:
         Generated response text, or None if LLM unavailable
@@ -105,23 +116,36 @@ def generate_response(
     ])
 
     # Build the system prompt with instructions
-    system_prompt = f"""You are DriveLegal, an expert on Indian traffic laws.
+    system_prompt = f"""You are TrafiAI (DriveLegal), an expert Indian traffic law assistant.
 User's State: {state}
-Language: {language}
+Language preference: {language}
 
 Relevant Laws:
 {laws_text}
 
 Rules:
+- CRITICAL: Auto-detect the user's language. Reply in the SAME language they used.
+  - Tamil input → Tamil response
+  - Hindi input → Hindi response
+  - English input → English response
+  - Mixed language → match their dominant language
 - Always cite the relevant section of the Motor Vehicles Act
 - Provide state-specific penalty amounts
-- Explain procedures clearly
-- Be concise and actionable
+- If the query is vague, give a brief answer AND ask 1-2 follow-up questions
+- Be conversational, friendly, and helpful
 - If unsure, say "I recommend checking with your local RTO"
-- Respond in the same language as the user"""
+"""
 
-    # Format as TinyLlama chat template
-    full_prompt = f"<|system|>\n{system_prompt}</s>\n<|user|>\n{prompt}</s>\n<|assistant|>\n"
+    # Format previous conversation history turns
+    history_text = ""
+    if history:
+        for turn in history:
+            role = "user" if turn.get('role') == 'user' else "assistant"
+            content = turn.get('content', '')
+            history_text += f"<|{role}|>\n{content}</s>\n"
+
+    # Format as TinyLlama chat template incorporating prior history
+    full_prompt = f"<|system|>\n{system_prompt}</s>\n{history_text}<|user|>\n{prompt}</s>\n<|assistant|>\n"
 
     try:
         from llama_cpp import Llama

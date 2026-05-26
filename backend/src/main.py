@@ -23,7 +23,7 @@ import json
 import re
 from typing import Dict, List
 
-from database import initialize_database, get_laws, get_penalties, save_chat_history
+from database import initialize_database, get_laws, get_penalties, save_chat_history, get_all_penalties_by_state
 from search import search
 from zones import check_zones
 from stt import transcribe_audio
@@ -58,6 +58,12 @@ def handle_query(json_payload: str) -> str:
     """
     try:
         payload = json.loads(json_payload)
+        action = payload.get('action')
+        if action == 'get_penalties':
+            state = payload.get('state', 'TN')
+            penalties = get_all_penalties_by_state(state)
+            return json.dumps({'status': 'success', 'penalties': penalties})
+
         result = execute_pipeline(payload)
         return json.dumps({'status': 'success', **result})
     except ModelLoadError as e:
@@ -122,6 +128,7 @@ def execute_pipeline(payload: Dict) -> Dict:
     location = payload.get('location', {})
     language = payload.get('language', 'en')
     state = location.get('state', 'TN')
+    history = payload.get('history', [])
 
     # STEP 1: Convert audio to text if needed
     if audio_uri:
@@ -149,7 +156,7 @@ def execute_pipeline(payload: Dict) -> Dict:
     confidence = laws[0].get('similarity', 0) if laws else 0
 
     # STEP 4: Generate response (LLM with template fallback)
-    response_text = generate_response(text, laws, state, language)
+    response_text = generate_response(text, laws, state, language, history=history)
     if not response_text:
         response_text = build_template_response(laws, penalties, state)
 

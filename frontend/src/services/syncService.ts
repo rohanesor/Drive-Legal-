@@ -39,6 +39,11 @@ class SyncService {
 
   async checkConnection(): Promise<boolean> {
     try {
+      if (!convexClient) {
+        this.isOnline = false;
+        this.notifyStatusChange("offline");
+        return false;
+      }
       const health = await convexClient.mutation(":health" as any);
       this.isOnline = true;
       this.notifyStatusChange("online");
@@ -94,6 +99,7 @@ class SyncService {
 
   private async syncRegions(): Promise<string[]> {
     try {
+      if (!convexClient) return [];
       const regions = await convexClient.query("regions:list" as any);
       if (regions) {
         await offlineCache.set(cacheKeys.regions, regions);
@@ -110,7 +116,7 @@ class SyncService {
       if (!cachedRegions) return [];
       for (const region of cachedRegions) {
         try {
-          const rules = await convexClient.query("rules:getByRegion" as any, {
+          const rules = await convexClient!.query("rules:getByRegion" as any, {
             regionId: region._id,
           });
           if (rules) {
@@ -132,7 +138,7 @@ class SyncService {
       if (!cachedRegions) return [];
       for (const region of cachedRegions) {
         try {
-          const contacts = await convexClient.query(
+          const contacts = await convexClient!.query(
             "emergency:getByRegion" as any,
             { regionId: region._id }
           );

@@ -14,6 +14,7 @@
   - DriveLegalLocationService: Foreground service for GPS monitoring
   - RNPushNotificationBootEventReceiver: Restarts alerts after device reboot
 -->
+<!--suppress ALL -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.drivelegal">
 
@@ -39,6 +40,9 @@
         android:largeHeap="true"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true">
+
+        <!-- Map uses OpenStreetMap tiles via Leaflet (no API key required).
+             OpenRouteService key for routing/geocoding is in constants/config.ts -->
 
         <!-- Main activity - entry point for React Native -->
         <activity

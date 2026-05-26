@@ -19,7 +19,7 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { FileText, X } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 
 interface CitationChipProps {
@@ -39,7 +39,7 @@ export const CitationChip = ({ section, fullText }: CitationChipProps) => {
         style={styles.chip}
         onPress={() => setShowModal(true)}
       >
-        <Ionicons name="document-text-outline" size={12} color={COLORS.primary} />
+        <FileText size={12} color={COLORS.primary} />
         <Text style={styles.chipText}>{section}</Text>
       </TouchableOpacity>
 
@@ -55,7 +55,7 @@ export const CitationChip = ({ section, fullText }: CitationChipProps) => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{section}</Text>
               <TouchableOpacity onPress={() => setShowModal(false)}>
-                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+                <X size={24} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
             <ScrollView>

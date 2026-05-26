@@ -91,11 +91,67 @@ export const SHADOWS = {
     shadowRadius: 12,
     elevation: 4,
   },
+  strong: {
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  glow: (color: string) => ({
+    shadowColor: color,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 6,
+  }),
 };
 
 export const BORDER_RADIUS = {
   small: 6,
   medium: 12,
   large: 20,
+  xl: 28,
   round: 9999,
+};
+
+/**
+ * Glassmorphism presets for premium UI elements.
+ * Apply as background + border styles on Views.
+ */
+export const GLASS = {
+  light: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  dark: {
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  cyan: {
+    backgroundColor: 'rgba(6, 182, 212, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.18)',
+  },
+  frosted: {
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.6)',
+  },
+};
+
+/**
+ * Gradient color stops for LinearGradient components
+ * (used as reference since RN doesn't support CSS gradients natively).
+ */
+export const GRADIENTS = {
+  cyanBlue: ['#06B6D4', '#2563EB'],
+  navyCyan: ['#0F172A', '#164E63'],
+  successMint: ['#22C55E', '#06B6D4'],
+  warningAmber: ['#F59E0B', '#F97316'],
+  errorRose: ['#EF4444', '#E11D48'],
+  darkNavy: ['#0F172A', '#1E293B'],
+  premiumDark: ['#0F172A', '#0C1426', '#070D19'],
 };

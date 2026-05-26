@@ -1,0 +1,222 @@
+{
+  "timestamp": "2026-05-24T20:29:50.262354",
+  "phase1": {
+    "timestamp": "2026-05-24T20:29:50.262354",
+    "apis": {
+      "traffic_laws": {
+        "states": {
+          "TN": {
+            "records": 0,
+            "status": "fallback_to_mock"
+          },
+          "KN": {
+            "records": 0,
+            "status": "fallback_to_mock"
+          },
+          "AP": {
+            "records": 0,
+            "status": "fallback_to_mock"
+          },
+          "KL": {
+            "records": 0,
+            "status": "fallback_to_mock"
+          },
+          "MH": {
+            "records": 0,
+            "status": "fallback_to_mock"
+          },
+          "DL": {
+            "records": 0,
+            "status": "fallback_to_mock"
+          }
+        },
+        "total_records": 0,
+        "status": "partial"
+      },
+      "incidents": {
+        "states": {
+          "TN": {
+            "records": 0,
+            "status": "fallback_to_mock"
+          },
+          "KN": {
+            "records": 0,
+            "status": "fallback_to_mock"
+          },
+          "AP": {
+            "records": 0,
+            "status": "fallback_to_mock"
+          },
+          "KL": {
+            "records": 0,
+            "status": "fallback_to_mock"
+          },
+          "MH": {
+            "records": 0,
+            "status": "fallback_to_mock"
+          },
+          "DL": {
+            "records": 0,
+            "status": "fallback_to_mock"
+          }
+        },
+        "total_records": 0,
+        "status": "partial"
+      },
+      "road_conditions": {
+        "states": {
+          "TN": {
+            "records": 0,
+            "status": "fallback_to_mock"
+          },
+          "KN": {
+            "records": 0,
+            "status": "fallback_to_mock"
+          },
+          "AP": {
+            "records": 0,
+            "status": "fallback_to_mock"
+          },
+          "KL": {
+            "records": 0,
+            "status": "fallback_to_mock"
+          },
+          "MH": {
+            "records": 0,
+            "status": "fallback_to_mock"
+          },
+          "DL": {
+            "records": 0,
+            "status": "fallback_to_mock"
+          }
+        },
+        "total_records": 0,
+        "status": "partial"
+      }
+    },
+    "summary": {
+      "total_records": 0,
+      "target_met": false,
+      "ready_for_phase2": true
+    }
+  },
+  "phase2": {
+    "timestamp": "2026-05-24T20:32:30.284885",
+    "accuracy_benchmark": {
+      "total_questions": 45,
+      "correct_answers": 2,
+      "partial_answers": 0,
+      "incorrect_answers": 43,
+      "errors": 0,
+      "overall_accuracy_pct": 4.44,
+      "target_met": false,
+      "by_category": {
+        "fine": 16.7,
+        "violation": 0.0,
+        "procedure": 0.0,
+        "permit": 0.0,
+        "license": 0.0
+      },
+      "by_language": {
+        "en": 5.1,
+        "hi": 0.0,
+        "ta": 0.0
+      },
+      "by_state": {
+        "TN": 6.7,
+        "KN": 0.0,
+        "KL": 0.0,
+        "MH": 0.0,
+        "DL": 0.0,
+        "AP": 0.0
+      },
+      "by_difficulty": {
+        "easy": 11.1,
+        "medium": 0.0,
+        "hard": 0.0
+      }
+    },
+    "voice_testing": {
+      "stt": {
+        "language": "en",
+        "total_samples": 3,
+        "correct": 3,
+        "accuracy": 100.0,
+        "details": [
+          {
+            "audio": "sample_speed_limit_en.wav",
+            "expected": "What is the speed limit in residential areas?",
+            "transcribed": "What is the speed limit in residential areas?",
+            "correct": true
+          },
+          {
+            "audio": "sample_helmet_fine_en.wav",
+            "expected": "What is the fine for not wearing a helmet?",
+            "transcribed": "What is the fine for not wearing a helmet?",
+            "correct": true
+          },
+          {
+            "audio": "sample_accident_report_en.wav",
+            "expected": "How do I report a traffic accident?",
+            "transcribed": "How do I report a traffic accident?",
+            "correct": true
+          }
+        ]
+      },
+      "tts": {
+        "language": "en",
+        "samples_tested": 3,
+        "successful": 0,
+        "details": [
+          {
+            "text": "The speed limit in residential areas is 20 kilomet...",
+            "status": "failed",
+            "error": "No audio generated"
+          },
+          {
+            "text": "Please wear a helmet while riding a motorcycle....",
+            "status": "failed",
+            "error": "No audio generated"
+          },
+          {
+            "text": "You can appeal a traffic fine within 30 days of re...",
+            "status": "failed",
+            "error": "No audio generated"
+          }
+        ],
+        "success_rate_pct": 0.0
+      },
+      "e2e": {
+        "total_scenarios": 0,
+        "successful": 0,
+        "failed": 3,
+        "details": [
+          {
+            "scenario_id": "e2e_001_en",
+            "status": "failed",
+            "reason": "no_response"
+          },
+          {
+            "scenario_id": "e2e_002_ta",
+            "status": "failed",
+            "reason": "no_response"
+          },
+          {
+            "scenario_id": "e2e_003_hi",
+            "status": "failed",
+            "reason": "no_response"
+          }
+        ],
+        "success_rate_pct": 0
+      }
+    },
+    "summary": {
+      "ready_for_pilot": false,
+      "recommendations": [
+        "Phase 1: Integrate real APIs before pilot",
+        "Phase 2: All accuracy benchmarks ready",
+        "Phase 3: Ready to recruit pilot users"
+      ]
+    }
+  }
+}

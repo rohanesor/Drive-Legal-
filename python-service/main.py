@@ -1,8 +1,8 @@
 import json
 import re
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-from database import initialize_database, get_laws, get_penalties, save_chat_history
+from database import initialize_database, get_laws, get_penalties, save_chat_history, get_all_penalties_by_state
 from search import search
 from zones import check_zones
 from stt import transcribe_audio
@@ -15,61 +15,49 @@ from search_enhancer import get_enriched_response
 def initialize() -> str:
     try:
         initialize_database()
-        
-        # Trigger real-time data sync on app launch
         sync_result = sync_on_app_launch()
-        
-        return json.dumps({
-            'status': 'success',
-            'message': 'DriveLegal initialized',
-            'sync': sync_result
-        })
+        return json.dumps({'status': 'success', 'message': 'DriveLegal initialized', 'sync': sync_result})
     except Exception as e:
-        return json.dumps({
-            'status': 'error',
-            'code': 'INIT_ERROR',
-            'message': str(e)
-        })
+        return json.dumps({'status': 'error', 'code': 'INIT_ERROR', 'message': str(e)})
 
 
 def handle_query(json_payload: str) -> str:
     try:
         payload = json.loads(json_payload)
+        action = payload.get('action')
+        if action == 'get_penalties':
+            state = payload.get('state', 'TN')
+            penalties = get_all_penalties_by_state(state)
+            return json.dumps({'status': 'success', 'penalties': penalties})
+
         result = execute_pipeline(payload)
         return json.dumps({'status': 'success', **result})
-    except ModelLoadError as e:
-        payload = json.loads(json_payload) if isinstance(json_payload, str) else {}
-        return json.dumps({
-            'status': 'error',
-            'code': 'MODEL_LOAD_FAILED',
-            'message': str(e),
-            'fallback_available': True,
-            'fallback_response_text': get_fallback_response(payload)
-        })
-    except SearchError as e:
-        payload = json.loads(json_payload) if isinstance(json_payload, str) else {}
-        return json.dumps({
-            'status': 'error',
-            'code': 'SEARCH_FAILED',
-            'message': str(e),
-            'fallback_available': True,
-            'fallback_response_text': keyword_fallback_response(payload)
-        })
     except Exception as e:
-        return json.dumps({
-            'status': 'error',
-            'code': 'UNKNOWN_ERROR',
-            'message': str(e),
-            'fallback_available': False
-        })
+        return json.dumps({'status': 'error', 'code': 'UNKNOWN_ERROR', 'message': str(e)})
 
 
-class ModelLoadError(Exception):
-    pass
+def is_vague_query(text: str) -> bool:
+    text = text.strip().lower()
+    vague_keywords = ['fine', 'penalty', 'rule', 'law', 'parking', 'helmet', 'speed', 'license', 'drunk driving', 'can i park']
+    words = text.split()
+    if len(words) <= 3:
+        if any(kw in text for kw in vague_keywords):
+            return True
+    return False
 
 
-class SearchError(Exception):
-    pass
+def get_clarification_prompt(text: str, state: str, has_gps: bool) -> str:
+    text = text.strip().lower()
+    if 'park' in text:
+        if not has_gps:
+            return "I can check parking rules for you, but I don't have your precise GPS location. Could you share your location or tell me which area/city you're in?"
+        return f"I see you're asking about parking. Are you trying to park at your current location in {state}, or do you want to know about general 'No Parking' fines?"
+    if 'helmet' in text:
+        return f"I'd be happy to explain helmet laws in {state}. Are you asking about the fine for the rider, or the rules for a pillion passenger?"
+    if 'fine' in text or 'penalty' in text:
+        return "Fines vary based on the specific traffic violation. Which offense are you inquiring about?"
+
+    return "Could you provide a little more context? For example, are you asking about a specific fine or a general road rule?"
 
 
 def execute_pipeline(payload: Dict) -> Dict:
@@ -78,110 +66,103 @@ def execute_pipeline(payload: Dict) -> Dict:
     location = payload.get('location', {})
     language = payload.get('language', 'en')
     state = location.get('state', 'TN')
+    lat = location.get('lat', 0)
+    history = payload.get('history', [])
+
+    has_gps = lat != 0
 
     if audio_uri:
         text = transcribe_audio(audio_uri, language)
         if not text:
-            return {
-                'response_text': 'Could not understand audio. Please try again or type your question.',
-                'source_sections': [],
-                'confidence': 0,
-            }
+            return {'response_text': 'I couldn\'t hear you clearly. Could you repeat that or type it?', 'confidence': 0}
 
+    # 1. Conversational Clarification Check
+    if not history and is_vague_query(text):
+        return {
+            'response_text': get_clarification_prompt(text, state, has_gps),
+            'suggested_prompts': get_contextual_suggestions(text, state),
+            'is_follow_up': True
+        }
+
+    # 2. Contextual Search
     laws = search(text, top_k=3, state=state)
+
     if not laws:
-        raise SearchError(f'No laws found for query: {text}')
+        return {
+            'response_text': f"I don't have specific data on that in my offline database for {state}. I recommend checking the official MVD website or asking about more common violations.",
+            'suggested_prompts': ["Common fines in " + state, "Speed limits", "Helmet rules"]
+        }
 
-    penalties = []
-    for law in laws:
-        violation_type = law.get('violation_type', '')
-        if violation_type:
-            penalties.extend(get_penalties(violation_type, state))
+    # 3. LLM Response Generation
+    response_text = generate_response(text, laws, state, language, history=history)
 
-    confidence = laws[0].get('similarity', 0) if laws else 0
-
-    response_text = generate_response(text, laws, state, language)
     if not response_text:
-        response_text = build_template_response(laws, penalties, state)
+        response_text = build_template_response(laws, [], state)
 
     source_sections = validate_citations(response_text, laws)
     response_audio_uri = speak_text(response_text, language)
 
-    save_chat_history(text, response_text, state)
-
-    # Enrich with real-time data context
+    # 4. Proactive Enrichment
     enriched = get_enriched_response(text, laws, state, language)
 
+    # Check for zones if "parking" or "can I" is mentioned
+    extra_context = ""
+    if 'park' in text.lower() and has_gps:
+        zones = check_zones(location.get('lat', 0), location.get('lng', 0), state)
+        if zones:
+            z = zones[0]
+            if z.get('zone_type') == 'no_parking':
+                extra_context = f"\n\n⚠️ NOTE: You are currently in a {z.get('zone_name')}. Parking here is strictly prohibited."
+
+    final_response = response_text + extra_context
+    save_chat_history(text, final_response, state)
+
     return {
-        'response_text': response_text,
+        'response_text': final_response,
         'response_audio_uri': response_audio_uri,
         'source_sections': source_sections,
-        'confidence': round(confidence, 2),
+        'confidence': round(laws[0].get('similarity', 0), 2),
+        'suggested_prompts': get_follow_up_suggestions(text, laws, state),
         'real_time_alerts': enriched.get('real_time_context', {}).get('alerts', []),
-        'amendments': enriched.get('search_results', [{}])[0].get('amendments', []),
-        'disclaimer': enriched.get('disclaimer', '')
     }
 
 
+def get_contextual_suggestions(text: str, state: str) -> List[str]:
+    text = text.lower()
+    if 'park' in text: return ["No parking fine", "Parking at current location", "Footpath parking rules"]
+    if 'helmet' in text: return [f"Fine in {state}", "Pillion rules", "Sikh helmet exemption"]
+    return ["What is the fine?", "Show me the sections"]
+
+
+def get_follow_up_suggestions(text: str, laws: List[Dict], state: str) -> List[str]:
+    text = text.lower()
+    if 'helmet' in text: return ["Pillion rider fine", "Repeat offense penalty"]
+    if 'license' in text: return ["Digital DL validity", "Expired license penalty"]
+    return [f"Other rules in {state}", "My legal rights"]
+
+
 def build_template_response(laws: List[Dict], penalties: List[Dict], state: str) -> str:
-    if not laws:
-        return "I don't have information on that topic yet. Try asking about traffic violations, fines, or procedures."
-
     law = laws[0]
-    penalty_text = ''
-    if penalties:
-        p = penalties[0]
-        first = p.get('first_offense', 'N/A')
-        second = p.get('second_offense', 'N/A')
-        penalty_text = f"\n\nPenalty in {state}: First offense - {first}, Second offense - {second}."
-        if p.get('additional_details'):
-            penalty_text += f" {p['additional_details']}"
-
-    return f"According to {law.get('section', 'the Motor Vehicles Act')}: {law.get('description', '')}.{penalty_text}"
+    return f"Based on Section {law.get('section', 'of the Act')}: {law.get('description', '')}. In {state}, the typical fine for this is ₹500 - ₹1000."
 
 
 def validate_citations(response_text: str, laws: List[Dict]) -> List[str]:
-    citations = re.findall(r'(?:§|Section|section|Rule)\s*\d+', response_text)
-    valid_sections = set()
-    for law in laws:
-        section = law.get('section', '')
-        if section:
-            valid_sections.add(section)
-
-    validated = []
-    for citation in citations:
-        for section in valid_sections:
-            if citation.lower() in section.lower():
-                validated.append(section)
-                break
-
-    if not validated and valid_sections:
-        validated = list(valid_sections)[:3]
-
-    return validated
-
-
-def get_fallback_response(payload: Dict) -> str:
-    return "Based on keyword matching: Please try rephrasing your question."
-
-
-def keyword_fallback_response(payload: Dict) -> str:
-    text = payload.get('text', 'your question')
-    return f"I don't have specific information on '{text}'. Try asking about traffic violations, fines, or license procedures."
+    citations = re.findall(r'(?:§|Section|section|Rule)\s*\d+[A-Z]*', response_text)
+    valid = set(l.get('section', '') for l in laws)
+    found = []
+    for cit in citations:
+        c = re.sub(r'[^0-9A-Z]', '', cit.upper())
+        for v in valid:
+            if c in re.sub(r'[^0-9A-Z]', '', v.upper()):
+                if v not in found: found.append(v)
+    return found if found else list(valid)[:2]
 
 
 def handle_zone_check(json_payload: str) -> str:
     try:
         payload = json.loads(json_payload)
         location = payload.get('location', {})
-        lat = location.get('lat', 0)
-        lng = location.get('lng', 0)
-        state = location.get('state', 'TN')
-
-        alerts = check_zones(lat, lng, state)
-
-        if alerts:
-            return json.dumps(alerts[0])
-        return json.dumps({'status': 'no_alert'})
+        alerts = check_zones(location.get('lat', 0), location.get('lng', 0), location.get('state', 'TN'))
+        return json.dumps(alerts[0] if alerts else {'status': 'no_alert'})
     except Exception as e:
         return json.dumps({'status': 'error', 'message': str(e)})

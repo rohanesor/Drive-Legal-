@@ -32,8 +32,17 @@ try:
 except ImportError:
     WHISPER_AVAILABLE = False
 
+# Helper to find models dynamically, allowing fallback to writable files directory
+def get_model_path(relative_path: str) -> str:
+    # 1. Check writable files directory (plenty of space, avoids APK bloat)
+    fallback_path = os.path.join('/data/data/com.drivelegal/files', relative_path)
+    if os.path.exists(fallback_path):
+        return fallback_path
+    # 2. Check packaged JNI assets
+    return os.path.join(os.path.dirname(__file__), relative_path)
+
 # Whisper model files location
-MODEL_DIR = os.path.join(os.path.dirname(__file__), 'models', 'whisper-tiny')
+MODEL_DIR = get_model_path(os.path.join('models', 'whisper-tiny'))
 _model = None
 
 

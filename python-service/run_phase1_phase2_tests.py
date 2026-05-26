@@ -13,6 +13,13 @@ from typing import Dict
 
 sys.path.insert(0, os.path.dirname(__file__))
 
+# Configure stdout to use UTF-8 to prevent UnicodeEncodeErrors on Windows consoles
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+except (AttributeError, TypeError):
+    pass
+
+
 from api_integration import (
     DataGovInAPI,
     OpenStreetMapAPI,

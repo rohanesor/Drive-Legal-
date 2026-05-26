@@ -176,6 +176,18 @@ def get_penalties(violation_type: str, state: str) -> List[Dict]:
     return [dict(row) for row in rows]
 
 
+def get_all_penalties_by_state(state: str) -> List[Dict]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM penalties WHERE state = ? OR state = 'ALL'",
+        [state]
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+
 def get_procedures(procedure_type: str = None) -> List[Dict]:
     conn = get_connection()
     cursor = conn.cursor()

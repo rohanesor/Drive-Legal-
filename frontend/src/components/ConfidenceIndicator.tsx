@@ -16,7 +16,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { COLORS } from '../constants/theme';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { CheckCircle, AlertTriangle, AlertCircle } from 'lucide-react-native';
 
 interface ConfidenceIndicatorProps {
   confidence: number; // 0.0 to 1.0
@@ -40,12 +40,13 @@ export const ConfidenceIndicator = ({ confidence }: ConfidenceIndicatorProps) =>
 
   return (
     <View style={styles.container}>
-      {/* Icon changes based on confidence level */}
-      <Ionicons
-        name={level === 'high' ? 'checkmark-circle' : level === 'medium' ? 'warning' : 'alert-circle'}
-        size={14}
-        color={color}
-      />
+      {level === 'high' ? (
+        <CheckCircle size={14} color={color} />
+      ) : level === 'medium' ? (
+        <AlertTriangle size={14} color={color} />
+      ) : (
+        <AlertCircle size={14} color={color} />
+      )}
       <Text style={[styles.label, { color }]}>{label}</Text>
     </View>
   );

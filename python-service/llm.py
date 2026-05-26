@@ -17,16 +17,8 @@ def _load_model():
                 n_gpu_layers=0,
                 verbose=False,
             )
-        except ImportError:
-            try:
-                import ctypes
-                llama_lib = os.path.join(os.path.dirname(__file__), 'models', 'libllama.so')
-                if os.path.exists(llama_lib):
-                    _model = ctypes.CDLL(llama_lib)
-                else:
-                    _model = None
-            except Exception:
-                _model = None
+        except Exception:
+            _model = None
     return _model
 
 
@@ -41,32 +33,47 @@ def generate_response(
     state: str,
     language: str,
     max_tokens: int = 256,
+    history: List[Dict] = None,
 ) -> Optional[str]:
     model = _load_model()
     if model is None:
         return None
 
     laws_text = '\n\n'.join([
-        f"- {law.get('section', 'Unknown')}: {law.get('description', '')}"
+        f"- Section {law.get('section', 'Unknown')}: {law.get('description', '')}"
         for law in laws
     ])
 
-    system_prompt = f"""You are DriveLegal, an expert on Indian traffic laws.
-User's State: {state}
-Language: {language}
+    # Enhanced ChatGPT-like persona
+    system_prompt = f"""You are TrafiAI, a conversational, proactive, and friendly AI legal mobility assistant for Indian drivers.
+Context:
+- User's State: {state}
+- Language: {language}
 
-Relevant Laws:
+Legal Knowledge Base:
 {laws_text}
 
-Rules:
-- Always cite the relevant section of the Motor Vehicles Act
-- Provide state-specific penalty amounts
-- Explain procedures clearly
-- Be concise and actionable
-- If unsure, say "I recommend checking with your local RTO"
-- Respond in the same language as the user"""
+Persona Guidelines:
+- Be human-like and empathetic, not robotic.
+- Always provide specific Section numbers (e.g., Section 194).
+- State clear penalty amounts for {state}.
+- If the user's question is safety-related, give a brief proactive safety tip.
+- Keep answers concise but complete.
+- Use natural conversational fillers like "I see," "In that case," or "Actually."
+- If you don't have a specific answer in the provided laws, offer general guidance and suggest checking with the RTO.
+- ALWAYS respond in {language}.
+"""
 
-    full_prompt = f"<|system|>\n{system_prompt}</s>\n<|user|>\n{prompt}</s>\n<|assistant|>\n"
+    history_text = ""
+    if history:
+        # Only take last 4 turns for context to save tokens
+        for turn in history[-4:]:
+            role = "user" if turn.get('role') == 'user' else "assistant"
+            content = turn.get('content', '')
+            history_text += f"<|{role}|>\n{content}</s>\n"
+
+    # TinyLlama chat template
+    full_prompt = f"<|system|>\n{system_prompt}</s>\n{history_text}<|user|>\n{prompt}</s>\n<|assistant|>\n"
 
     try:
         from llama_cpp import Llama
@@ -74,12 +81,14 @@ Rules:
             output = model(
                 full_prompt,
                 max_tokens=max_tokens,
-                temperature=0.3,
-                stop=['</s>', '<|user|>'],
+                temperature=0.4, # Slightly higher for more natural flow
+                top_p=0.9,
+                stop=['</s>', '<|user|>', '<|system|>'],
                 echo=False,
             )
             return output['choices'][0]['text'].strip()
-    except Exception:
+    except Exception as e:
+        print(f"LLM Generation Error: {e}")
         pass
 
     return None

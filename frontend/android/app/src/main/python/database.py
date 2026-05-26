@@ -191,6 +191,27 @@ def get_penalties(violation_type: str, state: str) -> List[Dict]:
     return [dict(row) for row in rows]
 
 
+def get_all_penalties_by_state(state: str) -> List[Dict]:
+    """
+    Get all penalty rules applicable to a specific state (including state = 'ALL').
+    
+    Args:
+        state: State code (e.g., "TN", "KN")
+        
+    Returns:
+        List of penalty dictionaries
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM penalties WHERE state = ? OR state = 'ALL'",
+        [state]
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+
 def get_procedures(procedure_type: str = None) -> List[Dict]:
     """
     Get procedure guides (license renewal, fine payment, etc.).

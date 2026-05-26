@@ -10,7 +10,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../store';
 import { setState } from '../store/settingsSlice';
-import { getStateName } from '../services/location';
+import { getStateName } from '../services/locationService';
 import { STATES } from '../constants/states';
 import { COLORS, BORDER_RADIUS } from '../constants/theme';
 

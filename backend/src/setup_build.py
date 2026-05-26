@@ -36,7 +36,7 @@ PYTHON_FILES = [
 # Directories to copy (for models and data)
 PYTHON_DIRS = [
     ('src/data', 'data'),  # SQLite database
-    ('src/models', 'models'),  # ML models
+    ('src/models/faiss_index', 'models/faiss_index'),  # FAISS index (small)
 ]
 
 
@@ -44,6 +44,15 @@ def setup_build():
     """Copy backend Python files to Chaquopy python directory."""
     print(f"Setting up Chaquopy python directory: {PYTHON_DIR}")
     
+    # Clean old models folder to remove bloated cached models
+    old_models_dir = os.path.join(PYTHON_DIR, 'models')
+    if os.path.exists(old_models_dir):
+        try:
+            shutil.rmtree(old_models_dir)
+            print("  Cleaned old models folder")
+        except Exception as e:
+            print(f"  Warning: failed to clean old models folder: {e}")
+
     # Create the python directory if it doesn't exist
     os.makedirs(PYTHON_DIR, exist_ok=True)
     

@@ -32,6 +32,7 @@ export interface QueryPayload {
     state: string;         // State code (TN, KN, etc.)
   };
   language: string;        // 'en', 'ta', or 'hi'
+  history?: { role: string; content: string }[];
 }
 
 /**
