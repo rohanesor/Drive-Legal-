@@ -12,6 +12,8 @@ import json
 
 print('=== Database Tests ===')
 initialize_database()
+from ingest.seed import seed_database
+seed_database()
 laws = get_laws('TN')
 speeding = [l for l in laws if l['violation_type'] == 'speeding']
 assert len(speeding) >= 2, f'Expected >= 2 speeding laws, got {len(speeding)}'
