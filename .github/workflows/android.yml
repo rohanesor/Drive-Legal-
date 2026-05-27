@@ -79,6 +79,7 @@ jobs:
       - name: Build Android Unsigned Debug APK
         run: |
           cd frontend/android
+          chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
       - name: Upload Build Artifact
