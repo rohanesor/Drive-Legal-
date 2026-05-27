@@ -89,7 +89,7 @@ export const LocationScreen = ({ navigation }: any) => {
   const stateDetail = useMemo(() => {
     if (!detectedState) return null;
     return {
-      name: geoInfo?.stateName || '',
+      name: geoInfo?.state || '',
       code: detectedState,
       districtCount: detectedState === 'TN' ? TN_DISTRICTS.length : null,
     };

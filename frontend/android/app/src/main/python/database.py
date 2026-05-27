@@ -169,19 +169,50 @@ def get_laws_by_type(violation_type: str, state: str) -> List[Dict]:
     return [dict(row) for row in rows]
 
 
-def get_penalties(violation_type: str, state: str) -> List[Dict]:
+def get_penalties(violation_type: str, state: str, city: str = None, district: str = None) -> List[Dict]:
     """
-    Get penalty amounts for a violation type in a specific state.
+    Get penalty amounts for a violation type in a specific state,
+    with hierarchical fallback for district and city (taluk) level details.
     
-    Args:
-        violation_type: Type of violation
-        state: State code
-    
-    Returns:
-        List of penalty dictionaries with first_offense, second_offense amounts
+    Order of preference:
+    1. City (taluk) level rule in the district
+    2. District level rule
+    3. State level rule
+    4. National rule ('ALL')
     """
     conn = get_connection()
     cursor = conn.cursor()
+    
+    # 1. Try matching specific city/taluk and district first
+    if city and district:
+        cursor.execute(
+            """SELECT * FROM penalties 
+               WHERE violation_type = ? 
+                 AND state = ? 
+                 AND additional_details LIKE ? 
+                 AND additional_details LIKE ?""",
+            [violation_type, state, f'%"district": "{district}"%', f'%"city_or_zone": "{city}"%']
+        )
+        rows = cursor.fetchall()
+        if rows:
+            conn.close()
+            return [dict(row) for row in rows]
+            
+    # 2. Try matching district level rule
+    if district:
+        cursor.execute(
+            """SELECT * FROM penalties 
+               WHERE violation_type = ? 
+                 AND state = ? 
+                 AND additional_details LIKE ?""",
+            [violation_type, state, f'%"district": "{district}"%']
+        )
+        rows = cursor.fetchall()
+        if rows:
+            conn.close()
+            return [dict(row) for row in rows]
+
+    # 3. Fall back to state or national rules
     cursor.execute(
         "SELECT * FROM penalties WHERE violation_type = ? AND (state = ? OR state = 'ALL')",
         [violation_type, state]
@@ -210,6 +241,39 @@ def get_all_penalties_by_state(state: str) -> List[Dict]:
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+
+def get_localized_penalties(state: str, city: str = None, district: str = None) -> List[Dict]:
+    """
+    Get exactly one penalty record per unique violation type,
+    using the hierarchical fallback matching the user's precise location.
+    
+    Args:
+        state: State code (e.g. "TN")
+        city: Geocoded city or taluk name (e.g. "Anaimalai")
+        district: Geocoded district name (e.g. "Coimbatore")
+        
+    Returns:
+        List of localized penalty dictionaries
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Get all unique violation types for this state
+    cursor.execute(
+        "SELECT DISTINCT violation_type FROM penalties WHERE state = ? OR state = 'ALL'",
+        [state]
+    )
+    violation_types = [r[0] for r in cursor.fetchall() if r[0]]
+    conn.close()
+    
+    localized_list = []
+    for v_type in violation_types:
+        rules = get_penalties(v_type, state, city, district)
+        if rules:
+            localized_list.append(rules[0])
+            
+    return localized_list
 
 
 def get_procedures(procedure_type: str = None) -> List[Dict]:

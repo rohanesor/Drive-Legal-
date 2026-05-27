@@ -1,4 +1,5 @@
-import * as Location from 'expo-location';
+import { Platform, PermissionsAndroid } from 'react-native';
+import Geolocation from '@react-native-community/geolocation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // --- Types ---
@@ -69,14 +70,20 @@ const reverseGeocodeNominatim = async (lat: number, lng: number): Promise<GeoInf
     const stateName = addr.state || '';
     const stateCode = mapStateToCode(stateName);
 
+    // In India: state_district is the District (e.g. Coimbatore), county is the Taluk (e.g. Anaimalai)
+    const district = addr.state_district || addr.county || '';
+    const city = (addr.state_district && addr.county)
+      ? addr.county
+      : (addr.city || addr.town || addr.village || addr.suburb || '');
+
     return {
-      city: addr.city || addr.town || addr.village || addr.suburb || '',
-      district: addr.state_district || addr.county || '',
+      city: city,
+      district: district,
       state: stateName,
       stateCode: stateCode,
       country: addr.country || 'India',
       postalCode: addr.postcode || '',
-      confidence: addr.city ? 'high' : 'medium',
+      confidence: (city || district) ? 'high' : 'medium',
       source: 'nominatim',
     };
   } catch (error) {
@@ -88,59 +95,57 @@ const reverseGeocodeNominatim = async (lat: number, lng: number): Promise<GeoInf
 // --- Exported Functions (Simpler approach for Metro) ---
 
 export const requestLocationPermissions = async (): Promise<boolean> => {
-  try {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    return status === 'granted';
-  } catch (e) {
-    console.warn('Permission request failed', e);
-    return false;
+  if (Platform.OS === 'android') {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title: 'DriveLegal Location Permission',
+          message: 'DriveLegal needs access to your location to provide accurate traffic law information.',
+          buttonPositive: 'OK',
+          buttonNegative: 'Cancel',
+        }
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (e) {
+      console.warn('Permission request failed', e);
+      return false;
+    }
   }
+  return true;
 };
 
 export const getCurrentPosition = async (retries = 2): Promise<GPSCoords> => {
-  try {
-    const location = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.High,
-    });
-    return {
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
-      accuracy: location.coords.accuracy,
-      altitude: location.coords.altitude,
-      timestamp: location.timestamp,
-    };
-  } catch (error) {
-    if (retries > 0) {
-      return getCurrentPosition(retries - 1);
-    }
-    throw error;
-  }
+  return new Promise((resolve, reject) => {
+    Geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          altitude: position.coords.altitude,
+          timestamp: position.timestamp,
+        });
+      },
+      async (error) => {
+        if (retries > 0) {
+          try {
+            const nextCoords = await getCurrentPosition(retries - 1);
+            resolve(nextCoords);
+          } catch (retryErr) {
+            reject(retryErr);
+          }
+        } else {
+          reject(error);
+        }
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+    );
+  });
 };
 
 export const reverseGeocode = async (lat: number, lng: number): Promise<GeoInfo> => {
-  try {
-    const results = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
-    if (results && results.length > 0) {
-      const best = results[0];
-      if (best.region) {
-        const stateCode = mapStateToCode(best.region || '');
-        return {
-          city: best.city || best.district || '',
-          district: best.district || '',
-          state: best.region || '',
-          stateCode: stateCode,
-          country: best.country || 'India',
-          postalCode: best.postalCode || '',
-          confidence: best.city ? 'high' : 'medium',
-          source: 'expo',
-        };
-      }
-    }
-    return await reverseGeocodeNominatim(lat, lng);
-  } catch (error) {
-    console.warn('Expo Geocoding failed, trying Nominatim fallback:', error);
-    return await reverseGeocodeNominatim(lat, lng);
-  }
+  return await reverseGeocodeNominatim(lat, lng);
 };
 
 export const saveLastLocation = async (coords: GPSCoords, geo: GeoInfo) => {
@@ -163,12 +168,12 @@ export const getLastLocation = async (): Promise<CachedLocation | null> => {
 };
 
 export const getJurisdictionLabel = (info: GeoInfo): string => {
-  if (info.city && info.stateCode !== 'UNKNOWN') {
-    return `${info.city}, ${info.stateCode}`;
-  }
-  if (info.stateCode !== 'UNKNOWN') {
-    return info.stateCode;
-  }
+  const parts = [];
+  if (info.city) parts.push(info.city);
+  if (info.district && info.district !== info.city) parts.push(info.district);
+  if (info.stateCode && info.stateCode !== 'UNKNOWN') parts.push(info.stateCode);
+
+  if (parts.length > 0) return parts.join(', ');
   return 'India (General)';
 };
 

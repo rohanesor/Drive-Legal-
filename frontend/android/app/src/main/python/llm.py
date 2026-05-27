@@ -90,6 +90,9 @@ def generate_response(
     language: str,
     max_tokens: int = 256,
     history: List[Dict] = None,
+    penalties: List[Dict] = None,
+    city: str = None,
+    district: str = None,
 ) -> Optional[str]:
     """
     Generate a response using TinyLlama with law context.
@@ -101,6 +104,9 @@ def generate_response(
         language: Response language
         max_tokens: Maximum response length
         history: Previous chat turns context
+        penalties: Retrieved penalty details
+        city: Geocoded city or taluk name
+        district: Geocoded district name
     
     Returns:
         Generated response text, or None if LLM unavailable
@@ -115,13 +121,47 @@ def generate_response(
         for law in laws
     ])
 
+    import json
+    penalties_text = ""
+    if penalties:
+        pen_entries = []
+        for p in penalties:
+            first = p.get('first_offense', 'N/A')
+            second = p.get('second_offense', '')
+            details = p.get('additional_details', '')
+            sec = p.get('section', '')
+            
+            p_text = f"- Section {sec}: First offense - {first}"
+            if second:
+                p_text += f", Repeat offense - {second}"
+            if details:
+                if details.startswith('{'):
+                    try:
+                        d_json = json.loads(details)
+                        veh = d_json.get('vehicle_type', 'All vehicles')
+                        enf = d_json.get('enforcement_type', '')
+                        p_text += f" (Vehicle: {veh}"
+                        if enf:
+                            p_text += f", Enforcement: {enf}"
+                        p_text += ")"
+                    except:
+                        p_text += f" ({details})"
+                else:
+                    p_text += f" ({details})"
+            pen_entries.append(p_text)
+        penalties_text = "\n".join(pen_entries)
+
     # Build the system prompt with instructions
+    location_details = f"{city}, {district}, {state}" if city and district else district if district else state
     system_prompt = f"""You are TrafiAI (DriveLegal), an expert Indian traffic law assistant.
-User's State: {state}
+User's Location: {location_details}
 Language preference: {language}
 
 Relevant Laws:
 {laws_text}
+
+Specific Fine Amounts for user's location:
+{penalties_text}
 
 Rules:
 - CRITICAL: Auto-detect the user's language. Reply in the SAME language they used.
@@ -130,7 +170,7 @@ Rules:
   - English input → English response
   - Mixed language → match their dominant language
 - Always cite the relevant section of the Motor Vehicles Act
-- Provide state-specific penalty amounts
+- State-Specific and Localized Penalties: Quote the localized fine amounts for the user's location exactly as provided in the Fine Amounts section above. Prioritize city/taluk rules over general state/national rules.
 - If the query is vague, give a brief answer AND ask 1-2 follow-up questions
 - Be conversational, friendly, and helpful
 - If unsure, say "I recommend checking with your local RTO"

@@ -30,6 +30,8 @@ export interface QueryPayload {
     lat: number;
     lng: number;
     state: string;         // State code (TN, KN, etc.)
+    city?: string;         // Local city or taluk name
+    district?: string;     // Local state district name
   };
   language: string;        // 'en', 'ta', or 'hi'
   history?: { role: string; content: string }[];
@@ -44,6 +46,8 @@ export interface ZoneCheckPayload {
     lat: number;
     lng: number;
     state: string;
+    city?: string;
+    district?: string;
   };
 }
 

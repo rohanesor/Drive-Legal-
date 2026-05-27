@@ -206,7 +206,9 @@ export const ChatScreen = ({ navigation, route }: any) => {
         location: {
           lat: location?.latitude || 0,
           lng: location?.longitude || 0,
-          state: currentState
+          state: currentState,
+          city: geoInfo?.city || undefined,
+          district: geoInfo?.district || undefined,
         },
         language,
         history: chatHistory,

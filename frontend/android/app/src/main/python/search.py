@@ -135,9 +135,12 @@ def search(query: str, top_k: int = 3, state: str = None) -> List[Dict]:
     Returns:
         List of law dictionaries with similarity scores
     """
+    import json
     index = _load_faiss_index()
-    if index is None:
-        # FAISS not available, use keyword fallback directly
+    model = _load_embedding_model()
+    
+    if index is None or model is None:
+        # FAISS or embedding model not available, use keyword fallback directly
         return keyword_fallback(query, state)
 
     # Convert query to vector
@@ -161,9 +164,18 @@ def search(query: str, top_k: int = 3, state: str = None) -> List[Dict]:
             row = cursor.fetchone()
             if row:
                 result = dict(row)
-                # Convert distance to similarity score (0-1)
-                result['similarity'] = max(0.0, float(1 - distances[0][i]))
-                results.append(result)
+                
+                # Filter by active state context
+                states_str = result.get('states', '[]')
+                try:
+                    states_list = json.loads(states_str) if states_str else []
+                except:
+                    states_list = []
+                
+                if not states_list or not state or state in states_list:
+                    # Convert distance to similarity score (0-1)
+                    result['similarity'] = max(0.0, float(1 - distances[0][i]))
+                    results.append(result)
 
     conn.close()
 

@@ -14,7 +14,8 @@ import {
 import { useSelector } from 'react-redux';
 import type { RootState } from '../store';
 import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS, GLASS } from '../constants/theme';
-import { getStateName } from '../services/locationService';
+import { getStateName, getJurisdictionLabel } from '../services/locationService';
+import { useLocation } from '../context/LocationContext';
 import { Gauge, Zap, HardHat, UserCheck, CreditCard, ShieldCheck, AlertTriangle, Package, FileText, MapPin, FolderOpen, Smartphone, Wine, Calculator, Wallet, SlidersHorizontal, Repeat, Bus, Clock, List, AlertCircle, Sparkles, ChevronRight, CheckSquare, Square } from 'lucide-react-native';
 import { executeQuery } from '../services/pythonBridge';
 
@@ -51,6 +52,7 @@ const parseFine = (fineText: string | null | undefined): number => {
 
 export const ChallanCalculatorScreen = ({ navigation }: any) => {
   const userState = useSelector((state: RootState) => state.settings.state);
+  const { location, geoInfo } = useLocation();
 
   // Calculator selections
   const [violations, setViolations] = useState<Violation[]>([]);
@@ -111,6 +113,13 @@ export const ChallanCalculatorScreen = ({ navigation }: any) => {
           action: 'get_penalties',
           state: userState,
           language: 'en',
+          location: {
+            lat: location?.latitude || 0,
+            lng: location?.longitude || 0,
+            state: userState,
+            city: geoInfo?.city || undefined,
+            district: geoInfo?.district || undefined,
+          }
         } as any);
         if (response.status === 'success' && (response as any).penalties) {
           const dbPenalties = (response as any).penalties;
@@ -148,7 +157,7 @@ export const ChallanCalculatorScreen = ({ navigation }: any) => {
     };
 
     fetchPenalties();
-  }, [userState]);
+  }, [userState, location, geoInfo]);
 
   // Recalculate totals whenever selection or toggles change
   useEffect(() => {
@@ -207,7 +216,7 @@ export const ChallanCalculatorScreen = ({ navigation }: any) => {
           <View>
             <Text style={styles.headerTitle}>Challan Calculator</Text>
             <Text style={styles.headerSub}>
-              <MapPin size={11} color={COLORS.cyan} /> {getStateName(userState)} Jurisdiction
+              <MapPin size={11} color={COLORS.cyan} /> {geoInfo ? getJurisdictionLabel(geoInfo) : getStateName(userState)} Jurisdiction
             </Text>
           </View>
         </View>
@@ -228,7 +237,7 @@ export const ChallanCalculatorScreen = ({ navigation }: any) => {
             </View>
           </View>
           <Text style={styles.loadingTitle}>Loading Traffic Laws</Text>
-          <Text style={styles.loadingText}>{getStateName(userState)} penalty database</Text>
+          <Text style={styles.loadingText}>{geoInfo ? getJurisdictionLabel(geoInfo) : getStateName(userState)} penalty database</Text>
         </Animated.View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -364,7 +373,7 @@ export const ChallanCalculatorScreen = ({ navigation }: any) => {
                 <AlertCircle size={36} color={COLORS.textSecondary} />
               </View>
               <Text style={styles.noViolationsTitle}>No Laws Found</Text>
-              <Text style={styles.loadingText}>No structured laws found for {getStateName(userState)} in the local database.</Text>
+              <Text style={styles.loadingText}>No structured laws found for {geoInfo ? getJurisdictionLabel(geoInfo) : getStateName(userState)} in the local database.</Text>
             </View>
           ) : (
             violations.map((violation) => {

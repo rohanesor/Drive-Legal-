@@ -23,7 +23,7 @@ import json
 import re
 from typing import Dict, List
 
-from database import initialize_database, get_laws, get_penalties, save_chat_history, get_all_penalties_by_state
+from database import initialize_database, get_laws, get_penalties, save_chat_history, get_all_penalties_by_state, get_localized_penalties
 from search import search
 from zones import check_zones
 from stt import transcribe_audio
@@ -60,8 +60,11 @@ def handle_query(json_payload: str) -> str:
         payload = json.loads(json_payload)
         action = payload.get('action')
         if action == 'get_penalties':
-            state = payload.get('state', 'TN')
-            penalties = get_all_penalties_by_state(state)
+            location = payload.get('location', {})
+            state = payload.get('state') or location.get('state') or 'TN'
+            city = location.get('city')
+            district = location.get('district')
+            penalties = get_localized_penalties(state, city, district)
             return json.dumps({'status': 'success', 'penalties': penalties})
 
         result = execute_pipeline(payload)
@@ -128,6 +131,8 @@ def execute_pipeline(payload: Dict) -> Dict:
     location = payload.get('location', {})
     language = payload.get('language', 'en')
     state = location.get('state', 'TN')
+    city = location.get('city')
+    district = location.get('district')
     history = payload.get('history', [])
 
     # STEP 1: Convert audio to text if needed
@@ -158,15 +163,15 @@ def execute_pipeline(payload: Dict) -> Dict:
     for law in laws:
         violation_type = law.get('violation_type', '')
         if violation_type:
-            penalties.extend(get_penalties(violation_type, state))
+            penalties.extend(get_penalties(violation_type, state, city, district))
 
     # Calculate confidence from search similarity score
     confidence = laws[0].get('similarity', 0) if laws else 0
 
     # STEP 4: Generate response (LLM with template fallback)
-    response_text = generate_response(text, laws, state, language, history=history)
+    response_text = generate_response(text, laws, state, language, history=history, penalties=penalties, city=city, district=district)
     if not response_text:
-        response_text = build_template_response(laws, penalties, state)
+        response_text = build_template_response(laws, penalties, state, city, district)
 
     # STEP 5: Validate citations to prevent hallucinations
     source_sections = validate_citations(response_text, laws)
@@ -185,7 +190,7 @@ def execute_pipeline(payload: Dict) -> Dict:
     }
 
 
-def build_template_response(laws: List[Dict], penalties: List[Dict], state: str) -> str:
+def build_template_response(laws: List[Dict], penalties: List[Dict], state: str, city: str = None, district: str = None) -> str:
     """
     Build a response using a template (fallback when LLM is unavailable).
     
@@ -194,7 +199,7 @@ def build_template_response(laws: List[Dict], penalties: List[Dict], state: str)
     
     Format:
     "According to [law section]: [law description].
-     Penalty in [state]: First offense - [amount], Second offense - [amount]."
+     Penalty in [location]: First offense - [amount], Second offense - [amount]."
     """
     if not laws:
         return "I don't have information on that topic yet. Try asking about traffic violations, fines, or license procedures."
@@ -205,9 +210,27 @@ def build_template_response(laws: List[Dict], penalties: List[Dict], state: str)
         p = penalties[0]
         first = p.get('first_offense', 'N/A')
         second = p.get('second_offense', 'N/A')
-        penalty_text = f"\n\nPenalty in {state}: First offense - {first}, Second offense - {second}."
-        if p.get('additional_details'):
-            penalty_text += f" {p['additional_details']}"
+        
+        loc_label = f"{city}, {district}" if city and district else district if district else state
+        penalty_text = f"\n\nPenalty in {loc_label}: First offense - {first}"
+        if second:
+            penalty_text += f", Second offense - {second}"
+            
+        details = p.get('additional_details', '')
+        if details:
+            if details.startswith('{'):
+                try:
+                    d_json = json.loads(details)
+                    veh = d_json.get('vehicle_type', 'All vehicles')
+                    enf = d_json.get('enforcement_type', '')
+                    penalty_text += f" (Vehicle: {veh}"
+                    if enf:
+                        penalty_text += f", Enforcement: {enf}"
+                    penalty_text += ")"
+                except:
+                    penalty_text += f" ({details})"
+            else:
+                penalty_text += f" ({details})"
 
     return f"According to {law.get('section', 'the Motor Vehicles Act')}: {law.get('description', '')}.{penalty_text}"
 
