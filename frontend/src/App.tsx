@@ -14,6 +14,7 @@ import { ChallanCalculatorScreen } from './screens/ChallanCalculatorScreen';
 import { EmergencyScreen } from './screens/EmergencyScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { LocationScreen } from './screens/LocationScreen';
+import { VoiceAssistantScreen } from './screens/VoiceAssistantScreen';
 import { PaperProvider } from 'react-native-paper';
 import { COLORS } from './constants/theme';
 import { LocationProvider } from './context/LocationContext';
@@ -103,6 +104,11 @@ const AppContent = () => (
           name="Location"
           component={LocationScreen}
           options={{ title: 'Select Jurisdiction' }}
+        />
+        <Stack.Screen
+          name="VoiceAssistant"
+          component={VoiceAssistantScreen}
+          options={{ headerShown: false }}
         />
       </Stack.Navigator>
     </NavigationContainer>

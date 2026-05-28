@@ -15,7 +15,8 @@ public class DriveLegalPackage implements ReactPackage {
     public List<NativeModule> createNativeModules(ReactApplicationContext reactContext) {
         return Arrays.<NativeModule>asList(
             new PythonBridgeModule(reactContext),
-            new DriveLegalLocationServiceModule(reactContext)
+            new DriveLegalLocationServiceModule(reactContext),
+            new DriveLegalTTSModule(reactContext)
         );
     }
 

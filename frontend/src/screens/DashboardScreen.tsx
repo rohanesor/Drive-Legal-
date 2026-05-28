@@ -15,7 +15,7 @@ import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS, GLASS } from '../constants/
 import { useLocation } from '../context/LocationContext';
 import { getJurisdictionLabel } from '../services/locationService';
 import { LocationMap } from '../components/LocationMap';
-import { MessageCircle, Calculator, MapPin, Phone, ShieldCheck, LocateFixed, Sparkles, ChevronRight, ArrowRight, Maximize2, AlertTriangle, Server } from 'lucide-react-native';
+import { MessageCircle, Calculator, MapPin, Phone, ShieldCheck, LocateFixed, Sparkles, ChevronRight, ArrowRight, Maximize2, AlertTriangle, Server, Mic } from 'lucide-react-native';
 
 const FEATURES = [
   {
@@ -27,6 +27,17 @@ const FEATURES = [
     badge: 'AI Assistant',
     desc: 'Consult our on-device traffic law bot in English, Tamil, or Hindi. Gets verified database citations.',
     action: 'Launch Assistant',
+    accentColor: COLORS.cyan,
+  },
+  {
+    key: 'VoiceAssistant',
+    Icon: Mic,
+    iconBg: 'rgba(6, 182, 212, 0.15)',
+    iconColor: COLORS.cyan,
+    title: 'Voice Copilot',
+    badge: 'Hands-Free',
+    desc: 'Speak freely with DriveLegal in hands-free mode. Displays high-contrast, driving-safe HUD.',
+    action: 'Activate Voice Mode',
     accentColor: COLORS.cyan,
   },
   {
@@ -296,6 +307,15 @@ export const DashboardScreen = ({ navigation }: any) => {
           <Text style={styles.statusFooterText}>Offline DB: Active · Engine v1.0.0</Text>
         </View>
       </ScrollView>
+
+      {/* Floating Glowing Mic Button for driving-safe voice mode trigger */}
+      <TouchableOpacity
+        style={styles.floatingMicButton}
+        onPress={() => navigation.navigate('VoiceAssistant')}
+        activeOpacity={0.85}
+      >
+        <Mic size={24} color={COLORS.white} />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -478,4 +498,17 @@ const styles = StyleSheet.create({
     width: 5, height: 5, borderRadius: 2.5, backgroundColor: COLORS.success,
   },
   statusFooterText: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
+  floatingMicButton: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.cyan,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...SHADOWS.glow(COLORS.cyan),
+    zIndex: 999,
+  },
 });
