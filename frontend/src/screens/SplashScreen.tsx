@@ -77,12 +77,12 @@ export const SplashScreen = ({ navigation }: any) => {
         ]).start();
       });
     } else {
-      navigation.replace('Dashboard');
+      navigation.replace('Mobile');
     }
   };
 
   const handleSkip = () => {
-    navigation.replace('Dashboard');
+    navigation.replace('Mobile');
   };
 
   const roadTranslateX = roadAnim.interpolate({

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { COLORS, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 import { Map } from 'lucide-react-native';
@@ -352,6 +352,9 @@ const MAP_HTML = `
 </html>
 `;
 
+import { useAppMode } from '../hooks/useAppMode';
+import { Compass, Navigation } from 'lucide-react-native';
+
 export const LocationMap: React.FC<LocationMapProps> = ({
   currentLocation,
   zones = [],
@@ -359,6 +362,7 @@ export const LocationMap: React.FC<LocationMapProps> = ({
   interactive = true,
 }) => {
   const webViewRef = useRef<WebView>(null);
+  const { isCar } = useAppMode();
 
   const sendMessageToMap = useCallback((message: object) => {
     webViewRef.current?.postMessage(JSON.stringify(message));
@@ -382,10 +386,10 @@ export const LocationMap: React.FC<LocationMapProps> = ({
   }, [currentLocation, zones]);
 
   useEffect(() => {
-    if (currentLocation) {
+    if (currentLocation && !isCar) {
       sendMessageToMap({ type: 'location', lat: currentLocation.lat, lng: currentLocation.lng });
     }
-  }, [currentLocation, sendMessageToMap]);
+  }, [currentLocation, isCar, sendMessageToMap]);
 
   if (!currentLocation) {
     return (
@@ -393,6 +397,28 @@ export const LocationMap: React.FC<LocationMapProps> = ({
         <Map size={48} color={COLORS.textSecondary} />
         <Text style={styles.placeholderTitle}>No Location Data</Text>
         <Text style={styles.placeholderSub}>Enable GPS to see your position</Text>
+      </View>
+    );
+  }
+
+  // Optimized Car Mode view: Disable heavy WebViews completely to prevent OOM
+  if (isCar) {
+    return (
+      <View style={[styles.carContainer, { height }]}>
+        <View style={styles.carRow}>
+          <Compass size={40} color="#00E5FF" />
+          <View style={styles.carInfo}>
+            <Text style={styles.carInfoTitle}>ACTIVE NAVIGATION</Text>
+            <Text style={styles.carInfoCoords}>
+              {currentLocation.lat.toFixed(5)}°N, {currentLocation.lng.toFixed(5)}°E
+            </Text>
+            <Text style={styles.carInfoSub}>Web Map Disabled for Performance</Text>
+          </View>
+        </View>
+        <View style={styles.compassContainer}>
+          <Navigation size={32} color="#00E676" style={styles.arrow} />
+          <Text style={styles.compassLabel}>N</Text>
+        </View>
       </View>
     );
   }
@@ -423,6 +449,63 @@ const styles = StyleSheet.create({
   },
   map: {
     backgroundColor: '#0F172A',
+  },
+  carContainer: {
+    backgroundColor: '#000000',
+    borderWidth: 2,
+    borderColor: '#262626',
+    borderRadius: BORDER_RADIUS.medium,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+  },
+  carRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  carInfo: {
+    justifyContent: 'center',
+  },
+  carInfoTitle: {
+    color: '#00E5FF',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
+  carInfoCoords: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: 'bold',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    marginTop: 4,
+  },
+  carInfoSub: {
+    color: '#A3A3A3',
+    fontSize: 12,
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  compassContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 60,
+    height: 60,
+    backgroundColor: '#0A0A0A',
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: '#262626',
+  },
+  arrow: {
+    transform: [{ rotate: '45deg' }],
+  },
+  compassLabel: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '900',
+    position: 'absolute',
+    top: 4,
   },
   placeholder: {
     justifyContent: 'center',

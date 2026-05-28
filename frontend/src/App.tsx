@@ -8,17 +8,13 @@ import { convexClient } from './convex/client';
 import { syncService } from './services/syncService';
 import { setSyncStatus, setLastSync } from './store/convexSlice';
 import { SplashScreen } from './screens/SplashScreen';
-import { DashboardScreen } from './screens/DashboardScreen';
-import { ChatScreen } from './screens/ChatScreen';
-import { ChallanCalculatorScreen } from './screens/ChallanCalculatorScreen';
-import { EmergencyScreen } from './screens/EmergencyScreen';
-import { SettingsScreen } from './screens/SettingsScreen';
-import { LocationScreen } from './screens/LocationScreen';
-import { VoiceAssistantScreen } from './screens/VoiceAssistantScreen';
 import { PaperProvider } from 'react-native-paper';
 import { COLORS } from './constants/theme';
 import { LocationProvider } from './context/LocationContext';
 import { setupLocationListener, removeLocationListener, startLocationService } from './services/backgroundService';
+import { useAppMode } from './hooks/useAppMode';
+import { MobileNavigator } from './navigation/MobileNavigator';
+import { CarNavigator } from './navigation/CarNavigator';
 
 const Stack = createStackNavigator();
 
@@ -59,61 +55,30 @@ const SyncInitializer = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const AppContent = () => (
-  <PaperProvider>
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Splash"
-        screenOptions={{
-          headerStyle: { backgroundColor: COLORS.navy },
-          headerTintColor: '#ffffff',
-          headerTitleStyle: { fontWeight: 'bold' },
-        }}
-      >
-        <Stack.Screen
-          name="Splash"
-          component={SplashScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Dashboard"
-          component={DashboardScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Chat"
-          component={ChatScreen}
-          options={{ title: 'AI Legal Assistant' }}
-        />
-        <Stack.Screen
-          name="Calculator"
-          component={ChallanCalculatorScreen}
-          options={{ title: 'Challan Calculator' }}
-        />
-        <Stack.Screen
-          name="Emergency"
-          component={EmergencyScreen}
-          options={{ title: 'Emergency Services' }}
-        />
-        <Stack.Screen
-          name="Settings"
-          component={SettingsScreen}
-          options={{ title: 'Settings' }}
-        />
-        <Stack.Screen
-          name="Location"
-          component={LocationScreen}
-          options={{ title: 'Select Jurisdiction' }}
-        />
-        <Stack.Screen
-          name="VoiceAssistant"
-          component={VoiceAssistantScreen}
-          options={{ headerShown: false }}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
-  </PaperProvider>
-);
+const AppContent = () => {
+  const { mode } = useAppMode();
+
+  return (
+    <PaperProvider>
+      <NavigationContainer>
+        {mode === 'car' ? (
+          <CarNavigator />
+        ) : (
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen
+              name="Splash"
+              component={SplashScreen}
+            />
+            <Stack.Screen
+              name="Mobile"
+              component={MobileNavigator}
+            />
+          </Stack.Navigator>
+        )}
+      </NavigationContainer>
+    </PaperProvider>
+  );
+};
 
 const App = () => {
   useEffect(() => {

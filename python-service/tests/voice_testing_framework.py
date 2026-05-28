@@ -236,6 +236,7 @@ class VoiceTestingFramework:
                 }
             ]
         
+        results['total_scenarios'] = len(test_scenarios)
         for scenario in test_scenarios:
             question = scenario.get('question', '')
             language = scenario.get('language', 'en')
@@ -381,7 +382,7 @@ def run_voice_tests():
     with open(output_file, 'w') as f:
         json.dump(all_results, f, indent=2)
     
-    print(f"\n✓ Results saved to {output_file}")
+    print(f"\n[SUCCESS] Results saved to {output_file}")
 
 
 if __name__ == '__main__':

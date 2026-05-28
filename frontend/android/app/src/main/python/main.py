@@ -134,6 +134,7 @@ def execute_pipeline(payload: Dict) -> Dict:
     city = location.get('city')
     district = location.get('district')
     history = payload.get('history', [])
+    concise_mode = payload.get('concise_mode', False)
 
     # STEP 1: Convert audio to text if needed
     if audio_uri:
@@ -169,7 +170,12 @@ def execute_pipeline(payload: Dict) -> Dict:
     confidence = laws[0].get('similarity', 0) if laws else 0
 
     # STEP 4: Generate response (LLM with template fallback)
-    response_text = generate_response(text, laws, state, language, history=history, penalties=penalties, city=city, district=district)
+    response_text = generate_response(
+        text, laws, state, language, 
+        history=history, penalties=penalties, 
+        city=city, district=district, 
+        concise_mode=concise_mode
+    )
     if not response_text:
         response_text = build_template_response(laws, penalties, state, city, district)
 
@@ -386,13 +392,7 @@ def handle_zone_check(json_payload: str) -> str:
     Check if current GPS location triggers any zone alerts.
     
     Called by React Native whenever the GPS location changes
-    (every 30 seconds or 100 meters during background monitoring).
-    
-    Args:
-        json_payload: JSON string with action, location (lat, lng, state)
-    
-    Returns:
-        JSON string with zone alert info, or 'no_alert' if no zones triggered
+    (every 5 seconds in Car Mode, or 30 seconds in Mobile Mode).
     """
     try:
         payload = json.loads(json_payload)
@@ -400,8 +400,10 @@ def handle_zone_check(json_payload: str) -> str:
         lat = location.get('lat', 0)
         lng = location.get('lng', 0)
         state = location.get('state', 'TN')
+        heading = location.get('heading')
+        speed = location.get('speed', 0)
 
-        alerts = check_zones(lat, lng, state)
+        alerts = check_zones(lat, lng, state, heading=heading, speed=speed)
 
         if alerts:
             return json.dumps(alerts[0])  # Return first triggered alert

@@ -18,6 +18,8 @@ interface SettingsState {
   notificationsEnabled: boolean;
   locationAlertsEnabled: boolean;
   showDisclaimerAlways: boolean;
+  preferredMode: 'auto' | 'mobile' | 'car';
+  autoModeDetection: boolean;
 }
 
 const initialState: SettingsState = {
@@ -27,6 +29,8 @@ const initialState: SettingsState = {
   notificationsEnabled: true,
   locationAlertsEnabled: false,
   showDisclaimerAlways: false,
+  preferredMode: 'auto',
+  autoModeDetection: true,
 };
 
 const settingsSlice = createSlice({
@@ -51,6 +55,12 @@ const settingsSlice = createSlice({
     toggleDisclaimerAlways: (state) => {
       state.showDisclaimerAlways = !state.showDisclaimerAlways;
     },
+    setPreferredMode: (state, action: PayloadAction<'auto' | 'mobile' | 'car'>) => {
+      state.preferredMode = action.payload;
+    },
+    toggleAutoModeDetection: (state) => {
+      state.autoModeDetection = !state.autoModeDetection;
+    },
     // Load settings from AsyncStorage on app startup
     loadSettings: (state, action: PayloadAction<Partial<SettingsState>>) => {
       return { ...state, ...action.payload };
@@ -65,6 +75,8 @@ export const {
   toggleNotifications,
   toggleLocationAlerts,
   toggleDisclaimerAlways,
+  setPreferredMode,
+  toggleAutoModeDetection,
   loadSettings,
 } = settingsSlice.actions;
 

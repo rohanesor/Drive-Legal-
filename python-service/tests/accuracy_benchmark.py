@@ -84,7 +84,7 @@ class AccuracyBenchmark:
                     'report': report,
                     'detailed_results': self.test_details
                 }, f, indent=2)
-            print(f"\n✓ Results saved to {output_filepath}")
+            print(f"\n[SUCCESS] Results saved to {output_filepath}")
         
         # Print summary
         self._print_summary(report)
@@ -303,33 +303,33 @@ class AccuracyBenchmark:
         print("ACCURACY BENCHMARK RESULTS")
         print("="*80)
         
-        print(f"\n📊 OVERALL ACCURACY: {report['overall_accuracy_pct']}%")
-        print(f"   Target: 90% | Status: {'✅ PASS' if report['target_met'] else '❌ FAIL'}")
+        print(f"\nOVERALL ACCURACY: {report['overall_accuracy_pct']}%")
+        print(f"   Target: 90% | Status: {'[PASS]' if report['target_met'] else '[FAIL]'}")
         
-        print(f"\n📈 DETAILED BREAKDOWN:")
+        print(f"\nDETAILED BREAKDOWN:")
         print(f"   Correct:  {report['correct_answers']} / {report['total_questions']}")
         print(f"   Partial:  {report['partial_answers']}")
         print(f"   Incorrect: {report['incorrect_answers']}")
         print(f"   Errors:   {report['errors']}")
         
-        print(f"\n🏷️ BY CATEGORY:")
+        print(f"\nBY CATEGORY:")
         for cat, acc in sorted(report['by_category'].items()):
-            status = "✓" if acc >= 90 else "✗"
+            status = "[PASS]" if acc >= 90 else "[FAIL]"
             print(f"   {status} {cat}: {acc}%")
         
-        print(f"\n🌍 BY LANGUAGE:")
+        print(f"\nBY LANGUAGE:")
         for lang, acc in sorted(report['by_language'].items()):
-            status = "✓" if acc >= 85 else "✗"
+            status = "[PASS]" if acc >= 85 else "[FAIL]"
             print(f"   {status} {lang}: {acc}%")
         
-        print(f"\n🏛️ BY STATE:")
+        print(f"\nBY STATE:")
         for state, acc in sorted(report['by_state'].items()):
-            status = "✓" if acc >= 85 else "✗"
+            status = "[PASS]" if acc >= 85 else "[FAIL]"
             print(f"   {status} {state}: {acc}%")
         
-        print(f"\n⭐ BY DIFFICULTY:")
+        print(f"\nBY DIFFICULTY:")
         for diff, acc in sorted(report['by_difficulty'].items()):
-            status = "✓" if acc >= 85 else "✗"
+            status = "[PASS]" if acc >= 85 else "[FAIL]"
             print(f"   {status} {diff}: {acc}%")
         
         print("\n" + "="*80)

@@ -13,6 +13,7 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../store';
 import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS, GLASS } from '../constants/theme';
 import { useLocation } from '../context/LocationContext';
+import { useAppMode } from '../hooks/useAppMode';
 import { getJurisdictionLabel } from '../services/locationService';
 import { LocationMap } from '../components/LocationMap';
 import { MessageCircle, Calculator, MapPin, Phone, ShieldCheck, LocateFixed, Sparkles, ChevronRight, ArrowRight, Maximize2, AlertTriangle, Server, Mic } from 'lucide-react-native';
@@ -137,6 +138,7 @@ const FeatureCard = ({ feature, onPress, index }: { feature: typeof FEATURES[0];
 
 export const DashboardScreen = ({ navigation }: any) => {
   const { location, geoInfo, isLoading, refreshLocation, isMocked } = useLocation();
+  const { switchMode } = useAppMode();
   const activeAlert = useSelector((state: RootState) => state.alerts.activeAlert);
 
   const locationText = geoInfo ? getJurisdictionLabel(geoInfo) : 'Detecting...';
@@ -194,15 +196,24 @@ export const DashboardScreen = ({ navigation }: any) => {
             <Text style={styles.headerTagline}>Traffic Law Intelligence</Text>
           </View>
         </View>
-        <TouchableOpacity
-          style={styles.locationBadge}
-          onPress={() => navigation.navigate('Location')}
-          activeOpacity={0.8}
-        >
-          <LocateFixed size={14} color={isMocked ? COLORS.warning : COLORS.cyan} />
-          <Text style={styles.locationText}>{locationText}</Text>
-          <View style={[styles.statusDot, isMocked && { backgroundColor: COLORS.warning }]} />
-        </TouchableOpacity>
+        <View style={styles.headerRightActions}>
+          <TouchableOpacity
+            style={styles.carModePill}
+            onPress={() => switchMode('car')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.carModePillText}>🚗 CAR</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.locationBadge}
+            onPress={() => navigation.navigate('Location')}
+            activeOpacity={0.8}
+          >
+            <LocateFixed size={14} color={isMocked ? COLORS.warning : COLORS.cyan} />
+            <Text style={styles.locationText}>{locationText}</Text>
+            <View style={[styles.statusDot, isMocked && { backgroundColor: COLORS.warning }]} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -336,6 +347,26 @@ const styles = StyleSheet.create({
   },
   headerText: { ...TYPOGRAPHY.h3, color: COLORS.white, fontWeight: 'bold' },
   headerTagline: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, fontSize: 10, marginTop: 1 },
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  carModePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: BORDER_RADIUS.round,
+    backgroundColor: 'rgba(0, 229, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 229, 255, 0.2)',
+  },
+  carModePillText: {
+    ...TYPOGRAPHY.caption,
+    color: '#00E5FF',
+    fontWeight: 'bold',
+  },
   locationBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     ...GLASS.light,

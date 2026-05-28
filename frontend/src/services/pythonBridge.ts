@@ -32,9 +32,12 @@ export interface QueryPayload {
     state: string;         // State code (TN, KN, etc.)
     city?: string;         // Local city or taluk name
     district?: string;     // Local state district name
+    heading?: number | null; // Driving heading for predictive checks
+    speed?: number;        // Current speed
   };
   language: string;        // 'en', 'ta', or 'hi'
   history?: { role: string; content: string }[];
+  concise_mode?: boolean;  // Concise responses for car mode HUD
 }
 
 /**
@@ -48,6 +51,8 @@ export interface ZoneCheckPayload {
     state: string;
     city?: string;
     district?: string;
+    heading?: number | null; // Driving heading for predictive checks
+    speed?: number;        // Current speed
   };
 }
 

@@ -92,23 +92,41 @@ def point_in_polygon(lat: float, lng: float, polygon: List[List[float]]) -> bool
     return inside
 
 
-def check_zones(lat: float, lng: float, state: str, last_state: str = None) -> List[Dict]:
+def calculate_bearing(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     """
-    Check if the user's current location triggers any zone alerts.
+    Calculate the bearing from coordinate 1 to coordinate 2 in degrees.
+    0 = North, 90 = East, 180 = South, 270 = West.
+    """
+    lat1_r, lng1_r, lat2_r, lng2_r = map(math.radians, [lat1, lng1, lat2, lng2])
+    d_lng = lng2_r - lng1_r
+    y = math.sin(d_lng) * math.cos(lat2_r)
+    x = math.cos(lat1_r) * math.sin(lat2_r) - math.sin(lat1_r) * math.cos(lat2_r) * math.cos(d_lng)
+    bearing = math.degrees(math.atan2(y, x))
+    return (bearing + 360) % 360
+
+
+def is_zone_ahead(lat: float, lng: float, heading: float, zone_lat: float, zone_lng: float) -> bool:
+    """
+    Checks if a target coordinate lies ahead of the user based on heading.
+    Returns True if target is within a 45 degree cone of heading.
+    """
+    if heading is None:
+        return True
+    bearing = calculate_bearing(lat, lng, zone_lat, zone_lng)
+    diff = abs(bearing - heading)
+    if diff > 180:
+        diff = 360 - diff
+    return diff <= 45
+
+
+def check_zones(lat: float, lng: float, state: str, last_state: str = None, heading: float = None, speed: float = 0) -> List[Dict]:
+    """
+    Check if the user's current location triggers any zone alerts, with predictive check.
     
     PROCESS:
     1. Check if user crossed a state border (laws change)
-    2. Check point-based zones (accident areas, schools) using distance
+    2. Check point-based zones (accident areas, schools) using distance & bearing check
     3. Check polygon-based zones (larger areas) using ray-casting
-    
-    Args:
-        lat: Current latitude
-        lng: Current longitude
-        state: Current state code
-        last_state: Previous state code (for border detection)
-    
-    Returns:
-        List of zone alert dictionaries (empty if no zones triggered)
     """
     alerts = []
 
@@ -120,10 +138,18 @@ def check_zones(lat: float, lng: float, state: str, last_state: str = None) -> L
     zones = get_zones(lat, lng, state)
 
     for zone in zones:
-        # Point-based zones: check if within radius
+        # Point-based zones: check if within radius & ahead
         if zone.get('center_lat') and zone.get('center_lng'):
             distance = haversine(lat, lng, zone['center_lat'], zone['center_lng'])
-            if distance <= zone.get('radius_meters', 500):
+            
+            # Predictive warning: warn 500m ahead if heading towards it
+            warning_threshold = zone.get('radius_meters', 500)
+            
+            if distance <= warning_threshold:
+                # If speed > 15 km/h, check if zone lies ahead of user
+                if speed > 15 and not is_zone_ahead(lat, lng, heading, zone['center_lat'], zone['center_lng']):
+                    continue  # Zone is behind or sideways, skip alert
+
                 alerts.append(create_zone_alert(zone, distance))
         # Polygon-based zones: check if inside polygon
         elif zone.get('polygon'):

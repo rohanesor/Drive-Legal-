@@ -9,6 +9,8 @@ export interface GPSCoords {
   accuracy: number | null;
   altitude: number | null;
   timestamp: number;
+  speed?: number | null;
+  heading?: number | null;
 }
 
 export interface GeoInfo {

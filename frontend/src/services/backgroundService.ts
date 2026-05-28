@@ -22,6 +22,7 @@ import { store } from '../store';
 import { addAlert, ZoneAlert } from '../store/alertSlice';
 import { addMessage } from '../store/chatSlice';
 import { checkZones } from './pythonBridge';
+import { predictiveEngine } from './predictiveEngine';
 
 const { DriveLegalLocationService } = NativeModules;
 
@@ -62,63 +63,21 @@ export const stopLocationService = async (): Promise<void> => {
  * Set up listeners for location update events from the Android service
  * 
  * When a location update arrives:
- * 1. Extract lat/lng from the event
- * 2. Call Python backend to check for zone alerts
- * 3. If an alert is found, dispatch it to Redux store
- * 4. Show a native alert dialog with "Learn More" option
+ * 1. Extract lat/lng, speed, heading
+ * 2. Delegate to predictiveEngine to handle zone checking & TTS alerts
  */
 export const setupLocationListener = (): void => {
   if (!eventEmitter) return;
 
   // Listen for GPS coordinate updates from the Android service
   eventEmitter.addListener('onLocationUpdate', async (data: any) => {
-    const { latitude, longitude } = data;
-    const { getState } = store;
-    const currentState = getState().settings.state;
+    const { latitude, longitude, speed, heading } = data;
 
-    // Check Python backend for zone alerts at this location
+    // Delegate execution to the predictive geo-fencing engine
     try {
-      const result = await checkZones({
-        action: 'check_zone',
-        location: { lat: latitude, lng: longitude, state: currentState },
-      });
-
-      // If a zone alert was found, dispatch it to Redux
-      if (result.status === 'zone_alert' && result.message) {
-        store.dispatch(addAlert({
-          id: Date.now().toString(),
-          zone_type: result.zone_type || 'custom',
-          zone_name: result.zone_name || 'Unknown Zone',
-          message: result.message,
-          suggested_query: result.suggested_query || '',
-          severity: (result.severity as 'low' | 'medium' | 'high') || 'medium',
-          timestamp: Date.now(),
-          dismissed: false,
-        }));
-
-        // Show native alert dialog
-        Alert.alert(
-          'DriveLegal Alert',
-          result.message,
-          [
-            { text: 'Dismiss', style: 'cancel' },
-            {
-              text: 'Learn More',
-              onPress: () => {
-                // Open chat with pre-filled question about this zone
-                store.dispatch(addMessage({
-                  id: Date.now().toString(),
-                  text: result.suggested_query || '',
-                  sender: 'user',
-                  timestamp: Date.now(),
-                }));
-              },
-            },
-          ]
-        );
-      }
+      await predictiveEngine.handleLocationUpdate(latitude, longitude, speed, heading);
     } catch (error) {
-      console.error('Zone check error:', error);
+      console.error('Background location engine update error:', error);
     }
   });
 };

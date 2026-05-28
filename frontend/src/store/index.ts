@@ -3,6 +3,7 @@ import chatReducer from './chatSlice';
 import settingsReducer from './settingsSlice';
 import alertReducer from './alertSlice';
 import convexReducer from './convexSlice';
+import appModeReducer from './appModeSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     settings: settingsReducer,
     alerts: alertReducer,
     convex: convexReducer,
+    appMode: appModeReducer,
   },
 });
 

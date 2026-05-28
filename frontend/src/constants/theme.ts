@@ -155,3 +155,30 @@ export const GRADIENTS = {
   darkNavy: ['#0F172A', '#1E293B'],
   premiumDark: ['#0F172A', '#0C1426', '#070D19'],
 };
+
+export const CAR_COLORS = {
+  background: '#000000',      // Pure black for OLED power savings & high contrast
+  surface: '#0A0A0A',         // High-contrast dark grey surface
+  surfaceHover: '#161616',    // High-contrast touch feedback state
+  text: '#FFFFFF',            // Maximum contrast white text
+  textSecondary: '#A3A3A3',   // Muted gray subtexts
+  accent: '#00E5FF',          // High-visibility cyan
+  warning: '#FFD600',         // Vibrant safety yellow
+  danger: '#FF1744',          // Brilliant emergency red
+  success: '#00E676',         // High-contrast valid green
+  border: '#262626',          // Dark, defined borders
+};
+
+export const CAR_TYPOGRAPHY = {
+  speed: { fontSize: 72, fontWeight: '900' as const },     // High-glance speed display
+  alert: { fontSize: 24, fontWeight: '800' as const },      // Crucial alert texts
+  title: { fontSize: 20, fontWeight: '700' as const },      // Glanceable screen titles
+  label: { fontSize: 18, fontWeight: '700' as const },      // Glanceable buttons / action labels
+  status: { fontSize: 14, fontWeight: '600' as const },     // Small badge statuses
+};
+
+export const CAR_SPACING = {
+  touchTarget: 80,           // Massive tactile touch target sizing
+  buttonGap: 16,
+  padding: 24,
+};
