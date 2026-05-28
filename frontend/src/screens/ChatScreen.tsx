@@ -15,7 +15,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { convexClient } from '../convex/client';
 import { api } from '../../convex/_generated/api';
 import type { RootState, AppDispatch } from '../store';
-import { addMessage, setLoading, clearChat, setSuggestedPrompts } from '../store/chatSlice';
+import { addMessage, updateMessageText, setLoading, clearChat, setSuggestedPrompts } from '../store/chatSlice';
 import { dismissAlert } from '../store/alertSlice';
 import { executeQuery, QueryPayload, QueryResult } from '../services/pythonBridge';
 import { useLocation } from '../context/LocationContext';
@@ -137,6 +137,57 @@ export const ChatScreen = ({ navigation, route }: any) => {
   const locationName = geoInfo ? getJurisdictionLabel(geoInfo) : 'Detecting...';
 
   const flatListRef = useRef<FlatList>(null);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    let animation: Animated.CompositeAnimation;
+    if (loading) {
+      animation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 1.25, duration: 600, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1.0, duration: 600, useNativeDriver: true }),
+        ])
+      );
+      animation.start();
+    } else {
+      pulseAnim.setValue(1);
+    }
+    return () => {
+      if (animation) animation.stop();
+    };
+  }, [loading]);
+
+  const streamBotResponse = (
+    fullText: string,
+    sourceSections?: string[],
+    confidence?: number,
+    suggestedPromptsList?: string[]
+  ) => {
+    const messageId = (Date.now() + 1).toString();
+    
+    dispatch(addMessage({
+      id: messageId,
+      text: '',
+      sender: 'bot',
+      timestamp: Date.now(),
+      source_sections: sourceSections,
+      confidence: confidence,
+      suggested_prompts: suggestedPromptsList || []
+    }));
+    
+    let currentLength = 0;
+    const speed = 15;
+    
+    const interval = setInterval(() => {
+      currentLength += 2;
+      if (currentLength >= fullText.length) {
+        clearInterval(interval);
+        dispatch(updateMessageText({ id: messageId, text: fullText }));
+      } else {
+        dispatch(updateMessageText({ id: messageId, text: fullText.substring(0, currentLength) }));
+      }
+    }, speed);
+  };
 
   useEffect(() => {
     checkDisclaimer();
@@ -185,14 +236,7 @@ export const ChatScreen = ({ navigation, route }: any) => {
             history: chatHistory,
           } as any) as any;
 
-          dispatch(addMessage({
-            id: (Date.now() + 1).toString(),
-            text: result.response,
-            sender: 'bot',
-            timestamp: Date.now(),
-            suggested_prompts: result.suggestions || []
-          }));
-          dispatch(setLoading(false));
+          streamBotResponse(result.response, undefined, undefined, result.suggestions || []);
           return;
         } catch (e) {
           console.warn("Claude failed, falling back...");
@@ -216,15 +260,8 @@ export const ChatScreen = ({ navigation, route }: any) => {
 
       const result: QueryResult = await executeQuery(payload);
 
-      dispatch(addMessage({
-        id: (Date.now() + 1).toString(),
-        text: (result as any).response_text || (result as any).fallback_response_text || (result as any).message || 'I encountered an issue. Please try again.',
-        sender: 'bot',
-        timestamp: Date.now(),
-        source_sections: result.source_sections,
-        confidence: result.confidence,
-        suggested_prompts: (result as any).suggested_prompts || []
-      }));
+      const botText = (result as any).response_text || (result as any).fallback_response_text || (result as any).message || 'I encountered an issue. Please try again.';
+      streamBotResponse(botText, result.source_sections, result.confidence, (result as any).suggested_prompts || []);
 
       if (showDisclaimer) {
         await setDisclaimerShown();
@@ -251,7 +288,12 @@ export const ChatScreen = ({ navigation, route }: any) => {
             <ChevronRight size={24} color={COLORS.white} style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
           <View>
-            <Text style={styles.headerTitle}>AI Legal Assistant</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.headerTitle}>TrafiAI Assistant</Text>
+              <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                <Sparkles size={16} color={COLORS.cyan} />
+              </Animated.View>
+            </View>
             <View style={styles.locationRow}>
               <MapPin size={12} color={COLORS.cyan} />
               <Text style={styles.locationTxt}>{locationName}</Text>
@@ -277,6 +319,10 @@ export const ChatScreen = ({ navigation, route }: any) => {
           ref={flatListRef}
           data={messages}
           keyExtractor={(item) => item.id}
+          removeClippedSubviews={Platform.OS === 'android'}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          initialNumToRender={8}
           renderItem={({ item }) => (
             <ChatMessage
               text={item.text}

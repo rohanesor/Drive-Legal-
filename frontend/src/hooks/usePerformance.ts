@@ -3,8 +3,8 @@ import { useAppMode } from './useAppMode';
 import { Animated } from 'react-native';
 
 export const usePerformance = () => {
-  const { preferences } = useAppMode();
-  const isReducedAnimation = preferences.reducedAnimations;
+  const { preferences, isCar } = useAppMode();
+  const isReducedAnimation = preferences.reducedAnimations || isCar;
 
   /**
    * Safe animation configuration wrapper.

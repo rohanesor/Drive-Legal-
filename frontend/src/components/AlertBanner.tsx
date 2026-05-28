@@ -49,13 +49,18 @@ export const AlertBanner = ({
   onDismiss,
 }: AlertBannerProps) => {
   const colors = severityColors[severity];
-  const slideAnim = useRef(new Animated.Value(-15)).current;
+  const slideAnim = useRef(new Animated.Value(-80)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.spring(slideAnim, { toValue: 0, friction: 8, tension: 40, useNativeDriver: true }),
-      Animated.timing(opacityAnim, { toValue: 1, duration: 250, useNativeDriver: true }),
+      Animated.spring(slideAnim, { 
+        toValue: 0, 
+        friction: 5, 
+        tension: 80, 
+        useNativeDriver: true 
+      }),
+      Animated.timing(opacityAnim, { toValue: 1, duration: 350, useNativeDriver: true }),
     ]).start();
   }, []);
 

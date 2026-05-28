@@ -200,7 +200,17 @@ export const CarDashboardScreen = () => {
 
       {/* 2. Main HUD speedometer Display */}
       <View style={styles.hudContainer}>
-        <View style={styles.speedometer}>
+        <View style={[
+          styles.speedometer,
+          { 
+            borderColor: isSpeeding ? CAR_COLORS.danger : CAR_COLORS.success,
+            shadowColor: isSpeeding ? CAR_COLORS.danger : CAR_COLORS.success,
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.55,
+            shadowRadius: 22,
+            elevation: 10
+          }
+        ]}>
           <Text style={styles.speedLabel}>SPEED</Text>
           <Text style={[
             styles.speedValue, 
@@ -209,7 +219,16 @@ export const CarDashboardScreen = () => {
             {currentSpeed}
           </Text>
           <Text style={styles.speedUnit}>km/h</Text>
-          <Text style={styles.limitLabel}>LIMIT {speedLimit}</Text>
+          <Text style={[
+            styles.limitLabel,
+            isSpeeding && { 
+              color: CAR_COLORS.danger,
+              borderColor: 'rgba(255, 23, 68, 0.4)',
+              backgroundColor: 'rgba(255, 23, 68, 0.12)'
+            }
+          ]}>
+            LIMIT {speedLimit}
+          </Text>
         </View>
 
         {/* Glowing safety HUD alert banner */}
@@ -468,9 +487,14 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   speedometer: {
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    borderWidth: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
+    backgroundColor: '#070D19',
   },
   speedLabel: {
     color: CAR_COLORS.textSecondary,

@@ -7,6 +7,7 @@ import { Map } from 'lucide-react-native';
 interface MapLocation {
   lat: number;
   lng: number;
+  heading?: number;
 }
 
 interface ZoneOverlay {
@@ -403,21 +404,37 @@ export const LocationMap: React.FC<LocationMapProps> = ({
 
   // Optimized Car Mode view: Disable heavy WebViews completely to prevent OOM
   if (isCar) {
+    const heading = currentLocation.heading !== undefined && currentLocation.heading !== null
+      ? currentLocation.heading
+      : 0;
+
+    const getHeadingDirection = (deg: number) => {
+      const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      const idx = Math.round(((deg % 360) + 360) % 360 / 45) % 8;
+      return directions[idx];
+    };
+
     return (
       <View style={[styles.carContainer, { height }]}>
         <View style={styles.carRow}>
-          <Compass size={40} color="#00E5FF" />
+          <Compass size={40} color="#00E5FF" style={{ ...SHADOWS.glow('#00E5FF') }} />
           <View style={styles.carInfo}>
-            <Text style={styles.carInfoTitle}>ACTIVE NAVIGATION</Text>
+            <Text style={styles.carInfoTitle}>TACTICAL TELEMETRY</Text>
             <Text style={styles.carInfoCoords}>
               {currentLocation.lat.toFixed(5)}°N, {currentLocation.lng.toFixed(5)}°E
             </Text>
-            <Text style={styles.carInfoSub}>Web Map Disabled for Performance</Text>
+            <Text style={styles.carInfoSub}>HEADING: {heading.toFixed(0)}° {getHeadingDirection(heading)}</Text>
           </View>
         </View>
-        <View style={styles.compassContainer}>
-          <Navigation size={32} color="#00E676" style={styles.arrow} />
-          <Text style={styles.compassLabel}>N</Text>
+        <View style={[styles.compassContainer, { ...SHADOWS.glow('#00E676') }]}>
+          <Navigation 
+            size={32} 
+            color="#00E676" 
+            style={{ 
+              transform: [{ rotate: `${heading - 45}deg` }] 
+            }} 
+          />
+          <Text style={styles.compassLabel}>{getHeadingDirection(heading)}</Text>
         </View>
       </View>
     );

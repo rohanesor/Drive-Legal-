@@ -154,6 +154,9 @@ export const GRADIENTS = {
   errorRose: ['#EF4444', '#E11D48'],
   darkNavy: ['#0F172A', '#1E293B'],
   premiumDark: ['#0F172A', '#0C1426', '#070D19'],
+  cyberpunkNeon: ['#A855F7', '#06B6D4'],
+  teslaCore: ['#DC2626', '#0A0A0A'],
+  electricViolet: ['#6366F1', '#A855F7'],
 };
 
 export const CAR_COLORS = {

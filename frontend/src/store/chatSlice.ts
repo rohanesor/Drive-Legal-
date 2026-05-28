@@ -42,6 +42,12 @@ const chatSlice = createSlice({
         state.suggestedPrompts = action.payload.suggested_prompts;
       }
     },
+    updateMessageText: (state, action: PayloadAction<{ id: string; text: string }>) => {
+      const msg = state.messages.find(m => m.id === action.payload.id);
+      if (msg) {
+        msg.text = action.payload.text;
+      }
+    },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
     },
@@ -60,6 +66,7 @@ const chatSlice = createSlice({
 
 export const {
   addMessage,
+  updateMessageText,
   setLoading,
   setSuggestedPrompts,
   clearChat,
