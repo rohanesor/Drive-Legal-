@@ -15,10 +15,10 @@
  * - Medium: Orange (caution)
  * - High: Red (urgent)
  */
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Info, AlertTriangle, AlertCircle, X } from 'lucide-react-native';
-import { COLORS } from '../constants/theme';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { Info, AlertTriangle, AlertCircle, X, ArrowRight } from 'lucide-react-native';
+import { COLORS, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 
 interface AlertBannerProps {
   message: string;
@@ -49,57 +49,95 @@ export const AlertBanner = ({
   onDismiss,
 }: AlertBannerProps) => {
   const colors = severityColors[severity];
+  const slideAnim = useRef(new Animated.Value(-15)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(slideAnim, { toValue: 0, friction: 8, tension: 40, useNativeDriver: true }),
+      Animated.timing(opacityAnim, { toValue: 1, duration: 250, useNativeDriver: true }),
+    ]).start();
+  }, []);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg, borderColor: colors.border }]}>
-      {/* Warning icon */}
-      <SeverityIcon severity={severity} color={colors.text} size={20} />
+    <Animated.View style={[
+      styles.container, 
+      { 
+        backgroundColor: colors.bg, 
+        borderColor: colors.border,
+        opacity: opacityAnim,
+        transform: [{ translateY: slideAnim }]
+      }
+    ]}>
+      {/* Warning icon and Alert message text row */}
+      <View style={styles.contentRow}>
+        <SeverityIcon severity={severity} color={colors.text} size={18} />
+        <Text style={[styles.message, { color: colors.text }]}>{message}</Text>
+      </View>
       
-      {/* Alert message text */}
-      <Text style={[styles.message, { color: colors.text }]}>{message}</Text>
-      
-      {/* Action buttons */}
-      <View style={styles.actions}>
-        <TouchableOpacity onPress={onLearnMore} style={styles.learnMoreButton}>
+      {/* Separator and Action buttons row */}
+      <View style={styles.actionRow}>
+        <TouchableOpacity 
+          onPress={onLearnMore} 
+          style={[styles.learnMoreButton, { backgroundColor: 'rgba(0,0,0,0.05)' }]}
+          activeOpacity={0.7}
+        >
           <Text style={[styles.learnMoreText, { color: colors.text }]}>Learn More</Text>
+          <ArrowRight size={12} color={colors.text} style={{ marginLeft: 2 }} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={onDismiss}>
-          <X size={20} color={colors.text} />
+        <TouchableOpacity onPress={onDismiss} style={styles.dismissButton}>
+          <X size={16} color={colors.text} />
         </TouchableOpacity>
       </View>
-    </View>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    borderRadius: BORDER_RADIUS.medium,
+    borderWidth: 1,
+    padding: 12,
+    marginHorizontal: 16,
+    marginTop: 10,
+    ...SHADOWS.subtle,
+  },
+  contentRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
-    padding: 12,
-    marginHorizontal: 12,
-    marginTop: 8,
-    borderRadius: 8,
-    borderWidth: 1,
+    gap: 8,
+    marginBottom: 8,
   },
   message: {
     flex: 1,
     fontSize: 13,
     lineHeight: 18,
+    fontWeight: '500',
   },
-  actions: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: 4,
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.04)',
+    paddingTop: 8,
   },
   learnMoreButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: BORDER_RADIUS.small,
   },
   learnMoreText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  dismissButton: {
+    padding: 4,
   },
 });
