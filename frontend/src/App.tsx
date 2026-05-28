@@ -17,6 +17,7 @@ import { LocationScreen } from './screens/LocationScreen';
 import { PaperProvider } from 'react-native-paper';
 import { COLORS } from './constants/theme';
 import { LocationProvider } from './context/LocationContext';
+import { setupLocationListener, removeLocationListener, startLocationService } from './services/backgroundService';
 
 const Stack = createStackNavigator();
 
@@ -109,6 +110,26 @@ const AppContent = () => (
 );
 
 const App = () => {
+  useEffect(() => {
+    // Start listeners and location service if enabled
+    setupLocationListener();
+    const checkAndStartBackgroundService = async () => {
+      const state = store.getState();
+      if (state.settings.locationAlertsEnabled) {
+        try {
+          await startLocationService();
+        } catch (e) {
+          console.error("Failed to autostart background GPS service on launch:", e);
+        }
+      }
+    };
+    checkAndStartBackgroundService();
+
+    return () => {
+      removeLocationListener();
+    };
+  }, []);
+
   return (
     <Provider store={store}>
       <LocationProvider>

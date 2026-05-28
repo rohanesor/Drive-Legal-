@@ -33,6 +33,7 @@ import {
 } from '../store/settingsSlice';
 import { saveSettings } from '../services/storage';
 import { getStateName } from '../services/locationService';
+import { startLocationService, stopLocationService } from '../services/backgroundService';
 import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS, GLASS } from '../constants/theme';
 import { Settings as SettingsIcon, Languages, MapPin, SlidersHorizontal, Navigation, Moon, Info, ShieldCheck, AlertCircle, Check, CheckCircle } from 'lucide-react-native';
 
@@ -60,6 +61,21 @@ export const SettingsScreen = () => {
       showDisclaimerAlways: settings.showDisclaimerAlways,
     });
   }, [settings]);
+
+  const handleToggleLocationAlerts = async () => {
+    const newValue = !settings.locationAlertsEnabled;
+    dispatch(toggleLocationAlerts());
+    
+    try {
+      if (newValue) {
+        await startLocationService();
+      } else {
+        await stopLocationService();
+      }
+    } catch (e) {
+      console.error("Failed to toggle location service:", e);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -183,7 +199,7 @@ export const SettingsScreen = () => {
             </View>
             <Switch
               value={settings.locationAlertsEnabled}
-              onValueChange={() => { dispatch(toggleLocationAlerts()); }}
+              onValueChange={handleToggleLocationAlerts}
               trackColor={{ false: COLORS.border, true: 'rgba(34, 197, 94, 0.3)' }}
               thumbColor={settings.locationAlertsEnabled ? COLORS.success : '#f4f3f4'}
             />

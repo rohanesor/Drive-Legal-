@@ -13,7 +13,10 @@ public class DriveLegalPackage implements ReactPackage {
 
     @Override
     public List<NativeModule> createNativeModules(ReactApplicationContext reactContext) {
-        return Arrays.<NativeModule>asList(new PythonBridgeModule(reactContext));
+        return Arrays.<NativeModule>asList(
+            new PythonBridgeModule(reactContext),
+            new DriveLegalLocationServiceModule(reactContext)
+        );
     }
 
     @Override
