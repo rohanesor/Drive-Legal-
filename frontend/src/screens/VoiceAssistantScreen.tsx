@@ -52,7 +52,7 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
   // Voice Interaction States
   const [voiceState, setVoiceState] = useState<VoiceState>('IDLE');
   const [userTranscript, setUserTranscript] = useState('');
-  const [botResponseText, setBotResponseText] = useState('Tap the mic and speak, or tap a quick card below.');
+  const [botResponseText, setBotResponseText] = useState('Welcome to TrafiAI Voice Mode. Tap the mic and speak, or tap a quick card below.');
   const [isHandsFree, setIsHandsFree] = useState(true);
 
   // Animations
@@ -170,7 +170,7 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
         PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
         {
           title: 'Microphone Permission',
-          message: 'DriveSafe Voice assistant needs access to your microphone for hands-free queries.',
+          message: 'TrafiAI Voice Mode needs access to your microphone for hands-free queries.',
           buttonPositive: 'OK',
           buttonNegative: 'Cancel',
         }
@@ -398,7 +398,7 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
         </TouchableOpacity>
         <View style={styles.headerTitleRow}>
           <Shield size={16} color={COLORS.cyan} />
-          <Text style={styles.headerText}>VOICE COPILOT</Text>
+          <Text style={styles.headerText}>TRAFIAI VOICE MODE</Text>
         </View>
         <View style={styles.locationBadge}>
           <Text style={styles.locationBadgeText}>
