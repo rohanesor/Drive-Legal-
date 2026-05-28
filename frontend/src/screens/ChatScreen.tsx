@@ -218,7 +218,7 @@ export const ChatScreen = ({ navigation, route }: any) => {
 
       dispatch(addMessage({
         id: (Date.now() + 1).toString(),
-        text: (result as any).response_text || 'I encountered an issue. Please try again.',
+        text: (result as any).response_text || (result as any).fallback_response_text || (result as any).message || 'I encountered an issue. Please try again.',
         sender: 'bot',
         timestamp: Date.now(),
         source_sections: result.source_sections,
