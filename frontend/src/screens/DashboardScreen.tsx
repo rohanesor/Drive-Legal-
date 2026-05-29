@@ -24,7 +24,7 @@ const FEATURES = [
     Icon: MessageCircle,
     iconBg: 'rgba(6, 182, 212, 0.1)',
     iconColor: COLORS.cyan,
-    title: 'Ask TrafiAI',
+    title: 'RoadMind AI',
     badge: 'AI Assistant',
     desc: 'Consult our on-device traffic law bot in English, Tamil, or Hindi. Gets verified database citations.',
     action: 'Launch Assistant',
@@ -35,9 +35,9 @@ const FEATURES = [
     Icon: Mic,
     iconBg: 'rgba(6, 182, 212, 0.15)',
     iconColor: COLORS.cyan,
-    title: 'TrafiAI Voice Mode',
+    title: 'DriveTalk (Voice)',
     badge: 'Hands-Free',
-    desc: 'Speak freely with TrafiAI in hands-free mode. Displays high-contrast, driving-safe HUD.',
+    desc: 'Speak freely with RoadMind AI in hands-free mode. Displays high-contrast, driving-safe HUD.',
     action: 'Activate Voice Mode',
     accentColor: COLORS.cyan,
   },
@@ -46,7 +46,7 @@ const FEATURES = [
     Icon: Calculator,
     iconBg: 'rgba(245, 158, 11, 0.1)',
     iconColor: COLORS.warning,
-    title: 'Challan Calculator',
+    title: 'FineIQ Calculator',
     badge: 'Offline',
     desc: 'Compute precise traffic fines with compounding fees, offense multipliers, and late payment penalties.',
     action: 'Calculate Fines',
@@ -57,7 +57,7 @@ const FEATURES = [
     Icon: MapPin,
     iconBg: 'rgba(37, 99, 235, 0.1)',
     iconColor: COLORS.primary,
-    title: 'Jurisdiction Rules',
+    title: 'Smart Jurisdiction Engine',
     badge: 'Location',
     desc: 'Configure state and municipal policies for law parsing and check local GPS border fences.',
     action: 'Explore Rules',
@@ -68,7 +68,7 @@ const FEATURES = [
     Icon: Phone,
     iconBg: 'rgba(239, 68, 68, 0.1)',
     iconColor: COLORS.error,
-    title: 'Emergency Services',
+    title: 'RoadSOS Direct',
     badge: 'Direct Dials',
     desc: 'Instant call triggers for Traffic Police, Ambulance, NHAI Road Assistance, and Towing.',
     action: 'View Contacts',
@@ -192,8 +192,8 @@ export const DashboardScreen = ({ navigation }: any) => {
             <ShieldCheck size={20} color={COLORS.cyan} />
           </View>
           <View>
-            <Text style={styles.headerText}>DriveLegal</Text>
-            <Text style={styles.headerTagline}>Traffic Law Intelligence</Text>
+            <Text style={styles.headerText}>RoadMind AI</Text>
+            <Text style={styles.headerTagline}>Adaptive Legal Assistant</Text>
           </View>
         </View>
         <View style={styles.headerRightActions}>
@@ -202,21 +202,28 @@ export const DashboardScreen = ({ navigation }: any) => {
             onPress={() => switchMode('car')}
             activeOpacity={0.8}
           >
-            <Text style={styles.carModePillText}>🚗 CAR</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.locationBadge}
-            onPress={() => navigation.navigate('Location')}
-            activeOpacity={0.8}
-          >
-            <LocateFixed size={14} color={isMocked ? COLORS.warning : COLORS.cyan} />
-            <Text style={styles.locationText}>{locationText}</Text>
-            <View style={[styles.statusDot, isMocked && { backgroundColor: COLORS.warning }]} />
+            <Text style={styles.carModePillText}>🚗 DriveCockpit</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Full-Width Spacious Location Banner */}
+        <TouchableOpacity
+          style={styles.spaciousLocationBanner}
+          onPress={() => navigation.navigate('Location')}
+          activeOpacity={0.9}
+        >
+          <View style={styles.spaciousLocationHeader}>
+            <LocateFixed size={16} color={isMocked ? COLORS.warning : COLORS.cyan} />
+            <Text style={styles.spaciousLocationTitle}>SMART JURISDICTION ENGINE</Text>
+            <View style={[styles.statusDotMedium, isMocked && { backgroundColor: COLORS.warning }]} />
+          </View>
+          <Text style={styles.spaciousLocationText}>
+            {geoInfo ? `India → ${geoInfo.state} → ${geoInfo.city || geoInfo.district || 'Detecting...'}` : 'Detecting Location...'}
+          </Text>
+        </TouchableOpacity>
+
         {isLoading && (
           <View style={styles.loadingOverlay}>
             <Text style={styles.loadingText}>Updating Location...</Text>
@@ -239,8 +246,8 @@ export const DashboardScreen = ({ navigation }: any) => {
               </View>
             </Animated.View>
             <View style={styles.aiTextContainer}>
-              <Text style={styles.aiTitle}>TrafiAI</Text>
-              <Text style={styles.aiSubtitle}>Your AI traffic law assistant</Text>
+              <Text style={styles.aiTitle}>RoadMind AI</Text>
+              <Text style={styles.aiSubtitle}>Your predictive legal mobility co-pilot</Text>
               <View style={styles.aiStatusRow}>
                 <View style={styles.aiStatusDot} />
                 <Text style={styles.aiStatus}>Online & ready</Text>
@@ -541,5 +548,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...SHADOWS.glow(COLORS.cyan),
     zIndex: 999,
+  },
+  spaciousLocationBanner: {
+    ...GLASS.dark,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.2)',
+    padding: 16,
+    borderRadius: BORDER_RADIUS.xl,
+    marginBottom: 16,
+    ...SHADOWS.glow(COLORS.cyan),
+  },
+  spaciousLocationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  spaciousLocationTitle: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    fontWeight: 'bold',
+    letterSpacing: 1.5,
+  },
+  spaciousLocationText: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.white,
+    fontWeight: '600',
+  },
+  statusDotMedium: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.success,
+    marginLeft: 'auto',
   },
 });

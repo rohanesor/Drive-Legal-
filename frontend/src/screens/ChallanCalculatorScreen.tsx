@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,15 +11,49 @@ import {
   Animated,
   Platform,
   TextInput,
+  Dimensions,
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../store';
 import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS, GLASS } from '../constants/theme';
 import { getStateName, getJurisdictionLabel } from '../services/locationService';
 import { useLocation } from '../context/LocationContext';
-import { Gauge, Zap, HardHat, UserCheck, CreditCard, ShieldCheck, AlertTriangle, Package, FileText, MapPin, FolderOpen, Smartphone, Wine, Calculator, Wallet, SlidersHorizontal, Repeat, Bus, Clock, List, AlertCircle, Sparkles, ChevronRight, ChevronDown, CheckSquare, Square, Search, X, Trash2 } from 'lucide-react-native';
+import { 
+  Gauge, 
+  Zap, 
+  HardHat, 
+  UserCheck, 
+  CreditCard, 
+  ShieldCheck, 
+  AlertTriangle, 
+  Package, 
+  FileText, 
+  MapPin, 
+  FolderOpen, 
+  Smartphone, 
+  Wine, 
+  Calculator, 
+  Wallet, 
+  SlidersHorizontal, 
+  Repeat, 
+  Bus, 
+  Clock, 
+  List, 
+  AlertCircle, 
+  Sparkles, 
+  ChevronRight, 
+  ChevronDown, 
+  CheckSquare, 
+  Square, 
+  X, 
+  Trash2,
+  Activity,
+  Award
+} from 'lucide-react-native';
 import { executeQuery } from '../services/pythonBridge';
+import { LocationMap, MapMarker, MapZone } from '../components/LocationMap';
 
+// Type definitions
 interface Violation {
   id: string;
   violation_type: string;
@@ -28,35 +62,145 @@ interface Violation {
   baseFine: number;
   subsequentFineMultiplier: number;
   Icon: any;
+  advisory?: string;
+  source?: string;
 }
 
-const COMMON_VIOLATIONS = [
-  { type: 'no_helmet', name: 'No Helmet', Icon: HardHat },
-  { type: 'no_seatbelt', name: 'No Seatbelt', Icon: UserCheck },
-  { type: 'speeding', name: 'Over Speeding', Icon: Gauge },
-  { type: 'drunk_driving', name: 'Drunk Driving', Icon: Wine },
-  { type: 'mobile_usage', name: 'Mobile Use', Icon: Smartphone },
-  { type: 'no_license', name: 'No License', Icon: CreditCard },
+const SUPPORTED_STATES = [
+  { code: 'TN', name: 'Tamil Nadu' },
+  { code: 'KN', name: 'Karnataka' },
+  { code: 'DL', name: 'Delhi' },
+  { code: 'MH', name: 'Maharashtra' },
+  { code: 'KL', name: 'Kerala' }
 ];
 
-const SUGGESTION_TAGS = ['Helmet', 'License', 'Speeding', 'Seatbelt', 'Insurance', 'Signal Jump'];
-
-
-const VIOLATION_MAP: Record<string, { name: string; Icon: any }> = {
-  speeding: { name: 'Over Speeding', Icon: Gauge },
-  traffic_signal: { name: 'Signal Jump / Red Light', Icon: Zap },
-  no_helmet: { name: 'No Helmet / Seatbelt Rider', Icon: HardHat },
-  no_seatbelt: { name: 'Seatbelt Missing', Icon: UserCheck },
-  no_license: { name: 'Driving Without License', Icon: CreditCard },
-  no_insurance: { name: 'No Valid Insurance', Icon: ShieldCheck },
-  dangerous_driving: { name: 'Dangerous Driving', Icon: AlertTriangle },
-  overloading: { name: 'Overloading Vehicle', Icon: Package },
-  no_registration: { name: 'Driving Without Registration', Icon: FileText },
-  parking_violation: { name: 'Wrong Parking / Obstruction', Icon: MapPin },
-  no_documents: { name: 'Missing Required Documents', Icon: FolderOpen },
-  mobile_usage: { name: 'Mobile Phone Use While Driving', Icon: Smartphone },
-  drunk_driving: { name: 'Drunk Driving', Icon: Wine },
+const VIOLATION_MAP: Record<string, { name: string; Icon: any; advisory: string; source: string }> = {
+  speeding: { 
+    name: 'Over Speeding', 
+    Icon: Gauge,
+    advisory: 'Maintain speed below state legal limits to avoid collision risks and dynamic fines.',
+    source: 'MV Act Section 183'
+  },
+  traffic_signal: { 
+    name: 'Signal Jump / Red Light', 
+    Icon: Zap,
+    advisory: 'Always stop at red signals. Signal jumping compromises intersection safety.',
+    source: 'MV Act Section 177'
+  },
+  no_helmet: { 
+    name: 'No Helmet / Seatbelt Rider', 
+    Icon: HardHat,
+    advisory: 'Wear BIS/ISI-certified helmets to avoid ₹1,000 penalties and reduce head injury risks by 80%.',
+    source: 'MV Act Section 194D'
+  },
+  no_seatbelt: { 
+    name: 'Seatbelt Missing', 
+    Icon: UserCheck,
+    advisory: 'Keep seatbelts locked at all times. Reduces fatal impact risks by up to 50%.',
+    source: 'MV Act Section 194B'
+  },
+  no_license: { 
+    name: 'Driving Without License', 
+    Icon: CreditCard,
+    advisory: 'Carry valid physical or DigiLocker DL to prevent towing and direct court compounding.',
+    source: 'MV Act Section 181'
+  },
+  no_insurance: { 
+    name: 'No Valid Insurance', 
+    Icon: ShieldCheck,
+    advisory: 'Third-party coverage is legally mandatory. Protects against liability.',
+    source: 'MV Act Section 196'
+  },
+  dangerous_driving: { 
+    name: 'Dangerous Driving', 
+    Icon: AlertTriangle,
+    advisory: 'Avoid reckless tailgating and sudden swerving. Keep traffic flow uniform.',
+    source: 'MV Act Section 184'
+  },
+  overloading: { 
+    name: 'Overloading Vehicle', 
+    Icon: Package,
+    advisory: 'Exceeding rated vehicle gross weight stresses axle limits and compromises braking.',
+    source: 'MV Act Section 194'
+  },
+  no_registration: { 
+    name: 'Driving Without Registration', 
+    Icon: FileText,
+    advisory: 'Mount standard high-security registration plates (HSRP) to verify vehicle identity.',
+    source: 'MV Act Section 192'
+  },
+  parking_violation: { 
+    name: 'Wrong Parking / Obstruction', 
+    Icon: MapPin,
+    advisory: 'Park only in designated bays. Obstructing roadways triggers towing fees.',
+    source: 'MV Act Section 177 / 201'
+  },
+  no_documents: { 
+    name: 'Missing Required Documents', 
+    Icon: FolderOpen,
+    advisory: 'Store registration certificate (RC), PUC, and tax receipts digitally for instant verification.',
+    source: 'MV Act Section 177'
+  },
+  mobile_usage: { 
+    name: 'Mobile Phone Use While Driving', 
+    Icon: Smartphone,
+    advisory: 'Avoid handling mobile devices while operating LMV. Use hands-free co-pilot controls.',
+    source: 'MV Act Section 184(c)'
+  },
+  drunk_driving: { 
+    name: 'Drunk Driving', 
+    Icon: Wine,
+    advisory: 'Compounded drunk driving triggers mandatory court summons and up to 6 months jail term.',
+    source: 'MV Act Section 185'
+  },
 };
+
+const MOCK_EV_VIOLATIONS: Violation[] = [
+  {
+    id: 'ev_stall_block',
+    violation_type: 'ev_rules',
+    name: 'Charging Bay Obstruction',
+    section: 'MV Act Section 177 / Local Rules',
+    baseFine: 500,
+    subsequentFineMultiplier: 1.5,
+    Icon: Zap,
+    advisory: 'Do not park non-EVs in active green charging bays to prevent blockage penalties.',
+    source: 'Urban Parking Enforcement Act 2026'
+  },
+  {
+    id: 'ev_silent_alert',
+    violation_type: 'ev_rules',
+    name: 'AVAS (Acoustic Alert) Offline',
+    section: 'MV Act Section 182A / Safety Code',
+    baseFine: 1000,
+    subsequentFineMultiplier: 2.0,
+    Icon: SlidersHorizontal,
+    advisory: 'Ensure AVAS silent alarm alert sounds are active below 20 km/h to warn blind pedestrians.',
+    source: 'National EV Safety Standard Section 4'
+  },
+  {
+    id: 'ev_illegal_battery',
+    violation_type: 'ev_rules',
+    name: 'Uncertified Battery Mod',
+    section: 'MV Act Section 182A(4) / Battery safety',
+    baseFine: 5000,
+    subsequentFineMultiplier: 2.0,
+    Icon: ShieldCheck,
+    advisory: 'Use only manufacturer-certified lithium cells to prevent thermal hazards and battery fires.',
+    source: 'AIS 156 Battery Safety Mandate'
+  },
+  {
+    id: 'ev_green_plate',
+    violation_type: 'ev_rules',
+    name: 'Standard Registration Plate',
+    section: 'MV Act Section 177 / Plate Norms',
+    baseFine: 500,
+    subsequentFineMultiplier: 1.5,
+    Icon: CreditCard,
+    advisory: 'Verify green registration plate is mounted to claim EV congestion toll exemptions.',
+    source: 'Ministry of Road Transport Order 2024'
+  }
+];
 
 const parseFine = (fineText: string | null | undefined): number => {
   if (!fineText) return 0;
@@ -65,10 +209,14 @@ const parseFine = (fineText: string | null | undefined): number => {
 };
 
 export const ChallanCalculatorScreen = ({ navigation }: any) => {
-  const userState = useSelector((state: RootState) => state.settings.state);
-  const { location, geoInfo } = useLocation();
+  const { location, geoInfo, isMocked, isLoading } = useLocation();
 
-  // Calculator selections
+  // Selected state override
+  const [selectedState, setSelectedState] = useState('TN');
+  const [showStateDropdown, setShowStateDropdown] = useState(false);
+  const [showEnforcementMap, setShowEnforcementMap] = useState(false);
+
+  // Selections
   const [violations, setViolations] = useState<Violation[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSubsequent, setIsSubsequent] = useState(false);
@@ -76,138 +224,18 @@ export const ChallanCalculatorScreen = ({ navigation }: any) => {
   const [isLatePayment, setIsLatePayment] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Search & Category Filters
+  // Search & Categories
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState('All');
-  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
-    Safety: true,
-    Documents: false,
-    Other: false,
-  });
+  const [activeTab, setActiveTab] = useState<'Safety' | 'Documents' | 'Speed' | 'Parking' | 'EV Rules'>('Safety');
 
-  const getViolationCategory = (violation: Violation): string => {
-    const name = violation.name.toLowerCase();
-    if (name.includes('helmet') || name.includes('seatbelt') || name.includes('speed') || name.includes('dangerous') || name.includes('drunk') || name.includes('phone') || name.includes('mobile') || name.includes('signal') || name.includes('traffic') || name.includes('parking') || name.includes('obstruction')) {
-      return 'Safety';
-    }
-    if (name.includes('license') || name.includes('registration') || name.includes('insurance') || name.includes('document') || name.includes('permit') || name.includes('rc') || name.includes('puc') || name.includes('paper')) {
-      return 'Documents';
-    }
-    return 'Other';
-  };
-
-  const matchesFuzzy = (violationName: string, sectionText: string, queryText: string): boolean => {
-    const q = queryText.toLowerCase().trim();
-    if (!q) return true;
-    
-    // Direct matches
-    if (violationName.toLowerCase().includes(q) || sectionText.toLowerCase().includes(q)) {
-      return true;
-    }
-    
-    // Synonym mapping
-    const synonyms: Record<string, string[]> = {
-      speeding: ['speed', 'overspeed', 'fast', 'camera', 'limiter', 'high speed'],
-      traffic_signal: ['signal', 'red light', 'jump', 'traffic light', 'crossing'],
-      no_helmet: ['helmet', 'head', 'two wheeler', 'bike', 'rider', 'pillion'],
-      no_seatbelt: ['belt', 'seatbelt', 'seat belt', 'car safety', 'driver safety'],
-      no_license: ['license', 'dl', 'driving license', 'permit', 'licence'],
-      no_insurance: ['insurance', 'third party', 'policy'],
-      dangerous_driving: ['dangerous', 'rash', 'reckless', 'negligent'],
-      overloading: ['load', 'overload', 'cargo', 'passenger capacity', 'weight'],
-      no_registration: ['registration', 'rc', 'number plate', 'rc book', 'smart card'],
-      parking_violation: ['parking', 'wrong park', 'tow', 'obstruction', 'no parking'],
-      no_documents: ['documents', 'papers', 'puc', 'pollution', 'emission'],
-      mobile_usage: ['phone', 'mobile', 'call', 'texting', 'chatting', 'device', 'screen'],
-      drunk_driving: ['drunk', 'alcohol', 'drink', 'drinking', 'wine', 'beer', 'liquor', 'breathalyzer'],
-    };
-
-    // Check if query matches any keywords for a specific violation_type
-    for (const [vType, keywords] of Object.entries(synonyms)) {
-      if (keywords.some(kw => kw.includes(q) || q.includes(kw))) {
-        // Find if this violation name maps to this type
-        const match = violations.find(item => item.name === violationName);
-        if (match && match.violation_type === vType) {
-          return true;
-        }
-      }
-    }
-    
-    return false;
-  };
-
-  const filteredViolations = violations.filter(violation => {
-    const matchesSearch = matchesFuzzy(violation.name, violation.section, searchQuery);
-    if (activeCategory === 'All') return matchesSearch;
-    return matchesSearch && getViolationCategory(violation) === activeCategory;
-  });
-
-  const toggleCategory = (cat: string) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [cat]: !prev[cat]
-    }));
-  };
-
-  // Computed Values
-  const [totalFine, setTotalFine] = useState(0);
-  const [baseSum, setBaseSum] = useState(0);
-  const [subsequentAddition, setSubsequentAddition] = useState(0);
-  const [commercialAddition, setCommercialAddition] = useState(0);
-  const [lateFeeAddition, setLateFeeAddition] = useState(0);
-
-  // Animations
-  const totalPulse = useRef(new Animated.Value(1)).current;
-  const shimmer = useRef(new Animated.Value(0)).current;
-  const loadingScale = useRef(new Animated.Value(0.9)).current;
-  const loadingOpacity = useRef(new Animated.Value(0)).current;
-
-  // Shimmer animation for total card
+  // Set selectedState from geoInfo initially and when geoInfo updates
   useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmer, { toValue: 1, duration: 2500, useNativeDriver: true }),
-        Animated.timing(shimmer, { toValue: 0, duration: 2500, useNativeDriver: true }),
-      ]),
-    ).start();
-  }, []);
-
-  // Loading entrance animation
-  useEffect(() => {
-    Animated.parallel([
-      Animated.spring(loadingScale, { toValue: 1, friction: 6, useNativeDriver: true }),
-      Animated.timing(loadingOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-    ]).start();
-  }, []);
-
-  // Pulse total on change
-  useEffect(() => {
-    if (totalFine > 0) {
-      Animated.sequence([
-        Animated.timing(totalPulse, { toValue: 1.06, duration: 150, useNativeDriver: true }),
-        Animated.spring(totalPulse, { toValue: 1, friction: 4, useNativeDriver: true }),
-      ]).start();
+    if (geoInfo && geoInfo.stateCode) {
+      setSelectedState(geoInfo.stateCode.toUpperCase());
     }
-  }, [totalFine]);
+  }, [geoInfo]);
 
-  // Auto-expand categories if searching
-  useEffect(() => {
-    if (searchQuery.trim().length > 0) {
-      const activeCats: Record<string, boolean> = {};
-      violations.forEach(v => {
-        if (matchesFuzzy(v.name, v.section, searchQuery)) {
-          const cat = getViolationCategory(v);
-          activeCats[cat] = true;
-        }
-      });
-      setExpandedCategories(prev => ({
-        ...prev,
-        ...activeCats
-      }));
-    }
-  }, [searchQuery, violations]);
-
-  // Fetch penalties on mount or when state selection changes
+  // Load state penalties on state code changes
   useEffect(() => {
     const fetchPenalties = async () => {
       setLoading(true);
@@ -215,29 +243,30 @@ export const ChallanCalculatorScreen = ({ navigation }: any) => {
       try {
         const response = await executeQuery({
           action: 'get_penalties',
-          state: userState,
+          state: selectedState,
           language: 'en',
           location: {
             lat: location?.latitude || 0,
             lng: location?.longitude || 0,
-            state: userState,
+            state: selectedState,
             city: geoInfo?.city || undefined,
             district: geoInfo?.district || undefined,
           }
         } as any);
+
         if (response.status === 'success' && (response as any).penalties) {
           const dbPenalties = (response as any).penalties;
           const mappedViolations: Violation[] = dbPenalties.map((p: any) => {
             const mapInfo = VIOLATION_MAP[p.violation_type] || {
               name: p.violation_type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()),
               Icon: AlertTriangle,
+              advisory: 'Follow state standard road safety compliance rules.',
+              source: 'Motor Vehicles Act Section 177'
             };
             const baseFine = parseFine(p.first_offense);
             const secondFine = parseFine(p.second_offense);
             const subsequentFineMultiplier = baseFine > 0 ? (secondFine || baseFine) / baseFine : 1.0;
-            
-            // Format section nicely
-            const sectionText = p.section ? p.section.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) : 'Motor Vehicles Act';
+            const sectionText = p.section ? p.section.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) : 'MV Act';
 
             return {
               id: p.id,
@@ -247,512 +276,486 @@ export const ChallanCalculatorScreen = ({ navigation }: any) => {
               baseFine,
               subsequentFineMultiplier,
               Icon: mapInfo.Icon,
+              advisory: mapInfo.advisory,
+              source: mapInfo.source
             };
           });
-          setViolations(mappedViolations);
+          
+          // Inject custom high-end EV rules
+          const finalViolations = [...mappedViolations, ...MOCK_EV_VIOLATIONS];
+          setViolations(finalViolations);
         } else {
-          setViolations([]);
+          setViolations(MOCK_EV_VIOLATIONS);
         }
       } catch (error) {
         console.error('Error fetching penalties:', error);
-        setViolations([]);
+        setViolations(MOCK_EV_VIOLATIONS);
       } finally {
         setLoading(false);
       }
     };
 
     fetchPenalties();
-  }, [userState, location, geoInfo]);
+  }, [selectedState, location]);
 
-  // Recalculate totals whenever selection or toggles change
-  useEffect(() => {
-    let base = 0;
-    let subsequent = 0;
+  const getViolationCategory = (violation: Violation): string => {
+    const name = violation.name.toLowerCase();
+    const type = violation.violation_type.toLowerCase();
+    
+    if (type === 'ev_rules' || name.includes('ev ') || name.includes('electric') || name.includes('charger') || name.includes('avas') || name.includes('battery')) {
+      return 'EV Rules';
+    }
+    if (type === 'parking_violation' || name.includes('parking') || name.includes('wrong park') || name.includes('obstruction') || name.includes('towing')) {
+      return 'Parking';
+    }
+    if (type === 'speeding' || name.includes('speed') || name.includes('overspeed') || name.includes('limiter') || name.includes('camera')) {
+      return 'Speed';
+    }
+    if (type === 'no_license' || type === 'no_insurance' || type === 'no_registration' || type === 'no_documents' || name.includes('license') || name.includes('registration') || name.includes('insurance') || name.includes('document') || name.includes('rc') || name.includes('puc') || name.includes('papers')) {
+      return 'Documents';
+    }
+    return 'Safety';
+  };
 
-    selectedIds.forEach((id) => {
-      const v = violations.find((item) => item.id === id);
-      if (v) {
-        base += v.baseFine;
-        if (isSubsequent) {
-          subsequent += v.baseFine * (v.subsequentFineMultiplier - 1);
-        }
+  const matchesSearch = (violation: Violation): boolean => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    return violation.name.toLowerCase().includes(q) || violation.section.toLowerCase().includes(q);
+  };
+
+  const filteredViolations = violations.filter(v => {
+    return getViolationCategory(v) === activeTab && matchesSearch(v);
+  });
+
+  // Calculations
+  let baseSum = 0;
+  let subsequentAddition = 0;
+  selectedIds.forEach(id => {
+    const v = violations.find(item => item.id === id);
+    if (v) {
+      baseSum += v.baseFine;
+      if (isSubsequent) {
+        subsequentAddition += v.baseFine * (v.subsequentFineMultiplier - 1);
       }
-    });
+    }
+  });
 
-    const commercial = isCommercial && selectedIds.length > 0 ? 1000 : 0;
-    const subtotal = base + subsequent + commercial;
-    const lateFee = isLatePayment ? Math.round(subtotal * 0.1) : 0;
+  const commercialAddition = isCommercial && selectedIds.length > 0 ? 1000 : 0;
+  const subtotal = baseSum + subsequentAddition + commercialAddition;
+  const lateFeeAddition = isLatePayment ? Math.round(subtotal * 0.1) : 0;
+  const totalFine = subtotal + lateFeeAddition;
 
-    setBaseSum(base);
-    setSubsequentAddition(subsequent);
-    setCommercialAddition(commercial);
-    setLateFeeAddition(lateFee);
-    setTotalFine(subtotal + lateFee);
-  }, [selectedIds, isSubsequent, isCommercial, isLatePayment, violations]);
+  // Compliance Risk Score calculations
+  const getRiskScore = () => {
+    if (selectedIds.length === 0) return { label: 'LOW RISK', color: COLORS.success, score: 100, desc: 'Completely Compliant' };
+    if (selectedIds.length <= 2 && totalFine <= 2000) return { label: 'MEDIUM RISK', color: COLORS.warning, score: 65, desc: 'Minor infractions detected' };
+    return { label: 'HIGH RISK', color: COLORS.error, score: 25, desc: 'Severe legal non-compliance!' };
+  };
+
+  const risk = getRiskScore();
 
   const toggleViolation = (id: string) => {
     if (selectedIds.includes(id)) {
-      setSelectedIds(selectedIds.filter((item) => item !== id));
+      setSelectedIds(selectedIds.filter(item => item !== id));
     } else {
       setSelectedIds([...selectedIds, id]);
     }
   };
 
-  const handleConsultAI = (violationName: string) => {
-    // Navigates to Chat screen and queries about the violation
-    navigation.navigate('Chat', { initialQuery: `What is the law and compounding penalty details for ${violationName} in ${userState}?` });
-  };
+  // Find active advisories
+  const activeAdvisories = violations.filter(v => selectedIds.includes(v.id) && v.advisory);
 
-  const shimmerOpacity = shimmer.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.03, 0.1, 0.03],
-  });
+  const enforcementMarkers: MapMarker[] = useMemo(() => {
+    if (!location) return [];
+    const lat = location.latitude;
+    const lng = location.longitude;
+    return [
+      { id: 'cam_1', type: 'warning', name: '📸 Speed Camera Zone', lat: lat + 0.003, lng: lng + 0.002 },
+      { id: 'cam_2', type: 'warning', name: '📸 Red Light Camera', lat: lat - 0.002, lng: lng + 0.004 },
+      { id: 'tow_1', type: 'rto', name: '🚫 Tow-Away Zone', lat: lat + 0.001, lng: lng - 0.003 },
+      { id: 'park_1', type: 'warning', name: '🅿️ No Parking Zone', lat: lat - 0.004, lng: lng - 0.001 },
+    ];
+  }, [location]);
+
+  const enforcementZones: MapZone[] = useMemo(() => {
+    if (!location) return [];
+    const lat = location.latitude;
+    const lng = location.longitude;
+    return [
+      { id: 'speed_zone', type: 'speed_camera', name: '⚡ Speed Enforcement Zone', coords: [{ lat: lat + 0.003, lng: lng + 0.002 }], radius: 200, severity: 'high' as const },
+      { id: 'no_park', type: 'restricted_zone', name: '🚫 No Parking Area', coords: [{ lat: lat - 0.004, lng: lng - 0.001 }], radius: 150, severity: 'medium' as const },
+    ];
+  }, [location]);
+
+  const getGPSStatusText = () => {
+    if (isLoading) return 'SEARCHING...';
+    if (isMocked) return '🛰️ GPS SIMULATED';
+    if (location) return '🛰️ GPS VERIFIED';
+    return '⚠️ OVERRIDE';
+  };
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor={COLORS.navy} barStyle="light-content" />
+      <StatusBar backgroundColor="#080E1A" barStyle="light-content" />
 
-      {/* Premium Header bar */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.headerIconContainer}>
-            <Calculator size={22} color={COLORS.cyan} />
-          </View>
-          <View>
-            <Text style={styles.headerTitle}>Challan Calculator</Text>
-            <Text style={styles.headerSub}>
-              <MapPin size={11} color={COLORS.cyan} /> {geoInfo ? getJurisdictionLabel(geoInfo) : getStateName(userState)} Jurisdiction
+      {/* TOP COMPASS GPS HEADER */}
+      <View style={styles.gpsHeader}>
+        <View style={styles.gpsRow}>
+          <Activity size={18} color={COLORS.cyan} style={styles.gpsIcon} />
+          <View style={styles.gpsTextBox}>
+            <Text style={styles.gpsLabel}>ACTIVE JURISDICTION</Text>
+            <Text style={styles.gpsValue}>
+              {geoInfo ? `${geoInfo.city || geoInfo.district || 'Coimbatore'}, ${geoInfo.state || 'Tamil Nadu'}, IN` : 'Coimbatore, TN, India'}
             </Text>
           </View>
+          
+          <TouchableOpacity 
+            style={[styles.statePill, showStateDropdown && { borderColor: COLORS.cyan }]} 
+            onPress={() => setShowStateDropdown(!showStateDropdown)}
+          >
+            <Text style={styles.statePillText}>{selectedState}</Text>
+            <ChevronDown size={14} color={COLORS.cyan} />
+          </TouchableOpacity>
         </View>
-        <View style={styles.headerBadge}>
-          <ShieldCheck size={12} color={COLORS.success} />
-          <Text style={styles.headerBadgeText}>Verified</Text>
+
+        <View style={styles.gpsStatusRow}>
+          <View style={[
+            styles.statusDot, 
+            { backgroundColor: isMocked ? COLORS.success : location ? COLORS.cyan : COLORS.warning }
+          ]} />
+          <Text style={[
+            styles.statusText,
+            { color: isMocked ? COLORS.success : location ? COLORS.cyan : COLORS.warning }
+          ]}>
+            {getGPSStatusText()}
+          </Text>
         </View>
+
+        {showStateDropdown && (
+          <View style={styles.dropdownGrid}>
+            <Text style={styles.dropdownTitle}>Select Manual Override Jurisdiction:</Text>
+            <View style={styles.dropdownPillsRow}>
+              {SUPPORTED_STATES.map(s => (
+                <TouchableOpacity
+                  key={s.code}
+                  style={[
+                    styles.dropdownPill,
+                    selectedState === s.code && styles.dropdownPillActive
+                  ]}
+                  onPress={() => {
+                    setSelectedState(s.code);
+                    setShowStateDropdown(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.dropdownPillText,
+                    selectedState === s.code && styles.dropdownPillTextActive
+                  ]}>{s.code}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
       </View>
 
-      {loading ? (
-        <Animated.View style={[styles.container, styles.loadingContainer, {
-          opacity: loadingOpacity,
-          transform: [{ scale: loadingScale }],
-        }]}>
-          <View style={styles.loadingOrbOuter}>
-            <View style={styles.loadingOrbInner}>
-              <ActivityIndicator size="large" color={COLORS.cyan} />
-            </View>
-          </View>
-          <Text style={styles.loadingTitle}>Loading Traffic Laws</Text>
-          <Text style={styles.loadingText}>{geoInfo ? getJurisdictionLabel(geoInfo) : getStateName(userState)} penalty database</Text>
-        </Animated.View>
-      ) : (
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          
-          {/* Animated Total Display Card with shimmer */}
-          <Animated.View style={[styles.totalCard, { transform: [{ scale: totalPulse }] }]}>
-            {/* Shimmer overlay */}
-            <Animated.View style={[styles.shimmerOverlay, { opacity: shimmerOpacity }]} />
-            
-            <View style={styles.totalCardHeader}>
-              <View style={styles.totalCardIcon}>
-                <Wallet size={18} color={COLORS.cyan} />
-              </View>
-              <Text style={styles.totalLabel}>ESTIMATED FINE TOTAL</Text>
-            </View>
-            
-            <Text style={styles.totalValue}>₹{totalFine.toLocaleString()}</Text>
-            
-            {selectedIds.length > 0 && (
-              <View style={styles.breakdownContainer}>
-                {/* Visual List of Selected Items to avoid scroll fatigue */}
-                <View style={styles.selectedTrayHeader}>
-                  <Text style={styles.selectedTrayTitle}>Selected Offenses ({selectedIds.length})</Text>
-                  <TouchableOpacity onPress={() => setSelectedIds([])} style={styles.resetButton}>
-                    <Text style={styles.resetButtonText}>Reset All</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.selectedListTray}>
-                  {selectedIds.map((id) => {
-                    const v = violations.find((item) => item.id === id);
-                    if (!v) return null;
-                    return (
-                      <View key={id} style={styles.selectedTrayItem}>
-                        <View style={styles.selectedTrayItemLeft}>
-                          <v.Icon size={14} color={COLORS.cyan} style={{ marginRight: 6 }} />
-                          <Text style={styles.selectedTrayItemName} numberOfLines={1}>
-                            {v.name}
-                          </Text>
-                        </View>
-                        <View style={styles.selectedTrayItemRight}>
-                          <Text style={styles.selectedTrayItemFine}>₹{v.baseFine.toLocaleString()}</Text>
-                          <TouchableOpacity onPress={() => toggleViolation(id)} style={styles.removeIconWrapper}>
-                            <Trash2 size={13} color={COLORS.error} />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-
-                <View style={styles.breakdownDivider} />
-
-                <View style={styles.breakdownRow}>
-                  <View style={styles.breakdownLabelRow}>
-                    <View style={[styles.breakdownDot, { backgroundColor: COLORS.primary }]} />
-                    <Text style={styles.breakdownLabel}>Base Violations</Text>
-                  </View>
-                  <Text style={styles.breakdownVal}>₹{baseSum.toLocaleString()}</Text>
-                </View>
-                {isSubsequent && subsequentAddition > 0 && (
-                  <View style={styles.breakdownRow}>
-                    <View style={styles.breakdownLabelRow}>
-                      <View style={[styles.breakdownDot, { backgroundColor: COLORS.warning }]} />
-                      <Text style={styles.breakdownLabel}>Repeat Offense Multiplier</Text>
-                    </View>
-                    <Text style={[styles.breakdownVal, { color: COLORS.warning }]}>+₹{subsequentAddition.toLocaleString()}</Text>
-                  </View>
-                )}
-                {isCommercial && commercialAddition > 0 && (
-                  <View style={styles.breakdownRow}>
-                    <View style={styles.breakdownLabelRow}>
-                      <View style={[styles.breakdownDot, { backgroundColor: COLORS.pending }]} />
-                      <Text style={styles.breakdownLabel}>Commercial Surcharge</Text>
-                    </View>
-                    <Text style={[styles.breakdownVal, { color: COLORS.pending }]}>+₹{commercialAddition.toLocaleString()}</Text>
-                  </View>
-                )}
-                {isLatePayment && lateFeeAddition > 0 && (
-                  <View style={styles.breakdownRow}>
-                    <View style={styles.breakdownLabelRow}>
-                      <View style={[styles.breakdownDot, { backgroundColor: COLORS.error }]} />
-                      <Text style={styles.breakdownLabel}>Late Penalty (10%)</Text>
-                    </View>
-                    <Text style={[styles.breakdownVal, { color: COLORS.error }]}>+₹{lateFeeAddition.toLocaleString()}</Text>
-                  </View>
-                )}
-              </View>
-            )}
-
-            {selectedIds.length === 0 && (
-              <Text style={styles.totalHint}>Select violations below to calculate fines</Text>
-            )}
-          </Animated.View>
-
-          {/* Quick-Tap Grid of Common Fines */}
-          {violations.length > 0 && (
-            <View style={styles.quickGridContainer}>
-              <View style={styles.sectionHeader}>
-                <Sparkles size={16} color={COLORS.cyan} />
-                <Text style={styles.sectionTitle}>Common Fines (Quick-Tap)</Text>
-              </View>
-              <View style={styles.quickGrid}>
-                {COMMON_VIOLATIONS.map((item) => {
-                  const dbMatch = violations.find(v => v.violation_type === item.type);
-                  if (!dbMatch) return null;
-                  
-                  const isSelected = selectedIds.includes(dbMatch.id);
-                  return (
-                    <TouchableOpacity
-                      key={item.type}
-                      style={[
-                        styles.quickGridCard,
-                        isSelected && styles.quickGridCardActive
-                      ]}
-                      onPress={() => toggleViolation(dbMatch.id)}
-                      activeOpacity={0.8}
-                    >
-                      <View style={[
-                        styles.quickGridIconContainer,
-                        isSelected && styles.quickGridIconContainerActive
-                      ]}>
-                        <item.Icon size={18} color={isSelected ? COLORS.primary : COLORS.textSecondary} />
-                      </View>
-                      <Text style={[
-                        styles.quickGridLabel,
-                        isSelected && styles.quickGridLabelActive
-                      ]} numberOfLines={1}>
-                        {item.name}
-                      </Text>
-                      <Text style={[
-                        styles.quickGridFine,
-                        isSelected && styles.quickGridFineActive
-                      ]}>
-                        ₹{dbMatch.baseFine.toLocaleString()}
-                      </Text>
-                      {isSelected && (
-                        <View style={styles.quickGridBadge}>
-                          <CheckSquare size={10} color={COLORS.white} />
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-          )}
-
-          {/* Adjustments & compounding toggles */}
-          <View style={styles.adjustmentsContainer}>
-            <View style={styles.sectionHeader}>
-              <SlidersHorizontal size={18} color={COLORS.cyan} />
-              <Text style={styles.sectionTitle}>Compounding Rules</Text>
-            </View>
-            
-            <View style={styles.rowToggle}>
-              <View style={styles.toggleIconContainer}>
-                <Repeat size={18} color={COLORS.warning} />
-              </View>
-              <View style={styles.toggleTextContainer}>
-                <Text style={styles.toggleLabel}>Subsequent Offense</Text>
-                <Text style={styles.toggleSub}>State-specific repeat-offender multipliers</Text>
-              </View>
-              <Switch
-                value={isSubsequent}
-                onValueChange={setIsSubsequent}
-                trackColor={{ false: COLORS.border, true: 'rgba(245, 158, 11, 0.3)' }}
-                thumbColor={isSubsequent ? COLORS.warning : '#f4f3f4'}
-              />
-            </View>
-
-            <View style={styles.rowToggle}>
-              <View style={styles.toggleIconContainer}>
-                <Bus size={18} color={COLORS.primary} />
-              </View>
-              <View style={styles.toggleTextContainer}>
-                <Text style={styles.toggleLabel}>Commercial Vehicle</Text>
-                <Text style={styles.toggleSub}>Flat +₹1,000 commercial enforcement penalty</Text>
-              </View>
-              <Switch
-                value={isCommercial}
-                onValueChange={setIsCommercial}
-                trackColor={{ false: COLORS.border, true: 'rgba(37, 99, 235, 0.3)' }}
-                thumbColor={isCommercial ? COLORS.primary : '#f4f3f4'}
-              />
-            </View>
-
-            <View style={[styles.rowToggle, { borderBottomWidth: 0 }]}>
-              <View style={styles.toggleIconContainer}>
-                <Clock size={18} color={COLORS.error} />
-              </View>
-              <View style={styles.toggleTextContainer}>
-                <Text style={styles.toggleLabel}>Late Payment (&gt;30 Days)</Text>
-                <Text style={styles.toggleSub}>10% compounding fee penalty</Text>
-              </View>
-              <Switch
-                value={isLatePayment}
-                onValueChange={setIsLatePayment}
-                trackColor={{ false: COLORS.border, true: 'rgba(239, 68, 68, 0.3)' }}
-                thumbColor={isLatePayment ? COLORS.error : '#f4f3f4'}
-              />
-            </View>
-          </View>
-
-          {/* Violations Search and Suggestion Chips */}
-          {violations.length > 0 && (
-            <View style={styles.filterSection}>
-              {/* Premium Search Bar */}
-              <View style={styles.searchBarWrapper}>
-                <Search size={18} color={COLORS.textSecondary} style={styles.searchBarIcon} />
-                <TextInput
-                  style={styles.searchBarInput}
-                  placeholder="Search by law, violation, keywords..."
-                  placeholderTextColor={COLORS.textSecondary}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  clearButtonMode="while-editing"
-                />
-                {searchQuery.length > 0 && (
-                  <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.searchBarClear}>
-                    <X size={16} color={COLORS.textSecondary} />
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {/* Suggestion Chips */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.categoryScroll}
-                contentContainerStyle={styles.categoryScrollContent}
-              >
-                <TouchableOpacity
-                  style={[styles.categoryPill, activeCategory === 'All' && styles.categoryPillActive]}
-                  onPress={() => {
-                    setActiveCategory('All');
-                    setSearchQuery('');
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.categoryPillText, activeCategory === 'All' && styles.categoryPillTextActive]}>
-                    Show All
-                  </Text>
-                </TouchableOpacity>
-                {SUGGESTION_TAGS.map((tag) => {
-                  const isActive = searchQuery.toLowerCase() === tag.toLowerCase();
-                  return (
-                    <TouchableOpacity
-                      key={tag}
-                      style={[styles.categoryPill, isActive && styles.categoryPillActive]}
-                      onPress={() => setSearchQuery(isActive ? '' : tag)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.categoryPillText, isActive && styles.categoryPillTextActive]}>
-                        {tag}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          )}
-
-          {/* Violations Category Accordions */}
-          <View style={styles.sectionHeader}>
-            <List size={18} color={COLORS.cyan} />
-            <Text style={styles.sectionTitle}>Full Penalty Database</Text>
-            {violations.length > 0 && (
-              <View style={styles.countBadge}>
-                <Text style={styles.countBadgeText}>{selectedIds.length}/{violations.length}</Text>
-              </View>
-            )}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        {/* COMPLIANCE RISK SCORE WIDGET */}
+        <View style={[styles.riskCard, { borderColor: risk.color + '33' }]}>
+          <View style={styles.riskHeader}>
+            <Award size={20} color={risk.color} />
+            <Text style={styles.riskTitle}>COMPLIANCE SECURITY</Text>
           </View>
           
-          {violations.length === 0 ? (
-            <View style={styles.noViolationsContainer}>
-              <View style={styles.noViolationsIcon}>
-                <AlertCircle size={36} color={COLORS.textSecondary} />
-              </View>
-              <Text style={styles.noViolationsTitle}>No Laws Found</Text>
-              <Text style={styles.loadingText}>No structured laws found for {geoInfo ? getJurisdictionLabel(geoInfo) : getStateName(userState)} in the local database.</Text>
+          <View style={styles.riskBody}>
+            <View style={styles.gaugeContainer}>
+              <View style={[styles.gaugeSegment, { backgroundColor: risk.color, width: `${risk.score}%` }]} />
+              <View style={styles.gaugeBackground} />
             </View>
-          ) : filteredViolations.length === 0 ? (
-            <View style={styles.noViolationsContainer}>
-              <View style={styles.noViolationsIcon}>
-                <AlertCircle size={36} color={COLORS.textSecondary} />
-              </View>
-              <Text style={styles.noViolationsTitle}>No Match Found</Text>
-              <Text style={styles.loadingText}>No traffic violations matched your search query.</Text>
+            <View style={styles.riskLabels}>
+              <Text style={[styles.riskStatus, { color: risk.color }]}>{risk.label}</Text>
+              <Text style={styles.riskDesc}>{risk.desc}</Text>
             </View>
+          </View>
+        </View>
+
+        {/* DRIVESHIELD ADVISORIES (DYNAMIC TICKER FEED) */}
+        {activeAdvisories.length > 0 && (
+          <View style={styles.advisoryFeed}>
+            <View style={styles.advisoryHeader}>
+              <ShieldCheck size={16} color={COLORS.cyan} />
+              <Text style={styles.advisoryTitleText}>DRIVESHIELD ADVISORIES</Text>
+            </View>
+            {activeAdvisories.map(v => (
+              <View key={v.id} style={styles.advisoryItem}>
+                <Sparkles size={12} color={COLORS.cyan} style={styles.advisorySparkle} />
+                <Text style={styles.advisoryText}>
+                  <Text style={{ fontWeight: 'bold', color: '#FFFFFF' }}>{v.name}: </Text>
+                  {v.advisory}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* ADJUSTMENTS & SWITCHES */}
+        <View style={styles.switchesCard}>
+          <View style={styles.switchItem}>
+            <View style={styles.switchIconBox}>
+              <Repeat size={16} color={COLORS.warning} />
+            </View>
+            <View style={styles.switchTextBox}>
+              <Text style={styles.switchLabel}>Subsequent Offense</Text>
+              <Text style={styles.switchSub}>Apply state repeat offender compounding rates</Text>
+            </View>
+            <Switch
+              value={isSubsequent}
+              onValueChange={setIsSubsequent}
+              trackColor={{ false: '#161F30', true: COLORS.warning + '33' }}
+              thumbColor={isSubsequent ? COLORS.warning : '#475569'}
+            />
+          </View>
+
+          <View style={styles.switchItem}>
+            <View style={styles.switchIconBox}>
+              <Bus size={16} color={COLORS.cyan} />
+            </View>
+            <View style={styles.switchTextBox}>
+              <Text style={styles.switchLabel}>Commercial LMV</Text>
+              <Text style={styles.switchSub}>Flat ₹1,000 carrier surcharge limits</Text>
+            </View>
+            <Switch
+              value={isCommercial}
+              onValueChange={setIsCommercial}
+              trackColor={{ false: '#161F30', true: COLORS.cyan + '33' }}
+              thumbColor={isCommercial ? COLORS.cyan : '#475569'}
+            />
+          </View>
+
+          <View style={[styles.switchItem, { borderBottomWidth: 0 }]}>
+            <View style={styles.switchIconBox}>
+              <Clock size={16} color={COLORS.error} />
+            </View>
+            <View style={styles.switchTextBox}>
+              <Text style={styles.switchLabel}>Late Compound (&gt;30 Days)</Text>
+              <Text style={styles.switchSub}>10% overdue state compound enforcement penalty</Text>
+            </View>
+            <Switch
+              value={isLatePayment}
+              onValueChange={setIsLatePayment}
+              trackColor={{ false: '#161F30', true: COLORS.error + '33' }}
+              thumbColor={isLatePayment ? COLORS.error : '#475569'}
+            />
+          </View>
+        </View>
+
+        {/* SEARCH BAR */}
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by infraction, law code..."
+            placeholderTextColor="#64748B"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery ? (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <X size={16} color="#64748B" />
+            </TouchableOpacity>
           ) : (
-            // Group and render accordions
-            ['Safety', 'Documents', 'Other'].map((cat) => {
-              const catViolations = filteredViolations.filter(v => getViolationCategory(v) === cat);
-              if (catViolations.length === 0) return null;
-              
-              const isExpanded = expandedCategories[cat];
-              const selectedInCat = catViolations.filter(v => selectedIds.includes(v.id)).length;
-              
-              // Icon mapping for header
-              const CatIcon = cat === 'Safety' ? HardHat : cat === 'Documents' ? FileText : AlertTriangle;
-              const catTitle = cat === 'Safety' ? 'Driver & Rider Safety' : cat === 'Documents' ? 'License & Documentation' : 'General & Loading';
-              
-              return (
-                <View key={cat} style={styles.accordionContainer}>
-                  {/* Accordion Header */}
-                  <TouchableOpacity
-                    style={[styles.accordionHeader, isExpanded && styles.accordionHeaderActive]}
-                    onPress={() => toggleCategory(cat)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.accordionHeaderLeft}>
-                      <View style={styles.accordionIconCircle}>
-                        <CatIcon size={16} color={isExpanded ? COLORS.primary : COLORS.textSecondary} />
-                      </View>
-                      <Text style={[styles.accordionTitle, isExpanded && styles.accordionTitleActive]}>
-                        {catTitle}
-                      </Text>
-                      <Text style={styles.accordionCount}>({catViolations.length})</Text>
-                    </View>
-                    
-                    <View style={styles.accordionHeaderRight}>
-                      {selectedInCat > 0 && (
-                        <View style={styles.accordionSelectedBadge}>
-                          <Text style={styles.accordionSelectedBadgeText}>{selectedInCat} active</Text>
-                        </View>
-                      )}
-                      {isExpanded ? (
-                        <ChevronDown size={18} color={COLORS.textSecondary} />
-                      ) : (
-                        <ChevronRight size={18} color={COLORS.textSecondary} />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                  
-                  {/* Accordion Content */}
-                  {isExpanded && (
-                    <View style={styles.accordionContent}>
-                      {catViolations.map((violation) => {
-                        const isSelected = selectedIds.includes(violation.id);
-                        return (
-                          <TouchableOpacity
-                            key={violation.id}
-                            style={[
-                              styles.violationItem,
-                              isSelected && styles.violationItemSelected,
-                            ]}
-                            onPress={() => toggleViolation(violation.id)}
-                            activeOpacity={0.85}
-                          >
-                            <View style={styles.violationMain}>
-                              <View style={[
-                                styles.violationIconCircle,
-                                isSelected && styles.violationIconCircleSelected,
-                              ]}>
-                                <violation.Icon
-                                  size={20}
-                                  color={isSelected ? COLORS.primary : COLORS.textSecondary}
-                                />
-                              </View>
-                              
-                              <View style={styles.violationInfo}>
-                                <Text style={[
-                                  styles.violationName,
-                                  isSelected && { color: COLORS.primary, fontWeight: '700' },
-                                ]}>{violation.name}</Text>
-                                <View style={styles.violationSubRow}>
-                                  <Text style={styles.violationSection}>{violation.section}</Text>
-                                  <View style={styles.fineBadge}>
-                                    <Text style={[
-                                      styles.violationFine,
-                                      isSelected && { color: COLORS.primary },
-                                    ]}>₹{violation.baseFine.toLocaleString()}</Text>
-                                  </View>
-                                </View>
-                              </View>
-          
-                              <View style={styles.violationRight}>
-                                {isSelected ? (
-                                  <CheckSquare size={22} color={COLORS.primary} />
-                                ) : (
-                                  <Square size={22} color={COLORS.border} />
-                                )}
-                              </View>
-                            </View>
-          
-                            {/* AI Consult strip */}
-                            {isSelected && (
-                              <TouchableOpacity
-                                style={styles.aiConsultStrip}
-                                onPress={() => handleConsultAI(violation.name)}
-                                activeOpacity={0.7}
-                              >
-                                <Sparkles size={13} color={COLORS.cyan} />
-                                <Text style={styles.aiConsultText}>Ask TrafiAI about this violation</Text>
-                                <ChevronRight size={13} color={COLORS.cyan} />
-                              </TouchableOpacity>
-                            )}
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  )}
-                </View>
-              );
-            })
+            <Sparkles size={16} color={COLORS.cyan} />
           )}
+        </View>
 
-          <View style={{ height: 40 }} />
+        {/* Enforcement Intelligence Map */}
+        <TouchableOpacity
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: 'rgba(6, 182, 212, 0.08)',
+            borderWidth: 1,
+            borderColor: 'rgba(6, 182, 212, 0.2)',
+            borderRadius: 12,
+            padding: 12,
+            marginBottom: 16,
+          }}
+          onPress={() => setShowEnforcementMap(!showEnforcementMap)}
+          activeOpacity={0.8}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <MapPin size={18} color="#00E5FF" />
+            <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700', letterSpacing: 0.5 }}>
+              ENFORCEMENT INTELLIGENCE MAP
+            </Text>
+          </View>
+          <ChevronDown
+            size={18}
+            color="#00E5FF"
+            style={{ transform: [{ rotate: showEnforcementMap ? '180deg' : '0deg' }] }}
+          />
+        </TouchableOpacity>
+
+        {showEnforcementMap && (
+          <View style={{ marginBottom: 16, borderRadius: 12, overflow: 'hidden' }}>
+            <LocationMap
+              currentLocation={location ? { lat: location.latitude, lng: location.longitude } : undefined}
+              mapType="fineiq"
+              markers={enforcementMarkers}
+              zones={enforcementZones}
+              height={220}
+              interactive={true}
+            />
+            <View style={{
+              backgroundColor: 'rgba(15, 23, 42, 0.9)',
+              padding: 8,
+              flexDirection: 'row',
+              justifyContent: 'center',
+              gap: 16,
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#EAB308' }} />
+                <Text style={{ color: '#94A3B8', fontSize: 10 }}>Speed Cam</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#F59E0B' }} />
+                <Text style={{ color: '#94A3B8', fontSize: 10 }}>Tow Zone</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' }} />
+                <Text style={{ color: '#94A3B8', fontSize: 10 }}>No Parking</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* CATEGORY TABS NAVIGATION BAR */}
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          style={styles.tabsScroll}
+          contentContainerStyle={styles.tabsContainer}
+        >
+          {(['Safety', 'Documents', 'Speed', 'Parking', 'EV Rules'] as const).map(tab => {
+            const isActive = activeTab === tab;
+            return (
+              <TouchableOpacity
+                key={tab}
+                style={[styles.tabButton, isActive && styles.tabButtonActive]}
+                onPress={() => setActiveTab(tab)}
+              >
+                <Text style={[styles.tabButtonText, isActive && styles.tabButtonTextActive]}>{tab}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
+
+        {/* RESPONSIVE TWO-COLUMN GRID OF VIOLATION CARDS */}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.cyan} />
+            <Text style={styles.loadingText}>Synchronizing State Compound Table...</Text>
+          </View>
+        ) : filteredViolations.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <AlertCircle size={32} color="#64748B" />
+            <Text style={styles.emptyText}>No violations found in this category.</Text>
+          </View>
+        ) : (
+          <View style={styles.cardsGrid}>
+            {filteredViolations.map(item => {
+              const isSelected = selectedIds.includes(item.id);
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[
+                    styles.violationCard,
+                    isSelected && styles.violationCardSelected
+                  ]}
+                  onPress={() => toggleViolation(item.id)}
+                  activeOpacity={0.9}
+                >
+                  <View style={styles.cardHeader}>
+                    <View style={[styles.cardIconBox, isSelected && { backgroundColor: COLORS.cyan + '1A' }]}>
+                      <item.Icon size={18} color={isSelected ? COLORS.cyan : '#64748B'} />
+                    </View>
+                    {isSelected ? (
+                      <CheckSquare size={16} color={COLORS.cyan} />
+                    ) : (
+                      <Square size={16} color="#334155" />
+                    )}
+                  </View>
+
+                  <Text style={[styles.cardName, isSelected && { color: '#FFFFFF' }]} numberOfLines={2}>
+                    {item.name}
+                  </Text>
+                  
+                  <Text style={styles.cardSection} numberOfLines={1}>
+                    {item.section}
+                  </Text>
+
+                  <View style={styles.cardPriceRow}>
+                    <Text style={styles.cardPriceLabel}>BASE FINE</Text>
+                    <Text style={[styles.cardPriceValue, isSelected && { color: COLORS.cyan }]}>
+                      ₹{item.baseFine.toLocaleString()}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
+        <View style={{ height: 140 }} />
+      </ScrollView>
+
+      {/* TOTAL COMPENSATING DRAWER PANEL */}
+      {selectedIds.length > 0 && (
+        <View style={styles.drawerCard}>
+          <View style={styles.drawerHeader}>
+            <View style={styles.drawerHeaderLeft}>
+              <Wallet size={18} color={COLORS.cyan} />
+              <Text style={styles.drawerTitle}>TOTAL COMPOUND FINE</Text>
+            </View>
+            <Text style={styles.drawerTotal}>₹{totalFine.toLocaleString()}</Text>
+          </View>
+
+          <View style={styles.drawerDivider} />
+
+          <View style={styles.drawerBreakdown}>
+            <Text style={styles.breakdownItem}>
+              Base Infractions ({selectedIds.length}): <Text style={styles.breakdownItemVal}>₹{baseSum.toLocaleString()}</Text>
+            </Text>
+            {isSubsequent && subsequentAddition > 0 && (
+              <Text style={styles.breakdownItem}>
+                Repeat Offender Penalty: <Text style={[styles.breakdownItemVal, { color: COLORS.warning }]}>+₹{subsequentAddition.toLocaleString()}</Text>
+              </Text>
+            )}
+            {isCommercial && commercialAddition > 0 && (
+              <Text style={styles.breakdownItem}>
+                Commercial Vehicle Surcharge: <Text style={[styles.breakdownItemVal, { color: COLORS.cyan }]}>+₹{commercialAddition.toLocaleString()}</Text>
+              </Text>
+            )}
+            {isLatePayment && lateFeeAddition > 0 && (
+              <Text style={styles.breakdownItem}>
+                Late Fee (10% Compounded): <Text style={[styles.breakdownItemVal, { color: COLORS.error }]}>+₹{lateFeeAddition.toLocaleString()}</Text>
+              </Text>
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={styles.aiButton}
+            onPress={() => {
+              const names = violations.filter(v => selectedIds.includes(v.id)).map(v => v.name).join(', ');
+              navigation.navigate('Chat', {
+                initialQuery: `Explain the compounding rules, legal procedures, and mitigating arguments for the following offenses: ${names} under ${selectedState} jurisdiction.`
+              });
+            }}
+          >
+            <Sparkles size={16} color="#000000" />
+            <Text style={styles.aiButtonText}>CONSULT ROADMIND AI</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
@@ -761,631 +764,460 @@ export const ChallanCalculatorScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  filterSection: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    gap: 12,
-  },
-  searchBarWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: BORDER_RADIUS.large,
-    paddingHorizontal: 12,
-    height: 48,
-    position: 'relative',
-  },
-  searchBarIcon: {
-    marginRight: 8,
-  },
-  searchBarInput: {
-    flex: 1,
-    ...TYPOGRAPHY.bodyMedium,
-    color: COLORS.textPrimary,
-    paddingVertical: 8,
-  },
-  searchBarClear: {
-    padding: 4,
-    position: 'absolute',
-    right: 12,
-  },
-  categoryScroll: {
-    flexDirection: 'row',
-    marginTop: 2,
-  },
-  categoryScrollContent: {
-    gap: 8,
-    paddingRight: 16,
-  },
-  categoryPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  categoryPillActive: {
-    backgroundColor: 'rgba(6, 182, 212, 0.12)',
-    borderColor: COLORS.cyan,
-  },
-  categoryPillText: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '600',
-  },
-  categoryPillTextActive: {
-    color: COLORS.cyan,
-  },
-  loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    gap: 12,
-  },
-  loadingOrbOuter: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(6, 182, 212, 0.08)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...SHADOWS.medium,
-  },
-  loadingOrbInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: COLORS.navy,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingTitle: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.textPrimary,
-    fontWeight: '700',
-    marginTop: 8,
-  },
-  loadingText: {
-    ...TYPOGRAPHY.bodyMedium,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-  },
-  noViolationsContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-    gap: 10,
-    backgroundColor: COLORS.surface,
-    borderRadius: BORDER_RADIUS.medium,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    ...SHADOWS.subtle,
-  },
-  noViolationsIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  noViolationsTitle: {
-    ...TYPOGRAPHY.bodyLarge,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-  },
-  header: {
-    backgroundColor: COLORS.navy,
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 50 : 16,
-    paddingBottom: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    ...SHADOWS.strong,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(6, 182, 212, 0.15)',
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  headerIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    ...GLASS.cyan,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.white,
-    fontWeight: 'bold',
-  },
-  headerSub: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.cyan,
-    marginTop: 2,
-  },
-  headerBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: BORDER_RADIUS.round,
-    ...GLASS.light,
-  },
-  headerBadgeText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.success,
-    fontSize: 10,
-    fontWeight: '600',
+    backgroundColor: '#080E1A',
   },
   scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: 16,
   },
-  // Premium Total Card
-  totalCard: {
-    backgroundColor: COLORS.navy,
-    borderRadius: BORDER_RADIUS.large,
-    padding: 24,
-    alignItems: 'center',
-    marginBottom: 20,
-    ...SHADOWS.strong,
-    borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.15)',
-    overflow: 'hidden',
+  gpsHeader: {
+    backgroundColor: '#0C1424',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#1A2E4C',
+    padding: 14,
   },
-  shimmerOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(6, 182, 212, 0.5)',
-    borderRadius: BORDER_RADIUS.large,
-  },
-  totalCardHeader: {
+  gpsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  totalCardIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(6, 182, 212, 0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  totalLabel: {
-    ...TYPOGRAPHY.caption,
-    color: 'rgba(255, 255, 255, 0.6)',
-    fontWeight: '700',
-    letterSpacing: 1.5,
-    fontSize: 11,
-  },
-  totalValue: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: COLORS.white,
-    marginVertical: 8,
-    letterSpacing: -1,
-  },
-  totalHint: {
-    ...TYPOGRAPHY.caption,
-    color: 'rgba(255, 255, 255, 0.35)',
-    marginTop: 4,
-  },
-  breakdownContainer: {
-    width: '100%',
-    borderTopWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    paddingTop: 14,
-    marginTop: 10,
-    gap: 8,
-  },
-  breakdownRow: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
   },
-  breakdownLabelRow: {
+  gpsIcon: {
+    marginRight: 8,
+  },
+  gpsTextBox: {
+    flex: 1,
+  },
+  gpsLabel: {
+    color: '#64748B',
+    fontSize: 8,
+    fontWeight: 'bold',
+    letterSpacing: 1.2,
+  },
+  gpsValue: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  statePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    backgroundColor: '#16233B',
+    borderWidth: 1.5,
+    borderColor: '#2D446A',
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    gap: 4,
   },
-  breakdownDot: {
+  statePillText: {
+    color: COLORS.cyan,
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  gpsStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    paddingLeft: 2,
+    gap: 6,
+  },
+  statusDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
   },
-  breakdownLabel: {
-    ...TYPOGRAPHY.caption,
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontSize: 12,
+  statusText: {
+    fontSize: 8.5,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
-  breakdownVal: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.white,
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  // Adjustments Section
-  adjustmentsContainer: {
-    backgroundColor: COLORS.surface,
-    borderRadius: BORDER_RADIUS.large,
+  dropdownGrid: {
+    marginTop: 12,
+    backgroundColor: '#111C31',
+    borderRadius: 8,
+    padding: 10,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 18,
-    marginBottom: 24,
-    ...SHADOWS.subtle,
+    borderColor: '#1E3255',
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    ...TYPOGRAPHY.bodyLarge,
+  dropdownTitle: {
+    color: '#94A3B8',
+    fontSize: 10,
     fontWeight: '700',
-    color: COLORS.textPrimary,
-    flex: 1,
+    marginBottom: 8,
   },
-  countBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: BORDER_RADIUS.round,
-    backgroundColor: COLORS.lightPrimary,
-  },
-  countBadgeText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.primary,
-    fontWeight: '700',
-    fontSize: 11,
-  },
-  rowToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    gap: 12,
-  },
-  toggleIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  toggleTextContainer: {
-    flex: 1,
-  },
-  toggleLabel: {
-    ...TYPOGRAPHY.bodyMedium,
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  toggleSub: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginTop: 1,
-    fontSize: 11,
-  },
-  // Violation Cards
-  violationItem: {
-    backgroundColor: COLORS.surface,
-    borderRadius: BORDER_RADIUS.medium,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginBottom: 10,
-    ...SHADOWS.subtle,
-    overflow: 'hidden',
-  },
-  violationItemSelected: {
-    borderColor: 'rgba(37, 99, 235, 0.35)',
-    backgroundColor: COLORS.lightPrimary,
-    ...SHADOWS.medium,
-  },
-  violationMain: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 12,
-  },
-  violationIconCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  violationIconCircleSelected: {
-    backgroundColor: 'rgba(37, 99, 235, 0.1)',
-  },
-  violationInfo: {
-    flex: 1,
-  },
-  violationName: {
-    ...TYPOGRAPHY.bodyMedium,
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  violationSubRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  violationSection: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    fontSize: 11,
-  },
-  fineBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: BORDER_RADIUS.small,
-    backgroundColor: COLORS.background,
-  },
-  violationFine: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    fontSize: 12,
-  },
-  violationRight: {
-    paddingLeft: 4,
-  },
-  aiConsultStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(37, 99, 235, 0.12)',
-    backgroundColor: 'rgba(6, 182, 212, 0.04)',
-  },
-  aiConsultText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.cyan,
-    fontWeight: '600',
-    flex: 1,
-    fontSize: 12,
-  },
-  // Quick Grid styles
-  quickGridContainer: {
-    marginBottom: 20,
-  },
-  quickGrid: {
+  dropdownPillsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 4,
+    gap: 8,
   },
-  quickGridCard: {
-    width: '31.3%', // roughly 3 columns
-    backgroundColor: COLORS.surface,
-    borderRadius: BORDER_RADIUS.medium,
+  dropdownPill: {
+    backgroundColor: '#1A2C49',
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#2D446A',
+  },
+  dropdownPillActive: {
+    borderColor: COLORS.cyan,
+    backgroundColor: '#0F2C46',
+  },
+  dropdownPillText: {
+    color: '#94A3B8',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  dropdownPillTextActive: {
+    color: COLORS.cyan,
+  },
+
+  // Compliance Risk Card
+  riskCard: {
+    backgroundColor: '#0C1424',
+    borderRadius: 12,
+    borderWidth: 1.5,
     padding: 12,
+    marginBottom: 16,
+  },
+  riskHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  riskTitle: {
+    color: '#94A3B8',
+    fontSize: 9.5,
+    fontWeight: 'bold',
+    letterSpacing: 1.2,
+  },
+  riskBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  gaugeContainer: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#1E293B',
     position: 'relative',
-    ...SHADOWS.subtle,
+    overflow: 'hidden',
   },
-  quickGridCardActive: {
-    borderColor: 'rgba(37, 99, 235, 0.4)',
-    backgroundColor: COLORS.lightPrimary,
-    ...SHADOWS.medium,
+  gaugeSegment: {
+    height: '100%',
+    borderRadius: 4,
   },
-  quickGridIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.background,
+  gaugeBackground: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  riskLabels: {
+    alignItems: 'flex-end',
+  },
+  riskStatus: {
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  riskDesc: {
+    color: '#64748B',
+    fontSize: 9,
+    fontWeight: '600',
+    marginTop: 1,
+  },
+
+  // DriveShield Advisory
+  advisoryFeed: {
+    backgroundColor: 'rgba(0, 229, 255, 0.04)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 229, 255, 0.15)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  advisoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  advisoryTitleText: {
+    color: COLORS.cyan,
+    fontSize: 9.5,
+    fontWeight: 'bold',
+    letterSpacing: 1.2,
+  },
+  advisoryItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 6,
+  },
+  advisorySparkle: {
+    marginTop: 2,
+    marginRight: 6,
+  },
+  advisoryText: {
+    color: '#CBD5E1',
+    fontSize: 10,
+    fontWeight: '500',
+    lineHeight: 14,
+    flex: 1,
+  },
+
+  // Switches Card
+  switchesCard: {
+    backgroundColor: '#0C1424',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#1A2E4C',
+    paddingHorizontal: 12,
+    marginBottom: 16,
+  },
+  switchItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1A2E4C',
+  },
+  switchIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: '#132038',
     justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  switchTextBox: {
+    flex: 1,
+    marginRight: 10,
+  },
+  switchLabel: {
+    color: '#FFFFFF',
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
+  switchSub: {
+    color: '#64748B',
+    fontSize: 9,
+    fontWeight: '500',
+    marginTop: 1,
+  },
+
+  // Search Input
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0C1424',
+    borderWidth: 1.5,
+    borderColor: '#1A2E4C',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 44,
+    marginBottom: 16,
+  },
+  searchInput: {
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: 12.5,
+    fontWeight: '600',
+    paddingVertical: 8,
+  },
+
+  // Tabs scroll
+  tabsScroll: {
+    marginBottom: 14,
+  },
+  tabsContainer: {
+    gap: 8,
+    paddingRight: 16,
+  },
+  tabButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    backgroundColor: '#0C1424',
+    borderWidth: 1.5,
+    borderColor: '#1A2E4C',
+  },
+  tabButtonActive: {
+    backgroundColor: '#0F2C46',
+    borderColor: COLORS.cyan,
+  },
+  tabButtonText: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  tabButtonTextActive: {
+    color: COLORS.cyan,
+  },
+
+  // Cards Grid Layout (Max 2 cards per row)
+  cardsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  violationCard: {
+    width: (Dimensions.get('window').width - 44) / 2,
+    backgroundColor: '#0C1424',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#1A2E4C',
+    padding: 12,
+    justifyContent: 'space-between',
+    minHeight: 128,
+  },
+  violationCardSelected: {
+    borderColor: COLORS.cyan,
+    backgroundColor: '#0F2236',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
   },
-  quickGridIconContainerActive: {
-    backgroundColor: 'rgba(37, 99, 235, 0.1)',
-  },
-  quickGridLabel: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    textAlign: 'center',
-    fontSize: 11,
-    marginBottom: 4,
-  },
-  quickGridLabelActive: {
-    color: COLORS.primary,
-  },
-  quickGridFine: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '700',
-    fontSize: 12,
-    color: COLORS.textSecondary,
-  },
-  quickGridFineActive: {
-    color: COLORS.primary,
-  },
-  quickGridBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  // Selected tray in total card styles
-  selectedTrayHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  selectedTrayTitle: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '700',
-    color: 'rgba(255, 255, 255, 0.65)',
-    fontSize: 12,
-  },
-  resetButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: BORDER_RADIUS.small,
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-  },
-  resetButtonText: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '700',
-    color: '#FCA5A5',
-    fontSize: 10,
-  },
-  selectedListTray: {
-    maxHeight: 150, // scrollable if too many
-    width: '100%',
-    gap: 6,
-  },
-  selectedTrayItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  selectedTrayItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  selectedTrayItemRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  selectedTrayItemName: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  selectedTrayItemFine: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.cyan,
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  removeIconWrapper: {
-    padding: 3,
-    borderRadius: 4,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-  },
-  breakdownDivider: {
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    marginVertical: 10,
-    width: '100%',
-  },
-
-  // Accordion styles
-  accordionContainer: {
-    backgroundColor: COLORS.surface,
-    borderRadius: BORDER_RADIUS.medium,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginBottom: 12,
-    overflow: 'hidden',
-    ...SHADOWS.subtle,
-  },
-  accordionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 14,
-    backgroundColor: COLORS.surface,
-  },
-  accordionHeaderActive: {
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    backgroundColor: 'rgba(6, 182, 212, 0.02)',
-  },
-  accordionHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  accordionHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  accordionIconCircle: {
+  cardIconBox: {
     width: 28,
     height: 28,
-    borderRadius: 8,
-    backgroundColor: COLORS.background,
+    borderRadius: 6,
+    backgroundColor: '#132038',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  accordionTitle: {
-    ...TYPOGRAPHY.bodyMedium,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    fontSize: 14,
-  },
-  accordionTitleActive: {
-    color: COLORS.primary,
-  },
-  accordionCount: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+  cardName: {
+    color: '#94A3B8',
     fontSize: 12,
+    fontWeight: 'bold',
+    lineHeight: 15,
+    marginBottom: 4,
   },
-  accordionSelectedBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    backgroundColor: COLORS.lightPrimary,
-  },
-  accordionSelectedBadgeText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.primary,
+  cardSection: {
+    color: '#475569',
+    fontSize: 9,
     fontWeight: '700',
-    fontSize: 10,
+    marginBottom: 8,
   },
-  accordionContent: {
-    padding: 10,
-    backgroundColor: COLORS.background,
+  cardPriceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    borderTopWidth: 1,
+    borderTopColor: '#1A2E4C',
+    paddingTop: 8,
+  },
+  cardPriceLabel: {
+    color: '#475569',
+    fontSize: 7.5,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  cardPriceValue: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+
+  // Load and Empties
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
     gap: 8,
   },
+  emptyText: {
+    color: '#64748B',
+    fontSize: 11.5,
+    fontWeight: 'bold',
+  },
+
+  // Bottom drawer panel
+  drawerCard: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#0C1424',
+    borderTopWidth: 2.5,
+    borderTopColor: COLORS.cyan,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: 16,
+    elevation: 24,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+  },
+  drawerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  drawerHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  drawerTitle: {
+    color: '#94A3B8',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 1.2,
+  },
+  drawerTotal: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  drawerDivider: {
+    height: 1,
+    backgroundColor: '#1A2E4C',
+    marginVertical: 10,
+  },
+  drawerBreakdown: {
+    gap: 4,
+    marginBottom: 12,
+  },
+  breakdownItem: {
+    color: '#64748B',
+    fontSize: 9.5,
+    fontWeight: '600',
+  },
+  breakdownItemVal: {
+    color: '#E2E8F0',
+    fontWeight: '700',
+  },
+  aiButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.cyan,
+    borderRadius: 8,
+    paddingVertical: 11,
+    gap: 6,
+  },
+  aiButtonText: {
+    color: '#000000',
+    fontWeight: '900',
+    fontSize: 11.5,
+    letterSpacing: 0.5,
+  },
 });
+
+export default ChallanCalculatorScreen;

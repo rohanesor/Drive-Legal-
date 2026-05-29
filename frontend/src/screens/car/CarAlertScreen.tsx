@@ -34,7 +34,7 @@ export const CarAlertScreen = () => {
     navigation.goBack();
   };
 
-  const handleAskTrafi = () => {
+  const handleAskRoadMind = () => {
     dispatch(dismissAlert());
     navigation.navigate('CarVoice');
     // Pre-prompt AI voice screen if needed
@@ -77,10 +77,10 @@ export const CarAlertScreen = () => {
       <View style={styles.footerRow}>
         <TouchableOpacity 
           style={[styles.actionButton, { backgroundColor: getAlertColor() }]}
-          onPress={handleAskTrafi}
+          onPress={handleAskRoadMind}
         >
           <Mic color="#000000" size={28} />
-          <Text style={styles.buttonText}>ASK TRAFIAI</Text>
+          <Text style={styles.buttonText}>ASK ROADMIND</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 

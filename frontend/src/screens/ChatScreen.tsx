@@ -22,6 +22,7 @@ import { useLocation } from '../context/LocationContext';
 import { getJurisdictionLabel } from '../services/locationService';
 import { isDisclaimerShown, setDisclaimerShown } from '../services/storage';
 import { ChatMessage } from '../components/ChatMessage';
+import { LocationMap, MapMarker } from '../components/LocationMap';
 import { VoiceInput } from '../components/VoiceInput';
 import { AlertBanner } from '../components/AlertBanner';
 import {
@@ -63,7 +64,7 @@ const ThinkingIndicator = () => {
         <Animated.View style={[styles.dot, { transform: [{ translateY: dot2 }] }]} />
         <Animated.View style={[styles.dot, { transform: [{ translateY: dot3 }] }]} />
       </View>
-      <Text style={styles.thinkingText}>TrafiAI is thinking...</Text>
+      <Text style={styles.thinkingText}>RoadMind AI is thinking...</Text>
     </View>
   );
 };
@@ -132,6 +133,9 @@ export const ChatScreen = ({ navigation, route }: any) => {
 
   const [inputText, setInputText] = useState('');
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [showAIMap, setShowAIMap] = useState(false);
+  const [aiMapMarkers, setAiMapMarkers] = useState<MapMarker[]>([]);
+  const mapSlideAnim = useRef(new Animated.Value(0)).current;
 
   const currentState = geoInfo?.state || 'TN';
   const locationName = geoInfo ? getJurisdictionLabel(geoInfo) : 'Detecting...';
@@ -206,6 +210,35 @@ export const ChatScreen = ({ navigation, route }: any) => {
     } catch (e) {}
   };
 
+  const checkForLocationQuery = (query: string, responseText: string) => {
+    const locationKeywords = ['nearest', 'nearby', 'police station', 'hospital', 'park here', 'parking', 'where', 'location', 'navigate', 'direction'];
+    const isLocationQuery = locationKeywords.some(kw => query.toLowerCase().includes(kw));
+    
+    if (isLocationQuery && location) {
+      const lat = location.latitude;
+      const lng = location.longitude;
+      
+      // Generate contextual markers based on query
+      const markers: MapMarker[] = [];
+      if (query.toLowerCase().includes('police')) {
+        markers.push({ id: 'ai_police_1', type: 'police', name: 'Nearest Police Station', lat: lat + 0.005, lng: lng + 0.003, distance: 0.8 });
+        markers.push({ id: 'ai_police_2', type: 'police', name: 'Traffic Police Post', lat: lat - 0.003, lng: lng + 0.006, distance: 1.2 });
+      } else if (query.toLowerCase().includes('hospital')) {
+        markers.push({ id: 'ai_hosp_1', type: 'hospital', name: 'District Hospital', lat: lat + 0.004, lng: lng - 0.002, distance: 0.5 });
+        markers.push({ id: 'ai_hosp_2', type: 'hospital', name: 'Primary Health Center', lat: lat - 0.006, lng: lng + 0.004, distance: 1.5 });
+      } else if (query.toLowerCase().includes('park')) {
+        markers.push({ id: 'ai_park_1', type: 'warning', name: '🅿️ Parking Permitted', lat: lat + 0.002, lng: lng + 0.001, distance: 0.3 });
+        markers.push({ id: 'ai_park_2', type: 'warning', name: '🚫 No Parking Zone', lat: lat - 0.001, lng: lng - 0.003, distance: 0.4 });
+      } else {
+        markers.push({ id: 'ai_gen_1', type: 'police', name: 'Nearby Service Point', lat: lat + 0.003, lng: lng + 0.002, distance: 0.6 });
+      }
+      
+      setAiMapMarkers(markers);
+      setShowAIMap(true);
+      Animated.timing(mapSlideAnim, { toValue: 1, duration: 400, useNativeDriver: false }).start();
+    }
+  };
+
   const handleSendMessage = async (text?: string) => {
     const query = text || inputText;
     if (!query.trim()) return;
@@ -237,6 +270,7 @@ export const ChatScreen = ({ navigation, route }: any) => {
           } as any) as any;
 
           streamBotResponse(result.response, undefined, undefined, result.suggestions || []);
+          checkForLocationQuery(query, result.response || '');
           return;
         } catch (e) {
           console.warn("Claude failed, falling back...");
@@ -262,6 +296,7 @@ export const ChatScreen = ({ navigation, route }: any) => {
 
       const botText = (result as any).response_text || (result as any).fallback_response_text || (result as any).message || 'I encountered an issue. Please try again.';
       streamBotResponse(botText, result.source_sections, result.confidence, (result as any).suggested_prompts || []);
+      checkForLocationQuery(query, botText);
 
       if (showDisclaimer) {
         await setDisclaimerShown();
@@ -289,7 +324,7 @@ export const ChatScreen = ({ navigation, route }: any) => {
           </TouchableOpacity>
           <View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={styles.headerTitle}>TrafiAI Assistant</Text>
+              <Text style={styles.headerTitle}>RoadMind AI Assistant</Text>
               <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
                 <Sparkles size={16} color={COLORS.cyan} />
               </Animated.View>
@@ -315,27 +350,78 @@ export const ChatScreen = ({ navigation, route }: any) => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          removeClippedSubviews={Platform.OS === 'android'}
-          maxToRenderPerBatch={8}
-          windowSize={5}
-          initialNumToRender={8}
-          renderItem={({ item }) => (
-            <ChatMessage
-              text={item.text}
-              sender={item.sender}
-              source_sections={item.source_sections}
-              confidence={item.confidence}
-            />
-          )}
-          contentContainerStyle={styles.messageList}
-          inverted
-          ListHeaderComponent={loading ? <ThinkingIndicator /> : null}
-          ListFooterComponent={messages.length === 0 ? <WelcomeHero onSuggest={handleSendMessage} /> : null}
-        />
+        {messages.length === 0 ? (
+          <ScrollView contentContainerStyle={styles.messageList}>
+            <WelcomeHero onSuggest={handleSendMessage} />
+          </ScrollView>
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item) => item.id}
+            removeClippedSubviews={Platform.OS === 'android'}
+            maxToRenderPerBatch={8}
+            windowSize={5}
+            initialNumToRender={8}
+            renderItem={({ item }) => (
+              <ChatMessage
+                text={item.text}
+                sender={item.sender}
+                source_sections={item.source_sections}
+                confidence={item.confidence}
+              />
+            )}
+            contentContainerStyle={styles.messageList}
+            inverted
+            ListHeaderComponent={loading ? <ThinkingIndicator /> : null}
+          />
+        )}
+
+        {/* RoadMind AI Intelligence Map */}
+        {showAIMap && location && (
+          <Animated.View style={{
+            height: mapSlideAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 200] }),
+            overflow: 'hidden',
+            borderTopWidth: 1,
+            borderTopColor: 'rgba(6, 182, 212, 0.2)',
+          }}>
+            <View style={{ position: 'relative' }}>
+              <LocationMap
+                currentLocation={{ lat: location.latitude, lng: location.longitude }}
+                mapType="chat"
+                markers={aiMapMarkers}
+                height={180}
+                interactive={true}
+              />
+              <TouchableOpacity
+                style={{
+                  position: 'absolute', top: 8, right: 8,
+                  backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                  borderRadius: 12, padding: 4,
+                  borderWidth: 1, borderColor: 'rgba(6, 182, 212, 0.3)',
+                }}
+                onPress={() => {
+                  Animated.timing(mapSlideAnim, { toValue: 0, duration: 300, useNativeDriver: false }).start(() => {
+                    setShowAIMap(false);
+                  });
+                }}
+              >
+                <X size={16} color="#00E5FF" />
+              </TouchableOpacity>
+            </View>
+            <View style={{
+              backgroundColor: 'rgba(15, 23, 42, 0.95)',
+              padding: 6,
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 6,
+            }}>
+              <Sparkles size={12} color="#00E5FF" />
+              <Text style={{ color: '#94A3B8', fontSize: 10, letterSpacing: 0.5 }}>ROADMIND AI MAP INTELLIGENCE</Text>
+            </View>
+          </Animated.View>
+        )}
 
         {/* Suggested Prompts & Input */}
         <View style={styles.footer}>
@@ -348,7 +434,7 @@ export const ChatScreen = ({ navigation, route }: any) => {
               <VoiceInput onVoiceInput={handleVoiceInput} />
               <TextInput
                 style={styles.input}
-                placeholder="Message TrafiAI..."
+                placeholder="Message RoadMind AI..."
                 placeholderTextColor={COLORS.textSecondary}
                 value={inputText}
                 onChangeText={setInputText}
@@ -417,7 +503,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center'
   },
 
-  heroContainer: { padding: 24, alignItems: 'center', marginTop: 40, transform: [{ scaleY: -1 }] },
+  heroContainer: { padding: 24, alignItems: 'center', marginTop: 40 },
   heroAvatar: {
     width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.navy,
     justifyContent: 'center', alignItems: 'center', marginBottom: 20,

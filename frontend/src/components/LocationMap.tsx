@@ -1,27 +1,54 @@
-import React, { useRef, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import React, { useRef, useEffect, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, Platform, TouchableOpacity } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { COLORS, BORDER_RADIUS, SHADOWS } from '../constants/theme';
-import { Map } from 'lucide-react-native';
+import { Map, Compass, Navigation } from 'lucide-react-native';
 
-interface MapLocation {
+export interface MapLocation {
   lat: number;
   lng: number;
   heading?: number;
+  speed?: number;
 }
 
-interface ZoneOverlay {
-  type: string;
+export interface MapMarker {
+  id: string;
+  type: 'police' | 'hospital' | 'fire' | 'rto' | 'ev' | 'warning' | 'border';
+  name: string;
+  lat: number;
+  lng: number;
+  distance?: number;
+  address?: string;
+  phone?: string;
+}
+
+export interface MapZone {
+  id: string;
+  type: 'school_zone' | 'accident_zone' | 'speed_camera' | 'tow_zone' | 'toll_plaza' | 'restricted_zone' | 'permitted_parking';
   name: string;
   coords: { lat: number; lng: number }[];
+  radius?: number; // for circle drawing if coords is single
   severity: 'low' | 'medium' | 'high';
+}
+
+export interface MapLine {
+  id: string;
+  name: string;
+  coords: { lat: number; lng: number }[];
+  color: string;
+  dashed?: boolean;
 }
 
 interface LocationMapProps {
   currentLocation?: MapLocation;
-  zones?: ZoneOverlay[];
+  mapType?: 'jurisdiction' | 'cockpit' | 'roadsos' | 'fineiq' | 'chat';
+  markers?: MapMarker[];
+  zones?: MapZone[];
+  lines?: MapLine[];
   height?: number;
   interactive?: boolean;
+  onMarkerSelect?: (marker: MapMarker) => void;
+  forceWebView?: boolean;
 }
 
 const MAP_HTML = `
@@ -33,24 +60,20 @@ const MAP_HTML = `
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0F172A; }
-    #map { width: 100vw; height: 100vh; background: #0F172A; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #070D19; }
+    #map { width: 100vw; height: 100vh; background: #070D19; }
 
     /* ── Coordinate Badge ─────────────────────────────── */
     .coord-badge {
       position: fixed; bottom: 10px; left: 10px;
-      background: rgba(15,23,42,0.82);
+      background: rgba(15,23,42,0.85);
       backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(6,182,212,0.18);
+      border: 1px solid rgba(6,182,212,0.22);
       padding: 5px 10px; border-radius: 6px;
-      font-size: 11px; color: rgba(6,182,212,0.85);
+      font-size: 11px; color: rgba(0, 229, 255, 0.9);
       font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
       z-index: 1000; letter-spacing: 0.5px;
-      transition: all 0.4s ease;
-    }
-    .coord-badge.offline {
-      border-color: rgba(6,182,212,0.35);
-      box-shadow: 0 0 12px rgba(6,182,212,0.08);
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.1);
     }
 
     /* ── Offline Status Badge ─────────────────────────── */
@@ -60,7 +83,7 @@ const MAP_HTML = `
       backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
       border: 1px solid rgba(6,182,212,0.22);
       padding: 6px 14px; border-radius: 8px;
-      font-size: 10px; color: #06B6D4;
+      font-size: 10px; color: #00E5FF;
       font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
       z-index: 1001; letter-spacing: 1.4px; text-transform: uppercase;
       opacity: 0; transform: translateY(8px);
@@ -72,7 +95,7 @@ const MAP_HTML = `
     }
     .offline-badge .pulse-dot {
       width: 6px; height: 6px; border-radius: 50%;
-      background: #06B6D4;
+      background: #00E5FF;
       animation: pulseDot 2s ease-in-out infinite;
     }
     @keyframes pulseDot {
@@ -80,14 +103,113 @@ const MAP_HTML = `
       50% { opacity: 1; box-shadow: 0 0 8px 3px rgba(6,182,212,0.25); }
     }
 
-    /* ── Online transition overlay ────────────────────── */
-    .reconnect-flash {
-      position: fixed; inset: 0; z-index: 2000;
-      background: radial-gradient(ellipse at center, rgba(6,182,212,0.12) 0%, transparent 70%);
-      opacity: 0; pointer-events: none;
-      transition: opacity 0.6s ease;
+    /* Blinking user vehicle marker */
+    .user-marker {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(0, 229, 255, 0.20);
+      border: 2px solid #00E5FF;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      animation: pulseUser 2.2s infinite;
     }
-    .reconnect-flash.active { opacity: 1; }
+    .user-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #00E5FF;
+      box-shadow: 0 0 8px #00E5FF;
+    }
+    @keyframes pulseUser {
+      0% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.6); }
+      70% { box-shadow: 0 0 0 12px rgba(0, 229, 255, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
+    }
+
+    /* Rotating Car Mode Marker */
+    .car-marker {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: transform 0.2s ease-out;
+    }
+    .car-cursor-inner {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(0, 229, 255, 0.15);
+      border: 2px solid #00E5FF;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 0 10px #00E5FF;
+    }
+    .car-arrow {
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-bottom: 12px solid #00E5FF;
+    }
+
+    /* Color-coded glowing legal intelligence markers */
+    .neon-marker {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid #FFFFFF;
+      box-shadow: 0 0 10px rgba(0,0,0,0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+    .neon-inner {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #FFFFFF;
+    }
+    .neon-marker.police { background: #3B82F6; box-shadow: 0 0 8px #3B82F6; }
+    .neon-marker.hospital { background: #10B981; box-shadow: 0 0 8px #10B981; }
+    .neon-marker.fire { background: #EF4444; box-shadow: 0 0 8px #EF4444; }
+    .neon-marker.rto { background: #F59E0B; box-shadow: 0 0 8px #F59E0B; }
+    .neon-marker.ev { background: #06B6D4; box-shadow: 0 0 8px #06B6D4; }
+    .neon-marker.warning { background: #EAB308; box-shadow: 0 0 8px #EAB308; }
+    .neon-marker.border { background: #A855F7; box-shadow: 0 0 8px #A855F7; }
+
+    /* Popups/Tooltips styling */
+    .leaflet-tooltip {
+      background: rgba(15, 23, 42, 0.9) !important;
+      border: 1px solid rgba(6, 182, 212, 0.3) !important;
+      color: #FFFFFF !important;
+      border-radius: 6px !important;
+      font-size: 11px !important;
+      font-weight: bold !important;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5) !important;
+    }
+    .leaflet-popup-content-wrapper {
+      background: rgba(15, 23, 42, 0.95) !important;
+      border: 1px solid rgba(6, 182, 212, 0.25) !important;
+      color: #FFFFFF !important;
+      border-radius: 8px !important;
+      box-shadow: 0 0 15px rgba(0,0,0,0.6) !important;
+      font-size: 12px !important;
+    }
+    .leaflet-popup-tip {
+      background: rgba(15, 23, 42, 0.95) !important;
+    }
+    .popup-btn {
+      display: block; width: 100%; text-align: center;
+      background: #00E5FF; color: #070D19;
+      font-size: 11px; font-weight: bold; text-transform: uppercase;
+      padding: 5px; margin-top: 8px; border-radius: 4px;
+      text-decoration: none; cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -97,18 +219,12 @@ const MAP_HTML = `
     <span class="pulse-dot"></span>
     <span>OFFLINE MODE &middot; Tactical Grid</span>
   </div>
-  <div class="reconnect-flash" id="reconnectFlash"></div>
 
   <script>
     /* ================================================================
        TACTICAL OFFLINE GRID LAYER
-       A custom L.GridLayer that renders a canvas-based tactical grid
-       when the device is offline.
        ================================================================ */
     var TacticalGridLayer = L.GridLayer.extend({
-      _scanOffset: 0,
-      _animFrame: null,
-
       createTile: function(coords) {
         var tile = document.createElement('canvas');
         var sz = this.getTileSize();
@@ -117,234 +233,224 @@ const MAP_HTML = `
         this._drawTacticalTile(tile, coords, sz);
         return tile;
       },
-
       _drawTacticalTile: function(canvas, coords, sz) {
         var ctx = canvas.getContext('2d');
         var w = sz.x, h = sz.y;
-
-        /* ── Background ─────────────────────────────── */
-        ctx.fillStyle = '#0F172A';
+        ctx.fillStyle = '#070D19';
         ctx.fillRect(0, 0, w, h);
 
-        /* ── Minor gridlines every 40px ─────────────── */
-        ctx.strokeStyle = 'rgba(6,182,212,0.10)';
+        ctx.strokeStyle = 'rgba(0,229,255,0.06)';
         ctx.lineWidth = 0.5;
         ctx.beginPath();
-        for (var x = 0; x < w; x += 40) {
-          ctx.moveTo(x, 0); ctx.lineTo(x, h);
-        }
-        for (var y = 0; y < h; y += 40) {
-          ctx.moveTo(0, y); ctx.lineTo(w, y);
-        }
+        for (var x = 0; x < w; x += 40) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+        for (var y = 0; y < h; y += 40) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
         ctx.stroke();
 
-        /* ── Major gridlines every 120px ────────────── */
-        ctx.strokeStyle = 'rgba(6,182,212,0.18)';
+        ctx.strokeStyle = 'rgba(0,229,255,0.12)';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        for (var x2 = 0; x2 < w; x2 += 120) {
-          ctx.moveTo(x2, 0); ctx.lineTo(x2, h);
-        }
-        for (var y2 = 0; y2 < h; y2 += 120) {
-          ctx.moveTo(0, y2); ctx.lineTo(w, y2);
-        }
+        for (var x2 = 0; x2 < w; x2 += 120) { ctx.moveTo(x2, 0); ctx.lineTo(x2, h); }
+        for (var y2 = 0; y2 < h; y2 += 120) { ctx.moveTo(0, y2); ctx.lineTo(w, y2); }
         ctx.stroke();
 
-        /* ── Intersection dots ──────────────────────── */
-        ctx.fillStyle = 'rgba(6,182,212,0.22)';
+        ctx.fillStyle = 'rgba(0,229,255,0.2)';
         for (var ix = 0; ix < w; ix += 120) {
           for (var iy = 0; iy < h; iy += 120) {
-            ctx.beginPath();
-            ctx.arc(ix, iy, 2, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(ix, iy, 2, 0, Math.PI * 2); ctx.fill();
           }
         }
-
-        /* ── Coordinate labels at major intersections ─ */
-        var map = this._map;
-        if (map) {
-          ctx.font = '9px monospace';
-          ctx.fillStyle = 'rgba(6,182,212,0.30)';
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'top';
-          for (var lx = 0; lx < w; lx += 120) {
-            for (var ly = 0; ly < h; ly += 120) {
-              var tileOrigin = coords.scaleBy(sz);
-              var latlng = map.unproject([tileOrigin.x + lx, tileOrigin.y + ly], coords.z);
-              var label = latlng.lat.toFixed(3) + ', ' + latlng.lng.toFixed(3);
-              ctx.fillText(label, lx + 4, ly + 4);
-            }
-          }
-        }
-
-        /* ── Subtle corner glow on each tile ────────── */
-        var grad = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, w * 0.7);
-        grad.addColorStop(0, 'rgba(6,182,212,0.02)');
-        grad.addColorStop(1, 'transparent');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
-      },
-
-      /* Animated scanning line – runs once added to map */
-      onAdd: function(map) {
-        L.GridLayer.prototype.onAdd.call(this, map);
-        this._startScanAnimation();
-        return this;
-      },
-      onRemove: function(map) {
-        this._stopScanAnimation();
-        L.GridLayer.prototype.onRemove.call(this, map);
-        return this;
-      },
-
-      _startScanAnimation: function() {
-        var self = this;
-        var scanCanvas = document.createElement('canvas');
-        scanCanvas.id = 'tactical-scan-overlay';
-        scanCanvas.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:450;';
-        document.body.appendChild(scanCanvas);
-        self._scanCanvas = scanCanvas;
-
-        function animateScan() {
-          var c = self._scanCanvas;
-          if (!c) return;
-          c.width = window.innerWidth;
-          c.height = window.innerHeight;
-          var ctx = c.getContext('2d');
-          ctx.clearRect(0, 0, c.width, c.height);
-
-          /* Sweeping horizontal scan line */
-          self._scanOffset = (self._scanOffset + 0.4) % c.height;
-          var sy = self._scanOffset;
-          var scanGrad = ctx.createLinearGradient(0, sy - 30, 0, sy + 30);
-          scanGrad.addColorStop(0, 'transparent');
-          scanGrad.addColorStop(0.5, 'rgba(6,182,212,0.07)');
-          scanGrad.addColorStop(1, 'transparent');
-          ctx.fillStyle = scanGrad;
-          ctx.fillRect(0, sy - 30, c.width, 60);
-
-          /* Thin bright line at center */
-          ctx.strokeStyle = 'rgba(6,182,212,0.14)';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(0, sy);
-          ctx.lineTo(c.width, sy);
-          ctx.stroke();
-
-          self._animFrame = requestAnimationFrame(animateScan);
-        }
-        self._animFrame = requestAnimationFrame(animateScan);
-      },
-
-      _stopScanAnimation: function() {
-        if (this._animFrame) cancelAnimationFrame(this._animFrame);
-        var el = document.getElementById('tactical-scan-overlay');
-        if (el) el.parentNode.removeChild(el);
-        this._scanCanvas = null;
       }
     });
 
-    /* ================================================================
-       MAP INIT
-       ================================================================ */
     var map = L.map('map', {
       attributionControl: false,
-      zoomControl: true,
+      zoomControl: false,
       scrollWheelZoom: true,
+      dragging: true
     });
 
-    var osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-    });
+    var osmTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19
+    }).addTo(map);
+
     var tacticalGrid = new TacticalGridLayer({ maxZoom: 19 });
-
     var isOffline = !navigator.onLine;
 
     function applyNetworkState() {
       var badge = document.getElementById('offlineBadge');
-      var coordEl = document.getElementById('coordBadge');
       if (isOffline) {
-        /* Switch to tactical grid */
         if (map.hasLayer(osmTileLayer)) map.removeLayer(osmTileLayer);
         if (!map.hasLayer(tacticalGrid)) tacticalGrid.addTo(map);
         badge.classList.add('visible');
-        coordEl.classList.add('offline');
-        /* Prefix coord badge */
-        var raw = coordEl.textContent.replace(/^OFFLINE\s*\u00b7\s*/, '');
-        coordEl.textContent = 'OFFLINE · ' + raw;
       } else {
-        /* Switch to OSM tiles */
         if (map.hasLayer(tacticalGrid)) map.removeLayer(tacticalGrid);
         if (!map.hasLayer(osmTileLayer)) osmTileLayer.addTo(map);
         badge.classList.remove('visible');
-        coordEl.classList.remove('offline');
-        coordEl.textContent = coordEl.textContent.replace(/^OFFLINE\s*\u00b7\s*/, '');
-        /* Flash reconnect effect */
-        var flash = document.getElementById('reconnectFlash');
-        flash.classList.add('active');
-        setTimeout(function() { flash.classList.remove('active'); }, 800);
       }
     }
 
-    /* Initial state */
     applyNetworkState();
-
-    /* Seamless transitions */
-    window.addEventListener('online', function() {
-      isOffline = false;
-      applyNetworkState();
-    });
-    window.addEventListener('offline', function() {
-      isOffline = true;
-      applyNetworkState();
-    });
+    window.addEventListener('online', function() { isOffline = false; applyNetworkState(); });
+    window.addEventListener('offline', function() { isOffline = true; applyNetworkState(); });
 
     var userMarker = null;
+    var markersList = {};
     var zoneLayers = [];
+    var lineLayers = [];
 
     // INITIALIZATION_INJECTION
 
-    function updateLocation(lat, lng) {
-      var prefix = isOffline ? 'OFFLINE \u00b7 ' : '';
-      document.getElementById('coordBadge').textContent = prefix + lat.toFixed(4) + ', ' + lng.toFixed(4);
+    function updateLocation(lat, lng, heading, speed) {
+      document.getElementById('coordBadge').textContent = lat.toFixed(5) + ', ' + lng.toFixed(5) + (heading ? ' · ' + heading.toFixed(0) + '°' : '');
+      var latlng = [lat, lng];
+      
       if (userMarker) {
-        userMarker.setLatLng([lat, lng]);
+        userMarker.setLatLng(latlng);
       } else {
-        userMarker = L.marker([lat, lng], {
-          title: 'You are here'
+        // Toggle chevron vs pulsating dot based on heading
+        var markerHtml = (heading !== undefined && heading !== null)
+          ? '<div class="car-marker" id="carMarkerDiv"><div class="car-cursor-inner"><div class="car-arrow"></div></div></div>'
+          : '<div class="user-marker"><div class="user-dot"></div></div>';
+          
+        userMarker = L.marker(latlng, {
+          icon: L.divIcon({
+            className: '',
+            html: markerHtml,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+          })
         }).addTo(map);
       }
-      map.setView([lat, lng], map.getZoom() < 14 ? 14 : map.getZoom());
+
+      if (heading !== undefined && heading !== null) {
+        var arrowDiv = document.getElementById('carMarkerDiv');
+        if (arrowDiv) {
+          arrowDiv.style.transform = 'rotate(' + heading + 'deg)';
+        }
+      }
+
+      // Smooth transition to viewport
+      map.setView(latlng, map.getZoom() < 14 ? 15 : map.getZoom());
+    }
+
+    function updateMarkers(markers) {
+      // Clear existing markers
+      Object.keys(markersList).forEach(function(key) {
+        map.removeLayer(markersList[key]);
+      });
+      markersList = {};
+
+      markers.forEach(function(m) {
+        var colorClass = m.type || 'police';
+        
+        var leafletMarker = L.marker([m.lat, m.lng], {
+          icon: L.divIcon({
+            className: '',
+            html: '<div class="neon-marker ' + colorClass + '"><div class="neon-inner"></div></div>',
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
+          })
+        }).addTo(map);
+
+        var popupContent = '<b>' + m.name + '</b><br>' + 
+                           (m.distance ? 'Distance: ' + m.distance + ' km<br>' : '') +
+                           (m.address ? m.address + '<br>' : '');
+                           
+        if (m.phone) {
+          popupContent += 'Phone: ' + m.phone + '<br>';
+        }
+        
+        popupContent += '<a class="popup-btn" onclick="selectMarker(\\'' + m.id + '\\')">Select Node</a>';
+
+        leafletMarker.bindPopup(popupContent);
+        markersList[m.id] = leafletMarker;
+      });
     }
 
     function updateZones(zones) {
-      zoneLayers.forEach(function(l) { map.removeLayer(l); });
+      zoneLayers.forEach(function(z) { map.removeLayer(z); });
       zoneLayers = [];
-      zones.forEach(function(zone) {
-        var coords = zone.coords.map(function(c) { return [c.lat, c.lng]; });
-        var color = zone.severity === 'high' ? '#ef4444' :
-                    zone.severity === 'medium' ? '#f59e0b' : '#3b82f6';
-        var polygon = L.polygon(coords, {
-          color: color,
-          fillColor: color,
-          fillOpacity: 0.15,
-          weight: 2,
-        }).addTo(map);
-        polygon.bindTooltip(zone.name);
-        zoneLayers.push(polygon);
+
+      zones.forEach(function(z) {
+        var color = z.severity === 'high' ? '#EF4444' :
+                    z.severity === 'medium' ? '#FBBF24' : '#00E5FF';
+                    
+        if (z.coords && z.coords.length > 0) {
+          if (z.coords.length === 1 && z.radius) {
+            // Draw circle
+            var circ = L.circle([z.coords[0].lat, z.coords[0].lng], {
+              radius: z.radius,
+              color: color,
+              fillColor: color,
+              fillOpacity: 0.15,
+              weight: 2
+            }).addTo(map);
+            circ.bindTooltip(z.name);
+            zoneLayers.push(circ);
+          } else {
+            // Draw polygon
+            var polyCoords = z.coords.map(function(c) { return [c.lat, c.lng]; });
+            var poly = L.polygon(polyCoords, {
+              color: color,
+              fillColor: color,
+              fillOpacity: 0.15,
+              weight: 2
+            }).addTo(map);
+            poly.bindTooltip(z.name);
+            zoneLayers.push(poly);
+          }
+        }
       });
+    }
+
+    function updateLines(lines) {
+      lineLayers.forEach(function(l) { map.removeLayer(l); });
+      lineLayers = [];
+
+      lines.forEach(function(l) {
+        var polyCoords = l.coords.map(function(c) { return [c.lat, c.lng]; });
+        var lineOpts = {
+          color: l.color || '#00E5FF',
+          weight: 4,
+          opacity: 0.8
+        };
+        if (l.dashed) {
+          lineOpts.dashArray = '8, 6';
+        }
+        var polyline = L.polyline(polyCoords, lineOpts).addTo(map);
+        polyline.bindTooltip(l.name);
+        lineLayers.push(polyline);
+      });
+    }
+
+    function selectMarker(markerId) {
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: 'marker_press',
+        id: markerId
+      }));
+    }
+
+    function focusOnMarker(markerId) {
+      var m = markersList[markerId];
+      if (m) {
+        map.setView(m.getLatLng(), 16);
+        m.openPopup();
+      }
     }
 
     window.addEventListener('message', function(e) {
       try {
         var data = JSON.parse(e.data);
         if (data.type === 'location') {
-          updateLocation(data.lat, data.lng);
+          updateLocation(data.lat, data.lng, data.heading, data.speed);
+        } else if (data.type === 'markers') {
+          updateMarkers(data.markers || []);
         } else if (data.type === 'zones') {
           updateZones(data.zones || []);
-        } else if (data.type === 'init') {
-          if (data.lat && data.lng) updateLocation(data.lat, data.lng);
-          if (data.zones) updateZones(data.zones);
+        } else if (data.type === 'lines') {
+          updateLines(data.lines || []);
+        } else if (data.type === 'focus_marker') {
+          focusOnMarker(data.id);
         }
       } catch(err) {}
     });
@@ -353,44 +459,85 @@ const MAP_HTML = `
 </html>
 `;
 
-import { useAppMode } from '../hooks/useAppMode';
-import { Compass, Navigation } from 'lucide-react-native';
-
 export const LocationMap: React.FC<LocationMapProps> = ({
   currentLocation,
+  mapType = 'jurisdiction',
+  markers = [],
   zones = [],
+  lines = [],
   height = 300,
   interactive = true,
+  onMarkerSelect,
+  forceWebView = false,
 }) => {
   const webViewRef = useRef<WebView>(null);
-  const { isCar } = useAppMode();
 
   const sendMessageToMap = useCallback((message: object) => {
     webViewRef.current?.postMessage(JSON.stringify(message));
   }, []);
 
-  // Dynamically inject the coordinates and zones into the Leaflet script upon mount
-  // to completely eliminate webview message-handling race conditions.
-  const mapHtml = React.useMemo(() => {
+  // Set initial map state injection and bypass race conditions
+  const mapHtml = useMemo(() => {
     if (!currentLocation) return MAP_HTML;
+    
+    // Inject custom preset markers, lines, boundaries based on map types
+    const markersStr = JSON.stringify(markers);
+    const zonesStr = JSON.stringify(zones);
+    const linesStr = JSON.stringify(lines);
+
     const injection = `
-      map.setView([${currentLocation.lat}, ${currentLocation.lng}], 14);
-      userMarker = L.marker([${currentLocation.lat}, ${currentLocation.lng}], {
-        title: 'You are here'
-      }).addTo(map);
-      document.getElementById('coordBadge').textContent = "${currentLocation.lat.toFixed(4)}, ${currentLocation.lng.toFixed(4)}";
+      map.setView([${currentLocation.lat}, ${currentLocation.lng}], ${mapType === 'cockpit' ? 16 : 14});
+      updateLocation(${currentLocation.lat}, ${currentLocation.lng}, ${currentLocation.heading || 'null'}, ${currentLocation.speed || 'null'});
       try {
-        updateZones(${JSON.stringify(zones)});
+        updateMarkers(${markersStr});
+        updateZones(${zonesStr});
+        updateLines(${linesStr});
       } catch (e) {}
     `;
     return MAP_HTML.replace('// INITIALIZATION_INJECTION', injection);
-  }, [currentLocation, zones]);
+  }, [currentLocation, mapType, markers, zones, lines]);
 
+  // Sync update coordinates
   useEffect(() => {
-    if (currentLocation && !isCar) {
-      sendMessageToMap({ type: 'location', lat: currentLocation.lat, lng: currentLocation.lng });
+    if (currentLocation) {
+      sendMessageToMap({
+        type: 'location',
+        lat: currentLocation.lat,
+        lng: currentLocation.lng,
+        heading: currentLocation.heading,
+        speed: currentLocation.speed,
+      });
     }
-  }, [currentLocation, isCar, sendMessageToMap]);
+  }, [currentLocation, sendMessageToMap]);
+
+  // Sync update markers
+  useEffect(() => {
+    if (markers.length > 0) {
+      sendMessageToMap({ type: 'markers', markers });
+    }
+  }, [markers, sendMessageToMap]);
+
+  // Sync update zones
+  useEffect(() => {
+    sendMessageToMap({ type: 'zones', zones });
+  }, [zones, sendMessageToMap]);
+
+  // Sync update lines
+  useEffect(() => {
+    sendMessageToMap({ type: 'lines', lines });
+  }, [lines, sendMessageToMap]);
+
+  const handleMessage = (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'marker_press' && onMarkerSelect) {
+        const found = markers.find(m => m.id === data.id);
+        if (found) {
+          onMarkerSelect(found);
+        }
+      }
+    } catch (e) {}
+  };
 
   if (!currentLocation) {
     return (
@@ -398,44 +545,6 @@ export const LocationMap: React.FC<LocationMapProps> = ({
         <Map size={48} color={COLORS.textSecondary} />
         <Text style={styles.placeholderTitle}>No Location Data</Text>
         <Text style={styles.placeholderSub}>Enable GPS to see your position</Text>
-      </View>
-    );
-  }
-
-  // Optimized Car Mode view: Disable heavy WebViews completely to prevent OOM
-  if (isCar) {
-    const heading = currentLocation.heading !== undefined && currentLocation.heading !== null
-      ? currentLocation.heading
-      : 0;
-
-    const getHeadingDirection = (deg: number) => {
-      const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-      const idx = Math.round(((deg % 360) + 360) % 360 / 45) % 8;
-      return directions[idx];
-    };
-
-    return (
-      <View style={[styles.carContainer, { height }]}>
-        <View style={styles.carRow}>
-          <Compass size={40} color="#00E5FF" style={{ ...SHADOWS.glow('#00E5FF') }} />
-          <View style={styles.carInfo}>
-            <Text style={styles.carInfoTitle}>TACTICAL TELEMETRY</Text>
-            <Text style={styles.carInfoCoords}>
-              {currentLocation.lat.toFixed(5)}°N, {currentLocation.lng.toFixed(5)}°E
-            </Text>
-            <Text style={styles.carInfoSub}>HEADING: {heading.toFixed(0)}° {getHeadingDirection(heading)}</Text>
-          </View>
-        </View>
-        <View style={[styles.compassContainer, { ...SHADOWS.glow('#00E676') }]}>
-          <Navigation 
-            size={32} 
-            color="#00E676" 
-            style={{ 
-              transform: [{ rotate: `${heading - 45}deg` }] 
-            }} 
-          />
-          <Text style={styles.compassLabel}>{getHeadingDirection(heading)}</Text>
-        </View>
       </View>
     );
   }
@@ -450,9 +559,9 @@ export const LocationMap: React.FC<LocationMapProps> = ({
         bounces={false}
         overScrollMode="never"
         javaScriptEnabled={true}
-        domStorageEnabled={false}
+        domStorageEnabled={true}
         originWhitelist={['*']}
-        onMessage={() => {}}
+        onMessage={handleMessage}
       />
     </View>
   );
@@ -465,64 +574,7 @@ const styles = StyleSheet.create({
     ...SHADOWS.subtle,
   },
   map: {
-    backgroundColor: '#0F172A',
-  },
-  carContainer: {
-    backgroundColor: '#000000',
-    borderWidth: 2,
-    borderColor: '#262626',
-    borderRadius: BORDER_RADIUS.medium,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-  },
-  carRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  carInfo: {
-    justifyContent: 'center',
-  },
-  carInfoTitle: {
-    color: '#00E5FF',
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 2,
-  },
-  carInfoCoords: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: 'bold',
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    marginTop: 4,
-  },
-  carInfoSub: {
-    color: '#A3A3A3',
-    fontSize: 12,
-    marginTop: 2,
-    fontWeight: '600',
-  },
-  compassContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 60,
-    height: 60,
-    backgroundColor: '#0A0A0A',
-    borderRadius: 30,
-    borderWidth: 1,
-    borderColor: '#262626',
-  },
-  arrow: {
-    transform: [{ rotate: '45deg' }],
-  },
-  compassLabel: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '900',
-    position: 'absolute',
-    top: 4,
+    backgroundColor: '#070D19',
   },
   placeholder: {
     justifyContent: 'center',

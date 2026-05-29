@@ -17,7 +17,7 @@ import { useLocation } from '../context/LocationContext';
 import { getJurisdictionLabel } from '../services/locationService';
 import { STATES } from '../constants/states';
 import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS, GLASS } from '../constants/theme';
-import { LocationMap } from '../components/LocationMap';
+import { LocationMap, MapLine, MapZone } from '../components/LocationMap';
 import { Map, LocateFixed, ShieldCheck, Building2, Navigation, AlertTriangle, ArrowLeftRight, Search, XCircle, Check, MapPin, ChevronRight } from 'lucide-react-native';
 
 const TN_DISTRICTS = [
@@ -95,6 +95,56 @@ export const LocationScreen = ({ navigation }: any) => {
     };
   }, [detectedState, geoInfo]);
 
+  const boundaryLines: MapLine[] = useMemo(() => {
+    if (detectedState === 'TN') {
+      return [
+        {
+          id: 'tn-kn-border',
+          name: 'TN–KN State Border',
+          coords: [
+            { lat: 12.9716, lng: 77.5946 },
+            { lat: 12.3051, lng: 76.6551 },
+            { lat: 11.6643, lng: 76.6950 },
+            { lat: 11.0168, lng: 76.9558 },
+          ],
+          color: '#FF1744',
+          dashed: true,
+        },
+      ];
+    }
+    if (detectedState === 'KN') {
+      return [
+        {
+          id: 'kn-tn-border',
+          name: 'KN–TN State Border',
+          coords: [
+            { lat: 12.9716, lng: 77.5946 },
+            { lat: 12.3051, lng: 76.6551 },
+            { lat: 11.6643, lng: 76.6950 },
+            { lat: 11.0168, lng: 76.9558 },
+          ],
+          color: '#A855F7',
+          dashed: true,
+        },
+      ];
+    }
+    return [];
+  }, [detectedState]);
+
+  const legalZones: MapZone[] = useMemo(() => {
+    if (!location) return [];
+    return [
+      {
+        id: 'school-zone-nearby',
+        type: 'school_zone',
+        name: 'School Zone – Speed Limit 25 km/h',
+        coords: [{ lat: location.latitude, lng: location.longitude }],
+        radius: 500,
+        severity: 'medium',
+      },
+    ];
+  }, [location]);
+
   const handleDistrictSelect = (district: string) => {
     dispatch(setState(detectedState || 'TN'));
   };
@@ -134,7 +184,47 @@ export const LocationScreen = ({ navigation }: any) => {
             currentLocation={location ? { lat: location.latitude, lng: location.longitude } : undefined}
             height={220}
             interactive={true}
+            mapType="jurisdiction"
+            lines={boundaryLines}
+            zones={legalZones}
           />
+
+          {/* Jurisdiction Breadcrumb */}
+          <View style={styles.jurisdictionBreadcrumb}>
+            <Text style={styles.breadcrumbText}>🇮🇳 India</Text>
+            <Text style={styles.breadcrumbSeparator}>›</Text>
+            <Text style={styles.breadcrumbText}>{detectedState || 'Detecting...'}</Text>
+            <Text style={styles.breadcrumbSeparator}>›</Text>
+            <Text style={styles.breadcrumbText}>{detectedDistrict || 'Detecting...'}</Text>
+            <Text style={styles.breadcrumbSeparator}>›</Text>
+            <Text style={styles.breadcrumbText}>{detectedCity || 'Detecting...'}</Text>
+          </View>
+
+          {/* Legal Rules Card */}
+          <View style={styles.legalRulesCard}>
+            <Text style={styles.legalRulesTitle}>Rules Active In This Region</Text>
+            <View style={styles.legalRule}>
+              <Text style={styles.legalRuleEmoji}>🪖</Text>
+              <View style={styles.legalRuleContent}>
+                <Text style={styles.legalRuleName}>Helmet Required</Text>
+                <Text style={styles.legalRuleDesc}>Mandatory for two-wheelers under MV Act Section 194D</Text>
+              </View>
+            </View>
+            <View style={styles.legalRule}>
+              <Text style={styles.legalRuleEmoji}>🔕</Text>
+              <View style={styles.legalRuleContent}>
+                <Text style={styles.legalRuleName}>Mobile Usage</Text>
+                <Text style={styles.legalRuleDesc}>Prohibited while driving under Section 184(c)</Text>
+              </View>
+            </View>
+            <View style={styles.legalRule}>
+              <Text style={styles.legalRuleEmoji}>💺</Text>
+              <View style={styles.legalRuleContent}>
+                <Text style={styles.legalRuleName}>Seatbelt</Text>
+                <Text style={styles.legalRuleDesc}>Mandatory for all occupants under Section 194B</Text>
+              </View>
+            </View>
+          </View>
         </View>
 
         {/* Detection Section */}
@@ -169,10 +259,10 @@ export const LocationScreen = ({ navigation }: any) => {
                   <Text style={styles.detectedLabel}>Active Jurisdiction</Text>
                   <Text style={styles.detectedName}>
                     {detectedCity
-                      ? `${detectedCity}, ${stateDetail.name}`
+                      ? `India → ${stateDetail.name} → ${detectedCity}`
                       : detectedDistrict
-                      ? `${detectedDistrict}, ${stateDetail.name}`
-                      : stateDetail.name}
+                      ? `India → ${stateDetail.name} → ${detectedDistrict}`
+                      : `India → ${stateDetail.name} → (Detecting...)`}
                   </Text>
                 </View>
                 <View style={styles.jurisdictionBadge}>
@@ -580,5 +670,67 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // Jurisdiction Breadcrumb
+  jurisdictionBreadcrumb: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0F172A',
+    borderWidth: 1,
+    borderColor: 'rgba(6,182,212,0.2)',
+    borderRadius: BORDER_RADIUS.medium,
+    padding: 10,
+    marginTop: 10,
+  },
+  breadcrumbText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  breadcrumbSeparator: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '600',
+    marginHorizontal: 6,
+    opacity: 0.5,
+  },
+  // Legal Rules Card
+  legalRulesCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.medium,
+    padding: 16,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(6,182,212,0.2)',
+  },
+  legalRulesTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 12,
+  },
+  legalRule: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: 10,
+  },
+  legalRuleEmoji: {
+    fontSize: 18,
+    marginTop: 1,
+  },
+  legalRuleContent: {
+    flex: 1,
+  },
+  legalRuleName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  legalRuleDesc: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
 });

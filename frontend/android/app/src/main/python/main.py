@@ -150,7 +150,7 @@ def execute_pipeline(payload: Dict) -> Dict:
     laws = search(text, top_k=3, state=state)
     if not laws:
         # Instead of raising error, provide smart follow-up for vague queries
-        followup = generate_smart_followup(text, state, language)
+        followup = generate_smart_followup(text, state, language, city, district)
         if followup:
             return {
                 'response_text': followup,
@@ -287,12 +287,52 @@ def get_fallback_response(payload: Dict) -> str:
     return "Based on keyword matching: Please try rephrasing your question."
 
 
+STATE_NAMES = {
+    'TN': 'Tamil Nadu',
+    'KN': 'Karnataka',
+    'KL': 'Kerala',
+    'MH': 'Maharashtra',
+    'DL': 'Delhi',
+    'AP': 'Andhra Pradesh',
+    'TS': 'Telangana',
+    'KA': 'Karnataka'
+}
+
+def get_location_label(state: str, city: str = None, district: str = None, language: str = 'en') -> str:
+    state_fullname = STATE_NAMES.get(state.upper(), state)
+    if language == 'ta':
+        if state.upper() == 'TN': state_fullname = 'தமிழ்நாடு'
+        if state.upper() == 'KN': state_fullname = 'கர்நாடகா'
+        if city and district:
+            return f"{city}, {district}, {state_fullname}"
+        elif district:
+            return f"{district}, {state_fullname}"
+        return state_fullname
+    elif language == 'hi':
+        if state.upper() == 'TN': state_fullname = 'तमिलनाडु'
+        if state.upper() == 'KN': state_fullname = 'कर्नाटक'
+        if city and district:
+            return f"{city}, {district}, {state_fullname}"
+        elif district:
+            return f"{district}, {state_fullname}"
+        return state_fullname
+    else:
+        if city and district:
+            return f"{city}, {district}, {state_fullname}"
+        elif district:
+            return f"{district}, {state_fullname}"
+        return state_fullname
+
+
 def keyword_fallback_response(payload: Dict) -> str:
     """Fallback when no laws are found — with smart follow-up questions."""
     text = payload.get('text', 'your question')
     language = payload.get('language', 'en')
-    state = payload.get('location', {}).get('state', 'TN')
-    followup = generate_smart_followup(text, state, language)
+    location = payload.get('location', {})
+    state = location.get('state', 'TN')
+    city = location.get('city')
+    district = location.get('district')
+    followup = generate_smart_followup(text, state, language, city, district)
     if followup:
         return followup
     if language == 'ta':
@@ -306,14 +346,14 @@ def keyword_fallback_response(payload: Dict) -> str:
 
 VAGUE_QUERY_PATTERNS = {
     'helmet': {
-        'en': '🪖 **Helmet Violation (Section 194D, MV Act)**\n\nNot wearing a helmet while riding a two-wheeler is a punishable offense.\n\n• **First offense:** ₹1,000 fine + 3-month license suspension\n• **Repeat offense:** ₹2,000 fine + longer suspension\n\nTo give you the exact fine for your situation, could you tell me:\n1. Is this your **first offense** or a repeat offense?\n2. Were you the **rider or pillion passenger**?',
-        'ta': '🪖 **ஹெல்மெட் விதிமீறல் (பிரிவு 194D, MV சட்டம்)**\n\nஇருசக்கர வாகனம் ஓட்டும்போது ஹெல்மெட் அணியாமல் இருப்பது தண்டனைக்குரிய குற்றம்.\n\n• **முதல் குற்றம்:** ₹1,000 அபராதம் + 3 மாத உரிம இடைநிறுத்தம்\n• **மீண்டும் குற்றம்:** ₹2,000 அபராதம்\n\nஉங்கள் நிலைமைக்கு சரியான அபராதத்தை சொல்ல:\n1. இது உங்கள் **முதல் குற்றமா** அல்லது மீண்டும்?\n2. நீங்கள் **ஓட்டுநரா அல்லது பின் இருக்கை பயணியா**?',
-        'hi': '🪖 **हेलमेट उल्लंघन (धारा 194D, MV अधिनियम)**\n\nदोपहिया वाहन चलाते समय हेलमेट न पहनना दंडनीय अपराध है।\n\n• **पहला अपराध:** ₹1,000 जुर्माना + 3 महीने का लाइसेंस निलंबन\n• **दोबारा अपराध:** ₹2,000 जुर्माना\n\nआपकी स्थिति के लिए सही जुर्माना बताने के लिए:\n1. क्या यह आपका **पहला अपराध** है या दोबारा?\n2. क्या आप **चालक थे या पीछे बैठे यात्री**?',
+        'en': '🪖 **Helmet Violation (Section 194D, MV Act)**\n\nNot wearing a helmet while riding a two-wheeler is a punishable offense.\n\n• **First offense:** {first_fine} fine + 3-month license suspension\n• **Repeat offense:** {second_fine} fine + longer suspension\n\nTo give you the exact fine for your situation, could you tell me:\n1. Is this your **first offense** or a repeat offense?\n2. Were you the **rider or pillion passenger**?',
+        'ta': '🪖 **ஹெல்மெட் விதிமீறல் (பிரிவு 194D, MV சட்டம்)**\n\nஇருசக்கர வாகனம் ஓட்டும்போது ஹெல்மெட் அணியாமல் இருப்பது தண்டனைக்குரிய குற்றம்.\n\n• **முதல் குற்றம்:** {first_fine} அபராதம் + 3 மாத உரிம இடைநிறுத்தம்\n• **மீண்டும் குற்றம்:** {second_fine} அபராதம்\n\nஉங்கள் நிலைமைக்கு சரியான அபராதத்தை சொல்ல:\n1. இது உங்கள் **முதல் குற்றமா** அல்லது மீண்டும்?\n2. நீங்கள் **ஓட்டுநரா அல்லது பின் இருக்கை பயணியா**?',
+        'hi': '🪖 **हेलमेट उल्लंघन (धारा 194D, MV अधिनियम)**\n\nदोपहिया वाहन चलाते समय हेलमेट न पहनना दंडनीय अपराध है।\n\n• **पहला अपराध:** {first_fine} जुर्माना + 3 महीने का लाइसेंस निलंबन\n• **दोबारा अपराध:** {second_fine} जुर्माना\n\nआपकी स्थिति के लिए सही जुर्माना बताने के लिए:\n1. क्या यह आपका **पहला अपराध** है या दोबारा?\n2. क्या आप **चालक थे या पीछे बैठे यात्री**?',
     },
     'signal': {
-        'en': '🚦 **Traffic Signal Violation (Section 194C, MV Act)**\n\nJumping a red light is a serious offense.\n\n• **Fine:** ₹1,000 to ₹5,000 (varies by state)\n• May also attract license suspension for repeat offenders.\n\nCould you clarify:\n1. Was this caught by a **traffic camera or by a police officer**?\n2. Is this your **first time** or have you been fined before?',
-        'ta': '🚦 **சிக்னல் ஜம்ப் (பிரிவு 194C, MV சட்டம்)**\n\nசிவப்பு விளக்கை மீறுவது கடுமையான குற்றம்.\n\n• **அபராதம்:** ₹1,000 முதல் ₹5,000\n\nதெளிவுபடுத்துங்கள்:\n1. **கேமரா மூலம் பிடிபட்டதா அல்லது காவல்துறை**?\n2. இது **முதல் முறையா**?',
-        'hi': '🚦 **सिग्नल उल्लंघन (धारा 194C, MV अधिनियम)**\n\nलाल बत्ती तोड़ना गंभीर अपराध है।\n\n• **जुर्माना:** ₹1,000 से ₹5,000\n\nकृपया बताएं:\n1. क्या यह **कैमरे से पकड़ा गया या पुलिस ने**?\n2. क्या यह **पहली बार** है?',
+        'en': '🚦 **Traffic Signal Violation (Section 194C, MV Act)**\n\nJumping a red light is a serious offense.\n\n• **Fine:** {first_fine} to {second_fine} (varies by state)\n• May also attract license suspension for repeat offenders.\n\nCould you clarify:\n1. Was this caught by a **traffic camera or by a police officer**?\n2. Is this your **first time** or have you been fined before?',
+        'ta': '🚦 **சிக்னல் ஜம்ப் (பிரிவு 194C, MV சட்டம்)**\n\nசிவப்பு விளக்கை மீறுவது கடுமையான குற்றம்.\n\n• **அபராதம்:** {first_fine} முதல் {second_fine}\n\nதெளிவுபடுத்துங்கள்:\n1. **கேமரா மூலம் பிடிபட்டதா அல்லது காவல்துறை**?\n2. இது **முதல் முறையா**?',
+        'hi': '🚦 **सिग्नल उल्लंघन (धारा 194C, MV अधिनियम)**\n\nलाल बत्ती तोड़ना गंभीर अपराध है।\n\n• **जुर्माना:** {first_fine} से {second_fine}\n\nकृपया बताएं:\n1. क्या यह **कैमरे से पकड़ा गया या पुलिस ने**?\n2. क्या यह **पहली बार** है?',
     },
     'license': {
         'en': '📋 **License Information**\n\nI can help you with license-related queries! Could you specify what you need:\n1. **Applying for a new license** (learner\'s or permanent)?\n2. **License renewal** — is your license expired or about to expire?\n3. **Driving without a license** — what\'s the penalty?\n4. **International driving permit**?',
@@ -331,14 +371,14 @@ VAGUE_QUERY_PATTERNS = {
         'hi': '📝 **चालान / ई-चालान**\n\nचालान संबंधी मदद:\n1. **लंबित चालान जांचें** — गाड़ी नंबर है?\n2. **ऑनलाइन भुगतान**?\n3. **चालान विवाद**?\n4. **जुर्माना राशि**?',
     },
     'speed': {
-        'en': '🏎️ **Speeding Violation (Section 194, MV Act)**\n\nSpeeding fines depend on the type of vehicle and how much you exceeded the limit.\n\n• **Light motor vehicle:** ₹1,000 - ₹2,000\n• **Medium/heavy vehicle:** ₹2,000 - ₹4,000\n\nTo give exact details:\n1. Were you driving a **car, bike, or commercial vehicle**?\n2. Do you know the **speed limit** on that road?',
-        'ta': '🏎️ **வேக விதிமீறல் (பிரிவு 194)**\n\nவேக அபராதம் வாகன வகையைப் பொறுத்தது.\n\n• **லேசான வாகனம்:** ₹1,000 - ₹2,000\n• **கனரக வாகனம்:** ₹2,000 - ₹4,000\n\nசரியான விவரங்களுக்கு:\n1. **கார், பைக் அல்லது வணிக வாகனம்**?\n2. அந்த சாலையின் **வேக வரம்பு** தெரியுமா?',
-        'hi': '🏎️ **ओवरस्पीडिंग (धारा 194)**\n\nजुर्माना वाहन के प्रकार पर निर्भर करता है।\n\n• **हल्का वाहन:** ₹1,000 - ₹2,000\n• **भारी वाहन:** ₹2,000 - ₹4,000\n\nसटीक जानकारी के लिए:\n1. **कार, बाइक या कमर्शियल वाहन**?\n2. उस सड़क की **स्पीड लिमिट** पता है?',
+        'en': '🏎️ **Speeding Violation (Section 194, MV Act)**\n\nSpeeding fines depend on the type of vehicle and how much you exceeded the limit.\n\n• **Light motor vehicle:** {first_fine}\n• **Medium/heavy vehicle:** {second_fine}\n\nTo give exact details:\n1. Were you driving a **car, bike, or commercial vehicle**?\n2. Do you know the **speed limit** on that road?',
+        'ta': '🏎️ **வேக விதிமீறல் (பிரிவு 194)**\n\nவேக அபராதம் வாகன வகையைப் பொறுத்தது.\n\n• **லேசான வாகனம்:** {first_fine}\n• **கனரக வாகனம்:** {second_fine}\n\nசரியான விவரங்களுக்கு:\n1. **கார், பைக் அல்லது வணிக வாகனம்**?\n2. அந்த சாலையின் **வேக வரம்பு** தெரியுமா?',
+        'hi': '🏎️ **ओवरस्पीडिंग (धारा 194)**\n\nजुर्माना वाहन के प्रकार पर निर्भर करता है।\n\n• **हल्का वाहन:** {first_fine}\n• **भारी वाहन:** {second_fine}\n\nसटीक जानकारी के लिए:\n1. **कार, बाइक या कमर्शियल वाहन**?\n2. उस सड़क की **स्पीड लिमिट** पता है?',
     },
     'drink': {
-        'en': '🍺 **Drunk Driving (Section 185, MV Act)**\n\nDrunk driving is one of the most severely punished traffic offenses in India.\n\n• **First offense:** ₹10,000 fine and/or up to 6 months imprisonment\n• **Repeat offense (within 3 years):** ₹15,000 fine and/or up to 2 years imprisonment\n• Blood alcohol limit: **30mg per 100ml of blood**\n\nIs this for:\n1. **Understanding the law** before driving?\n2. **Already caught** — what are your options?',
-        'ta': '🍺 **குடிபோதையில் ஓட்டுதல் (பிரிவு 185)**\n\n• **முதல் குற்றம்:** ₹10,000 + 6 மாத சிறை\n• **மீண்டும் (3 வருடத்தில்):** ₹15,000 + 2 வருட சிறை\n\nஇது எதற்கு:\n1. **சட்டத்தை புரிந்துகொள்ள**?\n2. **ஏற்கனவே பிடிபட்டதா**?',
-        'hi': '🍺 **शराब पीकर ड्राइविंग (धारा 185)**\n\n• **पहला अपराध:** ₹10,000 + 6 महीने जेल\n• **दोबारा (3 साल में):** ₹15,000 + 2 साल जेल\n\nयह किसलिए:\n1. **कानून समझने के लिए**?\n2. **पहले से पकड़े गए** — क्या विकल्प हैं?',
+        'en': '🍺 **Drunk Driving (Section 185, MV Act)**\n\nDrunk driving is one of the most severely punished traffic offenses in India.\n\n• **First offense:** {first_fine} fine and/or up to 6 months imprisonment\n• **Repeat offense (within 3 years):** {second_fine} fine and/or up to 2 years imprisonment\n• Blood alcohol limit: **30mg per 100ml of blood**\n\nIs this for:\n1. **Understanding the law** before driving?\n2. **Already caught** — what are your options?',
+        'ta': '🍺 **குடிபோதையில் ஓட்டுதல் (பிரிவு 185)**\n\n• **முதல் குற்றம்:** {first_fine} + 6 மாத சிறை\n• **மீண்டும் (3 வருடத்தில்):** {second_fine} + 2 வருட சிறை\n\nஇது எதற்கு:\n1. **சட்டத்தை புரிந்துகொள்ள**?\n2. **ஏற்கனவே பிடிபட்டதா**?',
+        'hi': '🍺 **शराब पीकर ड्राइविंग (धारा 185)**\n\n• **पहला अपराध:** {first_fine} + 6 महीने जेल\n• **दोबारा (3 साल में):** {second_fine} + 2 साल जेल\n\nयह किसलिए:\n1. **कानून समझने के लिए**?\n2. **पहले से पकड़े गए** — क्या विकल्प हैं?',
     },
 }
 
@@ -346,7 +386,7 @@ VAGUE_QUERY_PATTERNS = {
 PATTERN_TRIGGERS = {
     'helmet': ['helmet', 'helmat', 'ஹெல்மெட்', 'हेलमेट', 'topi'],
     'signal': ['signal', 'red light', 'traffic light', 'சிக்னல்', 'सिग्नल', 'redlight'],
-    'license': ['license', 'licence', 'dl', 'driving license', 'உரிமம்', 'लाइसेंस', 'permit'],
+    'license': ['license', 'licence', 'dl', 'driving license', 'உரிமம்', 'லாசைன்ஸ்', 'permit'],
     'fine': ['fine', 'penalty', 'amount', 'அபராதம்', 'जुर्माना', 'kitna'],
     'challan': ['challan', 'echallan', 'e-challan', 'சல்லான்', 'चालान'],
     'speed': ['speed', 'overspeeding', 'speeding', 'வேகம்', 'स्पीड', 'fast'],
@@ -365,7 +405,7 @@ def detect_language_from_text(text: str) -> str:
     return 'en'
 
 
-def generate_smart_followup(text: str, state: str, language: str) -> str:
+def generate_smart_followup(text: str, state: str, language: str, city: str = None, district: str = None) -> str:
     """
     Generate a smart follow-up response for vague queries.
     Returns None if the query doesn't match any known patterns.
@@ -380,9 +420,47 @@ def generate_smart_followup(text: str, state: str, language: str) -> str:
         for trigger in triggers:
             if trigger in text_lower:
                 templates = VAGUE_QUERY_PATTERNS.get(pattern_key, {})
-                response = templates.get(lang, templates.get('en', ''))
-                if response:
-                    return response
+                response_template = templates.get(lang, templates.get('en', ''))
+                if response_template:
+                    # Dynamically fetch localized penalty details
+                    first_fine = "₹1,000"
+                    second_fine = "₹2,000"
+                    
+                    violation_mapping = {
+                        'helmet': 'no_helmet',
+                        'signal': 'red_light',
+                        'speed': 'speeding',
+                        'drink': 'drunk_driving',
+                        'license': 'no_license'
+                    }
+                    
+                    if pattern_key in violation_mapping:
+                        try:
+                            from database import get_penalties
+                            p_list = get_penalties(violation_mapping[pattern_key], state, city, district)
+                            if p_list:
+                                p = p_list[0]
+                                first_fine = p.get('first_offense', first_fine)
+                                second_fine = p.get('second_offense', second_fine)
+                        except Exception:
+                            pass
+                    
+                    # Format response text safely with localized values
+                    try:
+                        formatted_response = response_template.format(first_fine=first_fine, second_fine=second_fine)
+                    except Exception:
+                        formatted_response = response_template
+                    
+                    # Prefix with localized location notice
+                    location_name = get_location_label(state, city, district, lang)
+                    if lang == 'ta':
+                        prefix = f"📍 **உங்கள் தற்போதைய இருப்பிடமான {location_name} அடிப்படையில்:**\n\n"
+                    elif lang == 'hi':
+                        prefix = f"📍 **आपके वर्तमान स्थान {location_name} के आधार पर:**\n\n"
+                    else:
+                        prefix = f"📍 **Based on your current location in {location_name}:**\n\n"
+                        
+                    return prefix + formatted_response
     
     return None
 

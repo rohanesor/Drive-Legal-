@@ -34,6 +34,11 @@ def generate_response(
     language: str,
     max_tokens: int = 256,
     history: List[Dict] = None,
+    penalties: List[Dict] = None,
+    city: str = None,
+    district: str = None,
+    concise_mode: bool = False,
+    **kwargs,
 ) -> Optional[str]:
     model = _load_model()
     if model is None:
@@ -123,31 +128,57 @@ def generate_response(
             section = law.get('section', 'Motor Vehicles Act')
             desc = law.get('description', '')
             title = law.get('title', 'Traffic Rules')
+            violation_type = law.get('violation_type', '')
             
             # Simple keyword matching from SQL to help satisfy basic queries
             penalty_info = ""
+            fine_amount = "₹500"
             try:
-                from database import get_connection
-                conn = get_connection()
-                cursor = conn.cursor()
-                cursor.execute(
-                    "SELECT first_offense, second_offense FROM penalties WHERE violation_type = ? AND state = ?",
-                    (law.get('violation_type', ''), state)
-                )
-                row = cursor.fetchone()
-                if row:
-                    penalty_info = f" The penalty for first offense is {row[0]} and second offense is {row[1]}."
-                conn.close()
-            except Exception:
-                pass
+                from database import get_localized_penalties
+                p_list = get_localized_penalties(state, city, district)
+                match = None
+                for p in p_list:
+                    if p.get('violation_type', '') == violation_type:
+                        match = p
+                        break
+                if match:
+                    fine_amount = match.get('first_offense', '₹500')
+                    penalty_info = f" The penalty in {city or state} is {match.get('first_offense')} for first offense ({match.get('additional_details', '')})."
+            except Exception as e:
+                # Basic direct query backup
+                try:
+                    from database import get_connection
+                    conn = get_connection()
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        "SELECT first_offense, second_offense, additional_details FROM penalties WHERE violation_type = ? AND state = ? LIMIT 1",
+                        (violation_type, state)
+                    )
+                    row = cursor.fetchone()
+                    if row:
+                        fine_amount = row[0]
+                        penalty_info = f" The penalty is {row[0]} for first offense ({row[2]})."
+                    conn.close()
+                except Exception:
+                    pass
+            
+            if concise_mode:
+                if language == 'ta':
+                    return f"எச்சரிக்கை! {title} அபராதம் {fine_amount} ஆகும்."
+                elif language == 'hi':
+                    return f"सावधान! {title} का जुर्माना {fine_amount} है।"
+                else:
+                    return f"Alert: {title} fine is {fine_amount} in {city or state}."
                 
             if language == 'ta':
-                return f"பிரிவு {law.get('section', 'மோட்டார் வாகனச் சட்டம்')}: {desc}.{penalty_info}"
+                return f"வணக்கம், பிரிவு {section} ({title}): {desc}.{penalty_info} பாதுகாப்புடன் ஓட்டவும்!"
             elif language == 'hi':
-                return f"धारा {law.get('section', 'मोटर वाहन अधिनियम')}: {desc}.{penalty_info}"
+                return f"नमस्ते, धारा {section} ({title}): {desc}.{penalty_info} सुरक्षित रूप से चलाएं!"
             else:
-                return f"Under {section} regarding {title}: {desc}.{penalty_info}"
+                return f"Hello, under {section} regarding {title}: {desc}.{penalty_info} Drive safely!"
                 
+        if concise_mode:
+            return "Please consult local speed signs."
         return "I see. Actually, in that case, please consult the local RTO for specific guidelines."
 
     laws_text = '\n\n'.join([
@@ -155,24 +186,35 @@ def generate_response(
         for law in laws
     ])
 
-    # Enhanced ChatGPT-like persona
-    system_prompt = f"""You are TrafiAI, a conversational, proactive, and friendly AI legal mobility assistant for Indian drivers.
+    penalties_text = ""
+    if penalties:
+        penalties_text = "Localized Penalties:\n" + "\n".join([
+            f"- Offense: {p.get('violation_type', '')} | Base Fine: {p.get('first_offense', '')} | State/City: {p.get('state', '')} ({p.get('additional_details', '')})"
+            for p in penalties
+        ])
+
+    # Enhanced RoadMind AI ChatGPT-like persona
+    system_prompt = f"""You are RoadMind AI, a conversational, proactive, and highly friendly AI legal mobility assistant for Indian drivers.
 Context:
 - User's State: {state}
+- User's City: {city or 'Unknown'}
+- User's District: {district or 'Unknown'}
 - Language: {language}
+- Concise Mode (Infotainment/Driving HUD): {concise_mode}
 
 Legal Knowledge Base:
 {laws_text}
 
+{penalties_text}
+
 Persona Guidelines:
-- Be human-like and empathetic, not robotic.
-- Always provide specific Section numbers (e.g., Section 194).
-- State clear penalty amounts for {state}.
-- If the user's question is safety-related, give a brief proactive safety tip.
-- Keep answers concise but complete.
-- Use natural conversational fillers like "I see," "In that case," or "Actually."
-- If you don't have a specific answer in the provided laws, offer general guidance and suggest checking with the RTO.
-- ALWAYS respond in {language}.
+- Be highly human-like, conversational, and empathetic. Avoid dry, robotic bullet points.
+- Always provide specific legal provisions (e.g., Section 194 of Motor Vehicles Act).
+- Always state the clear, exact fine amounts localized for {city or state} using the Localized Penalties table above.
+- If concise_mode is TRUE, limit your response strictly to a single, bold, action-oriented advisory under 80 characters for driver safety!
+- If concise_mode is FALSE, offer a friendly traffic safety advisory (e.g. "Please ensure your seatbelt is fastened! Safe driving!") at the end.
+- Use natural conversational fillers like "I see," "Actually," "In that case," or "Indeed."
+- ALWAYS respond in the identical language: {language}.
 """
 
     history_text = ""

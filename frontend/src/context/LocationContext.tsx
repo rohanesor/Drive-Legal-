@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { Alert } from 'react-native';
 import * as LocationService from '../services/locationService';
 import { GPSCoords, GeoInfo } from '../services/locationService';
 
@@ -52,6 +53,16 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (err: any) {
       setError(err.message);
 
+      // Explicit prompt to guide the user to turn on GPS/permissions
+      Alert.alert(
+        'Location Access Required',
+        'Smart Jurisdiction Engine requires location permissions and active GPS sensors to monitor speed laws in the background. Please ensure Location is enabled in system settings.',
+        [
+          { text: 'Use Offline Manual Mode', style: 'cancel' },
+          { text: 'Enable / Retry', onPress: () => refreshLocation() }
+        ]
+      );
+
       // Fallback to cache if GPS fails
       try {
         const cached = await LocationService.getLastLocation();
@@ -60,11 +71,11 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           setGeoInfo(cached.geo);
           console.info('Using cached location fallback');
         } else {
-          setManualLocation('DL');
+          setManualLocation('TN');
         }
       } catch (cacheErr) {
         console.warn('Cache access failed', cacheErr);
-        setManualLocation('DL');
+        setManualLocation('TN');
       }
     } finally {
       setIsLoading(false);

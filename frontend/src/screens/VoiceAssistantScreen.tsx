@@ -15,6 +15,7 @@ import {
   Platform,
   PermissionsAndroid,
   Switch,
+  TextInput,
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../store';
@@ -22,7 +23,7 @@ import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS, GLASS } from '../constants/
 import { useLocation } from '../context/LocationContext';
 import { getStateName, getJurisdictionLabel } from '../services/locationService';
 import { executeQuery } from '../services/pythonBridge';
-import { Mic, X, Sparkles, Volume2, Shield, Circle, RefreshCw, AlertCircle, ArrowLeft } from 'lucide-react-native';
+import { Mic, X, Sparkles, Volume2, Shield, Circle, RefreshCw, AlertCircle, ArrowLeft, Keyboard, Send } from 'lucide-react-native';
 import AudioRecorderPlayer from 'react-native-audio-recorder-player';
 import { getAudioPath } from '../utils/audioPath';
 
@@ -52,8 +53,10 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
   // Voice Interaction States
   const [voiceState, setVoiceState] = useState<VoiceState>('IDLE');
   const [userTranscript, setUserTranscript] = useState('');
-  const [botResponseText, setBotResponseText] = useState('Welcome to TrafiAI Voice Mode. Tap the mic and speak, or tap a quick card below.');
+  const [botResponseText, setBotResponseText] = useState('Welcome to DriveTalk. Tap the mic and speak, or tap a quick card below.');
   const [isHandsFree, setIsHandsFree] = useState(true);
+  const [inputText, setInputText] = useState('');
+  const [showTextInput, setShowTextInput] = useState(false);
 
   // Animations
   const pulseScale = useRef(new Animated.Value(1)).current;
@@ -170,7 +173,7 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
         PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
         {
           title: 'Microphone Permission',
-          message: 'TrafiAI Voice Mode needs access to your microphone for hands-free queries.',
+          message: 'DriveTalk needs access to your microphone for hands-free queries.',
           buttonPositive: 'OK',
           buttonNegative: 'Cancel',
         }
@@ -298,6 +301,43 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
     }
   };
 
+  const processTextQuery = async (queryText: string) => {
+    if (!queryText.trim()) return;
+    try {
+      await stopSpeechPlayback();
+      clearSpeechMonitoring();
+      
+      setVoiceState('THINKING');
+      setUserTranscript(`"${queryText}"`);
+      setBotResponseText('Searching laws...');
+      
+      const result = await executeQuery({
+        action: 'query',
+        text: queryText,
+        language: userLanguage,
+        location: {
+          lat: location?.latitude || 0,
+          lng: location?.longitude || 0,
+          state: userState,
+          city: geoInfo?.city || undefined,
+          district: geoInfo?.district || undefined,
+        }
+      });
+
+      if (result.status === 'success') {
+        const textResponse = result.response_text || result.fallback_response_text || 'No matches found in database.';
+        speakBotResponse(textResponse);
+      } else {
+        setVoiceState('IDLE');
+        setBotResponseText("I couldn't find the answers. Please try another query.");
+      }
+    } catch (e) {
+      console.error('Failed to execute text query:', e);
+      setVoiceState('IDLE');
+      setBotResponseText('Pipeline error. Please try again.');
+    }
+  };
+
   /**
    * Pipeline Step: Process Quick-Tap commands directly
    */
@@ -398,7 +438,7 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
         </TouchableOpacity>
         <View style={styles.headerTitleRow}>
           <Shield size={16} color={COLORS.cyan} />
-          <Text style={styles.headerText}>TRAFIAI VOICE MODE</Text>
+          <Text style={styles.headerText}>DRIVETALK (VOICE)</Text>
         </View>
         <View style={styles.locationBadge}>
           <Text style={styles.locationBadgeText}>
@@ -481,6 +521,47 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
            voiceState === 'SPEAKING' ? '🔊 BOT SPEAKING (Tap to mute)' :
            '🎤 TAP MIC TO SPEAK'}
         </Text>
+      </View>
+
+      {/* Keyboard Input Toggler & Collapsible Bar */}
+      <View style={styles.inputContainer}>
+        <TouchableOpacity 
+          style={styles.keyboardToggleBtn}
+          onPress={() => setShowTextInput(!showTextInput)}
+          activeOpacity={0.8}
+        >
+          <Keyboard size={20} color={showTextInput ? COLORS.cyan : COLORS.textSecondary} />
+          <Text style={[styles.keyboardToggleText, showTextInput && { color: COLORS.cyan }]}>
+            {showTextInput ? 'Hide Input' : 'Type Message'}
+          </Text>
+        </TouchableOpacity>
+
+        {showTextInput && (
+          <View style={styles.textInputRow}>
+            <TextInput
+              style={styles.hudTextInput}
+              placeholder="Ask DriveTalk..."
+              placeholderTextColor="#666666"
+              value={inputText}
+              onChangeText={setInputText}
+              onSubmitEditing={() => {
+                processTextQuery(inputText);
+                setInputText('');
+                setShowTextInput(false);
+              }}
+            />
+            <TouchableOpacity 
+              style={styles.hudSendBtn}
+              onPress={() => {
+                processTextQuery(inputText);
+                setInputText('');
+                setShowTextInput(false);
+              }}
+            >
+              <Send size={18} color="#000000" />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* Driving-safe HUD Quick Tap Cards */}
@@ -695,5 +776,52 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.white,
     textAlign: 'center',
+  },
+  inputContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginVertical: 12,
+  },
+  keyboardToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#0F172A',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.2)',
+  },
+  keyboardToggleText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  textInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '90%',
+    marginTop: 10,
+    backgroundColor: '#1E293B',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.3)',
+    paddingHorizontal: 12,
+  },
+  hudTextInput: {
+    flex: 1,
+    height: 48,
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  hudSendBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.cyan,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
