@@ -35,7 +35,7 @@ import { saveSettings } from '../services/storage';
 import { getStateName } from '../services/locationService';
 import { startLocationService, stopLocationService } from '../services/backgroundService';
 import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS, GLASS } from '../constants/theme';
-import { Settings as SettingsIcon, Languages, MapPin, SlidersHorizontal, Navigation, Moon, Info, ShieldCheck, AlertCircle, Check, CheckCircle } from 'lucide-react-native';
+import { Settings as SettingsIcon, Languages, MapPin, SlidersHorizontal, Navigation, Moon, Info, ShieldCheck, AlertCircle, Check, CheckCircle, Mic } from 'lucide-react-native';
 
 // Available languages with native script display
 const LANGUAGES = [
@@ -47,7 +47,7 @@ const LANGUAGES = [
 // Available Indian states
 const STATES = ['TN', 'KN', 'AP', 'KL', 'MH', 'DL'];
 
-export const SettingsScreen = () => {
+export const SettingsScreen = ({ navigation }: any) => {
   const dispatch = useDispatch();
   const settings = useSelector((state: RootState) => state.settings);
 
@@ -219,6 +219,20 @@ export const SettingsScreen = () => {
               trackColor={{ false: COLORS.border, true: 'rgba(6, 182, 212, 0.3)' }}
               thumbColor={settings.darkMode ? COLORS.cyan : '#f4f3f4'}
             />
+          </View>
+
+          <View style={styles.toggleRow}>
+            <TouchableOpacity 
+              style={[styles.toggleInfo, { flexDirection: 'row', alignItems: 'center' }]} 
+              onPress={() => navigation.navigate('SpeechTest')}
+              activeOpacity={0.8}
+            >
+              <Mic size={18} color={COLORS.cyan} />
+              <View style={[styles.toggleTexts, { marginLeft: 12 }]}>
+                <Text style={styles.toggleLabel}>Speech Recognition Lab</Text>
+                <Text style={styles.toggleSub}>Test and compare locale STT quality</Text>
+              </View>
+            </TouchableOpacity>
           </View>
 
           <View style={[styles.toggleRow, { borderBottomWidth: 0 }]}>

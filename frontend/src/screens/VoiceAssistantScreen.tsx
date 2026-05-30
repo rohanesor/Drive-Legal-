@@ -66,7 +66,7 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
   // Voice Interaction States
   const [voiceState, setVoiceState] = useState<VoiceState>('READY');
   const [userTranscript, setUserTranscript] = useState('');
-  const [isHandsFree, setIsHandsFree] = useState(true);
+  const [isHandsFree, setIsHandsFree] = useState(false);
   const [inputText, setInputText] = useState('');
   const [showTextInput, setShowTextInput] = useState(false);
 
@@ -110,6 +110,9 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
         hasTranscriptRef.current = true;
         latestTranscriptRef.current = match;
         setUserTranscript(match);
+        if (e.confidence !== undefined) {
+          setConfidenceScore(Math.round(e.confidence * 100));
+        }
       }
     });
 
@@ -119,6 +122,12 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
         hasTranscriptRef.current = true;
         latestTranscriptRef.current = match;
         autoRetryCount.current = 0;
+        
+        // Save recognition confidence returned from native module
+        if (e.confidence !== undefined) {
+          setConfidenceScore(Math.round(e.confidence * 100));
+        }
+        
         if (!hasSubmittedRef.current) {
           processSpeechText(match);
         }
@@ -130,16 +139,13 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
     });
 
     const onError = DeviceEventEmitter.addListener('onSpeechError', (e) => {
-      // Treat as successful and submit if we got some transcript, ignore subsequent errors
-      if (latestTranscriptRef.current.trim().length > 0) {
+      console.log(`JNI onSpeechError caught [Code: ${e.code}]: ${e.message}`);
+      // Treat as successful and submit if we got some transcript, or ignore trailing error code 5
+      if (latestTranscriptRef.current.trim().length > 0 || hasSubmittedRef.current || e.code === 5) {
         autoRetryCount.current = 0;
-        if (!hasSubmittedRef.current) {
+        if (latestTranscriptRef.current.trim().length > 0 && !hasSubmittedRef.current) {
           processSpeechText(latestTranscriptRef.current);
         }
-        return;
-      }
-      // If we already successfully submitted, just ignore subsequent trailing errors
-      if (hasSubmittedRef.current) {
         return;
       }
       handleSpeechFailure(e.message, e.code);
@@ -329,14 +335,6 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
   const handleSpeechFailure = (errorMsg: string, errorCode?: number) => {
     if (hasTranscriptRef.current) return;
     setVoiceState('RETRY');
-
-    // Auto-retry once for common silence/timeout codes in hands-free mode
-    if (isHandsFree && autoRetryCount.current < 1 && (errorCode === 7 || errorCode === 6 || errorCode === 8)) {
-      autoRetryCount.current += 1;
-      setTimeout(() => {
-        startAudioRecording();
-      }, 1000);
-    }
   };
 
   const getKeywordResponse = (text: string) => {

@@ -8,6 +8,7 @@ import { EmergencyScreen } from '../screens/EmergencyScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { LocationScreen } from '../screens/LocationScreen';
 import { VoiceAssistantScreen } from '../screens/VoiceAssistantScreen';
+import { SpeechTestScreen } from '../screens/SpeechTestScreen';
 import { COLORS } from '../constants/theme';
 
 const Stack = createStackNavigator();
@@ -56,6 +57,11 @@ export const MobileNavigator = () => {
         name="VoiceAssistant"
         component={VoiceAssistantScreen}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SpeechTest"
+        component={SpeechTestScreen}
+        options={{ title: 'Speech Diagnostics Lab' }}
       />
     </Stack.Navigator>
   );

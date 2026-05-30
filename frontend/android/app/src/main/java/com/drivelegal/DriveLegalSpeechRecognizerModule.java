@@ -132,11 +132,21 @@ public class DriveLegalSpeechRecognizerModule extends ReactContextBaseJavaModule
                                     arr.pushString(m);
                                 }
                             }
-                            Log.d(TAG, "SpeechRecognizer final results matches: " + matches);
+                            
+                            // Extract native confidence score if available
+                            float[] confidences = results.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES);
+                            double mainConfidence = 0.0;
+                            if (confidences != null && confidences.length > 0) {
+                                mainConfidence = confidences[0];
+                            }
+                            
+                            Log.d(TAG, "SpeechRecognizer final results matches: " + matches + ", confidence: " + mainConfidence);
                             isListening = false;
 
                             WritableMap map = Arguments.createMap();
                             map.putArray("value", arr);
+                            map.putDouble("confidence", mainConfidence);
+                            map.putString("langCode", langCode);
                             sendEvent("onSpeechResults", map);
                         }
 
@@ -149,33 +159,53 @@ public class DriveLegalSpeechRecognizerModule extends ReactContextBaseJavaModule
                                     arr.pushString(m);
                                 }
                             }
-                            Log.d(TAG, "SpeechRecognizer partial results matches: " + matches);
+                            
+                            // Extract confidence if available in partials
+                            float[] confidences = partialResults.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES);
+                            double mainConfidence = 0.0;
+                            if (confidences != null && confidences.length > 0) {
+                                mainConfidence = confidences[0];
+                            }
+                            
+                            Log.d(TAG, "SpeechRecognizer partial results matches: " + matches + ", confidence: " + mainConfidence);
 
                             WritableMap map = Arguments.createMap();
                             map.putArray("value", arr);
+                            map.putDouble("confidence", mainConfidence);
+                            map.putString("langCode", langCode);
                             sendEvent("onSpeechPartialResults", map);
                         }
 
                         @Override
                         public void onEvent(int eventType, Bundle params) {}
-                    });
+                     });
 
                     recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
                     recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
                     
                     Locale locale = Locale.US;
-                    if ("ta".equalsIgnoreCase(langCode)) {
-                        locale = new Locale("ta", "IN");
-                    } else if ("hi".equalsIgnoreCase(langCode)) {
-                        locale = new Locale("hi", "IN");
-                    } else if ("te".equalsIgnoreCase(langCode)) {
-                        locale = new Locale("te", "IN");
-                    } else if ("kn".equalsIgnoreCase(langCode) || "ka".equalsIgnoreCase(langCode)) {
-                        locale = new Locale("kn", "IN");
-                    } else if ("ml".equalsIgnoreCase(langCode)) {
-                        locale = new Locale("ml", "IN");
+                    if (langCode != null) {
+                        String lowerLang = langCode.toLowerCase().trim();
+                        if (lowerLang.contains("ta")) {
+                            locale = new Locale("ta", "IN");
+                        } else if (lowerLang.contains("hi")) {
+                            locale = new Locale("hi", "IN");
+                        } else if (lowerLang.contains("en-in") || lowerLang.contains("en_in")) {
+                            locale = new Locale("en", "IN");
+                        } else if (lowerLang.contains("te")) {
+                            locale = new Locale("te", "IN");
+                        } else if (lowerLang.contains("kn") || lowerLang.contains("ka")) {
+                            locale = new Locale("kn", "IN");
+                        } else if (lowerLang.contains("ml")) {
+                            locale = new Locale("ml", "IN");
+                        } else if (lowerLang.contains("en-us") || lowerLang.contains("en_us")) {
+                            locale = Locale.US;
+                        } else if (lowerLang.length() == 2) {
+                            locale = new Locale(lowerLang);
+                        }
                     }
                     
+                    Log.d(TAG, "Configured native locale resolved to: " + locale.toString());
                     recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, locale.toString());
                     recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, locale.toString());
                     recognizerIntent.putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, locale.toString());

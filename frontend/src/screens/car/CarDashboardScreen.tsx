@@ -350,19 +350,9 @@ export const CarDashboardScreen = () => {
         latestTranscriptRef.current = match;
         setUserTranscript(match);
         addLog(`Partial: "${match}"`);
-
-        // Client-side 1.5s Silence Auto-Stop Timeout
-        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-        silenceTimerRef.current = setTimeout(async () => {
-          addLog("[Silence Timeout] 1.5s silence detected. Auto-stopping and processing transcript.");
-          if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-          await stopRecordingFlow();
-          if (latestTranscriptRef.current.trim().length > 0) {
-            if (!hasSubmittedRef.current) {
-              processSpeechText(latestTranscriptRef.current);
-            }
-          }
-        }, 1500);
+        if (e.confidence !== undefined) {
+          setConfidenceScore(Math.round(e.confidence * 100));
+        }
       }
     });
 
@@ -375,6 +365,11 @@ export const CarDashboardScreen = () => {
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
         stopRecordingFlow(); // Auto-stop listening immediately on final results!
         autoRetryCount.current = 0;
+        
+        if (e.confidence !== undefined) {
+          setConfidenceScore(Math.round(e.confidence * 100));
+        }
+
         if (!hasSubmittedRef.current) {
           processSpeechText(match);
         }
@@ -388,17 +383,12 @@ export const CarDashboardScreen = () => {
 
     const onError = DeviceEventEmitter.addListener('onSpeechError', (e) => {
       addLog(`Speech Error [Code: ${e.code}]: ${e.message}`);
-      // Treat as successful and submit if we got some transcript, ignore subsequent errors
-      if (latestTranscriptRef.current.trim().length > 0) {
-        addLog(`Suppressed STT error [Code ${e.code}] - auto-submitting captured text: "${latestTranscriptRef.current}"`);
+      // Treat as successful and submit if we got some transcript, or ignore trailing error code 5
+      if (latestTranscriptRef.current.trim().length > 0 || hasSubmittedRef.current || e.code === 5) {
         autoRetryCount.current = 0;
-        if (!hasSubmittedRef.current) {
+        if (latestTranscriptRef.current.trim().length > 0 && !hasSubmittedRef.current) {
           processSpeechText(latestTranscriptRef.current);
         }
-        return;
-      }
-      // If we already successfully submitted, just ignore subsequent trailing errors
-      if (hasSubmittedRef.current) {
         return;
       }
       handleSpeechFailure(e.message, e.code);
@@ -595,14 +585,6 @@ export const CarDashboardScreen = () => {
     setVoiceState('RETRY');
     setSpeechError(errorMsg);
     setBotResponseText("Could not hear clearly. Tap to retry.");
-
-    if (autoListen && autoRetryCount.current < 1 && (errorCode === 7 || errorCode === 6 || errorCode === 8)) {
-      autoRetryCount.current += 1;
-      addLog(`Speech timeout. Auto-retrying #${autoRetryCount.current}...`);
-      setTimeout(() => {
-        startRecordingFlow();
-      }, 1000);
-    }
   };
 
   // Keyword fast path lookup
