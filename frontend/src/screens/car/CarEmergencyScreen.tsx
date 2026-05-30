@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
   },
   cardCategory: {
     color: '#64748B',
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: 'bold',
     letterSpacing: 1,
     marginBottom: 2,

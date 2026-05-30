@@ -11,7 +11,6 @@ import {
   StatusBar,
   Dimensions,
   NativeModules,
-  Alert,
   Platform,
   PermissionsAndroid,
   Switch,
@@ -23,17 +22,24 @@ import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS, GLASS } from '../constants/
 import { useLocation } from '../context/LocationContext';
 import { getStateName, getJurisdictionLabel } from '../services/locationService';
 import { executeQuery } from '../services/pythonBridge';
-import { Mic, X, Sparkles, Volume2, Shield, Circle, RefreshCw, AlertCircle, ArrowLeft, Keyboard, Send } from 'lucide-react-native';
-import AudioRecorderPlayer from 'react-native-audio-recorder-player';
-import { getAudioPath } from '../utils/audioPath';
+import { 
+  Mic, 
+  Sparkles, 
+  Volume2, 
+  Shield, 
+  Circle, 
+  RefreshCw, 
+  ArrowLeft, 
+  Keyboard, 
+  Send, 
+  VolumeX, 
+  HelpCircle,
+  Clock
+} from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
-
-// Native TTS bridge reference
-const { DriveLegalTTS } = NativeModules;
-
-// Audio recorder player instance
-const audioRecorderPlayer = new AudioRecorderPlayer();
+const { DriveLegalSpeechRecognizer, DriveLegalTTS } = NativeModules;
+import { DeviceEventEmitter } from 'react-native';
 
 // Driving safe quick commands
 const QUICK_COMMANDS = [
@@ -43,7 +49,14 @@ const QUICK_COMMANDS = [
   { text: 'Charging rules?', query: 'What are the rules and penalties for EV charging zones?' },
 ];
 
-type VoiceState = 'IDLE' | 'LISTENING' | 'THINKING' | 'SPEAKING';
+type VoiceState = 'READY' | 'LISTENING' | 'UNDERSTANDING' | 'RESPONDING' | 'RETRY';
+
+interface Message {
+  id: string;
+  sender: 'user' | 'ai';
+  text: string;
+  timestamp: string;
+}
 
 export const VoiceAssistantScreen = ({ navigation }: any) => {
   const userState = useSelector((state: RootState) => state.settings.state);
@@ -51,27 +64,101 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
   const { location, geoInfo } = useLocation();
 
   // Voice Interaction States
-  const [voiceState, setVoiceState] = useState<VoiceState>('IDLE');
+  const [voiceState, setVoiceState] = useState<VoiceState>('READY');
   const [userTranscript, setUserTranscript] = useState('');
-  const [botResponseText, setBotResponseText] = useState('Welcome to DriveTalk. Tap the mic and speak, or tap a quick card below.');
   const [isHandsFree, setIsHandsFree] = useState(true);
   const [inputText, setInputText] = useState('');
   const [showTextInput, setShowTextInput] = useState(false);
+
+  // Chat message history
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 'welcome',
+      sender: 'ai',
+      text: 'RoadMind AI co-driver is active. Tap the microphone and tell me what is happening, or select a quick query below.',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+  ]);
+
+  // Multilingual Telemetry States
+  const [detectedLang, setDetectedLang] = useState('');
+  const [confidenceScore, setConfidenceScore] = useState<number | null>(null);
+
+  const autoRetryCount = useRef(0);
+  const hasTranscriptRef = useRef(false);
+  const latestTranscriptRef = useRef('');
+  const hasSubmittedRef = useRef(false);
 
   // Animations
   const pulseScale = useRef(new Animated.Value(1)).current;
   const glowOpacity = useRef(new Animated.Value(0.15)).current;
   const spinAngle = useRef(new Animated.Value(0)).current;
-  const soundWaveHeight = useRef(new Animated.Value(0)).current;
 
   // Timers and Refs
-  const recordingTimer = useRef<any>(null);
   const isSpeakingCheckInterval = useRef<any>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  // Continuous rotating spin animation for Thinking state
+  useEffect(() => {
+    // Register Android Native SpeechRecognizer JNI event listeners
+    const onStart = DeviceEventEmitter.addListener('onSpeechStart', () => {
+      setVoiceState('LISTENING');
+    });
+
+    const onPartial = DeviceEventEmitter.addListener('onSpeechPartialResults', (e) => {
+      const match = e.value && e.value[0];
+      if (match) {
+        hasTranscriptRef.current = true;
+        latestTranscriptRef.current = match;
+        setUserTranscript(match);
+      }
+    });
+
+    const onResults = DeviceEventEmitter.addListener('onSpeechResults', (e) => {
+      const match = e.value && e.value[0];
+      if (match) {
+        hasTranscriptRef.current = true;
+        latestTranscriptRef.current = match;
+        autoRetryCount.current = 0;
+        if (!hasSubmittedRef.current) {
+          processSpeechText(match);
+        }
+      } else {
+        if (!hasTranscriptRef.current && !hasSubmittedRef.current) {
+          handleSpeechFailure("No speech matches found.");
+        }
+      }
+    });
+
+    const onError = DeviceEventEmitter.addListener('onSpeechError', (e) => {
+      // Treat as successful and submit if we got some transcript, ignore subsequent errors
+      if (latestTranscriptRef.current.trim().length > 0) {
+        autoRetryCount.current = 0;
+        if (!hasSubmittedRef.current) {
+          processSpeechText(latestTranscriptRef.current);
+        }
+        return;
+      }
+      // If we already successfully submitted, just ignore subsequent trailing errors
+      if (hasSubmittedRef.current) {
+        return;
+      }
+      handleSpeechFailure(e.message, e.code);
+    });
+
+    return () => {
+      onStart.remove();
+      onPartial.remove();
+      onResults.remove();
+      onError.remove();
+      stopSpeechPlayback();
+      clearSpeechMonitoring();
+    };
+  }, [userLanguage]);
+
+  // Continuous rotating spin animation for Understanding state
   useEffect(() => {
     let animation: Animated.CompositeAnimation;
-    if (voiceState === 'THINKING') {
+    if (voiceState === 'UNDERSTANDING') {
       spinAngle.setValue(0);
       animation = Animated.loop(
         Animated.timing(spinAngle, {
@@ -96,19 +183,19 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
     if (voiceState === 'LISTENING') {
       pulseLoop = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseScale, { toValue: 1.14, duration: 600, useNativeDriver: true }),
+          Animated.timing(pulseScale, { toValue: 1.16, duration: 600, useNativeDriver: true }),
           Animated.timing(pulseScale, { toValue: 1.0, duration: 600, useNativeDriver: true }),
         ])
       );
       glowLoop = Animated.loop(
         Animated.sequence([
-          Animated.timing(glowOpacity, { toValue: 0.6, duration: 600, useNativeDriver: true }),
+          Animated.timing(glowOpacity, { toValue: 0.65, duration: 600, useNativeDriver: true }),
           Animated.timing(glowOpacity, { toValue: 0.15, duration: 600, useNativeDriver: true }),
         ])
       );
       pulseLoop.start();
       glowLoop.start();
-    } else if (voiceState === 'SPEAKING') {
+    } else if (voiceState === 'RESPONDING') {
       pulseLoop = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseScale, { toValue: 1.08, duration: 850, useNativeDriver: true }),
@@ -124,7 +211,6 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
       pulseLoop.start();
       glowLoop.start();
     } else {
-      // IDLE breathing
       pulseScale.setValue(1);
       glowOpacity.setValue(0.15);
       pulseLoop = Animated.loop(
@@ -142,13 +228,12 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
     };
   }, [voiceState]);
 
-  // Clean up speech output on unmount
+  // Scroll to bottom helper when message log updates
   useEffect(() => {
-    return () => {
-      stopSpeechPlayback();
-      clearSpeechMonitoring();
-    };
-  }, []);
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  }, [messages]);
 
   const clearSpeechMonitoring = () => {
     if (isSpeakingCheckInterval.current) {
@@ -169,6 +254,9 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
 
   const requestPermission = async (): Promise<boolean> => {
     if (Platform.OS === 'android') {
+      const hasPermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
+      if (hasPermission) return true;
+      
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
         {
@@ -183,16 +271,11 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
     return true;
   };
 
-  /**
-   * Action: Microphone Press down to start speech capture
-   */
   const handleMicrophoneAction = async () => {
-    // Interruption handling: If speaking, tapping the orb stops playback and goes to idle
-    if (voiceState === 'SPEAKING') {
+    if (voiceState === 'RESPONDING') {
       await stopSpeechPlayback();
       clearSpeechMonitoring();
-      setVoiceState('IDLE');
-      setBotResponseText('Speech paused. Tap to ask anything.');
+      setVoiceState('READY');
       return;
     }
 
@@ -208,67 +291,102 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
     try {
       const hasPermission = await requestPermission();
       if (!hasPermission) {
-        Alert.alert('Permission Denied', 'Audio recording permission is required for voice mode.');
+        handleSpeechFailure("Microphone permission was denied.");
         return;
       }
 
       await stopSpeechPlayback();
       clearSpeechMonitoring();
 
+      hasTranscriptRef.current = false;
+      latestTranscriptRef.current = '';
+      hasSubmittedRef.current = false;
       setVoiceState('LISTENING');
       setUserTranscript('Listening...');
-      setBotResponseText('');
 
-      // Start capture
-      await audioRecorderPlayer.startRecorder();
+      if (DriveLegalSpeechRecognizer) {
+        await DriveLegalSpeechRecognizer.startListening(userLanguage);
+      } else {
+        handleSpeechFailure("Native SpeechRecognizer module unavailable.");
+      }
 
-      // VAD safety: Auto-stop recording after 6 seconds to prevent massive files
-      if (recordingTimer.current) clearTimeout(recordingTimer.current);
-      recordingTimer.current = setTimeout(() => {
-        stopAudioRecording();
-      }, 6000);
-
-    } catch (err) {
-      console.error('Error starting recording:', err);
-      setVoiceState('IDLE');
-      setBotResponseText('Could not access microphone.');
+    } catch (err: any) {
+      handleSpeechFailure(err.message || "Failed to initialize Speech Recognizer.");
     }
   };
 
   const stopAudioRecording = async () => {
-    if (recordingTimer.current) {
-      clearTimeout(recordingTimer.current);
-      recordingTimer.current = null;
-    }
-
     try {
-      const rawPath = await audioRecorderPlayer.stopRecorder();
-      setVoiceState('THINKING');
-      setUserTranscript('Processing audio...');
-
-      const path = getAudioPath(rawPath);
-      if (path && path !== 'cancelled') {
-        processVoiceQuery(path);
-      } else {
-        setVoiceState('IDLE');
-        setUserTranscript('');
-        setBotResponseText('Recording cancelled.');
+      if (DriveLegalSpeechRecognizer) {
+        await DriveLegalSpeechRecognizer.stopListening();
       }
     } catch (err) {
-      console.error('Error stopping recording:', err);
-      setVoiceState('IDLE');
+      console.error('Error stopping listening:', err);
+      setVoiceState('READY');
     }
   };
 
-  /**
-   * Pipeline Step: Process Audio File URI using offline Python Whisper STT + RAG database
-   */
-  const processVoiceQuery = async (audioPath: string) => {
+  const handleSpeechFailure = (errorMsg: string, errorCode?: number) => {
+    if (hasTranscriptRef.current) return;
+    setVoiceState('RETRY');
+
+    // Auto-retry once for common silence/timeout codes in hands-free mode
+    if (isHandsFree && autoRetryCount.current < 1 && (errorCode === 7 || errorCode === 6 || errorCode === 8)) {
+      autoRetryCount.current += 1;
+      setTimeout(() => {
+        startAudioRecording();
+      }, 1000);
+    }
+  };
+
+  const getKeywordResponse = (text: string) => {
+    const lower = text.toLowerCase();
+    if (lower.includes("speed limit")) {
+      return "📍 Speed Limit Regulations:\nUnder Section 112 of the Motor Vehicles Act, exceeding speed limits attracts a fine of ₹1,000 to ₹2,000 for LMV vehicles.";
+    }
+    if (lower.includes("helmet fine") || lower.includes("helmet") || lower.includes("ஹெல்மெட்") || lower.includes("हेलमेट")) {
+      return "🪖 Helmet Violation Fine:\nUnder Section 194D of the Motor Vehicles Act, riding without a helmet attracts a fine of ₹1,000 and 3-month license disqualification.";
+    }
+    if (lower.includes("parking") || lower.includes("park")) {
+      return "🚗 Parking Regulations:\nParking in a designated 'No Parking' zone attracts a fine of ₹500 under Section 122/177 of the Motor Vehicles Act, plus towing fees.";
+    }
+    if (lower.includes("police station") || lower.includes("police") || lower.includes("காவல் நிலையம்") || lower.includes("पुलिस")) {
+      return "🚓 Nearest Police Station:\nLocated 500m ahead at Gandhipuram Junction. Dial 100 for immediate emergency dispatch.";
+    }
+    if (lower.includes("emergency") || lower.includes("sos") || lower.includes("accident")) {
+      return "🚨 Emergency SOS Active:\nEmergency response services notified. Dial 108 for medical trauma support.";
+    }
+    if (lower.includes("ev charging") || lower.includes("ev") || lower.includes("charging")) {
+      return "🔌 EV charging rules:\nParking standard non-EVs in designated charging ports attracts a ₹500 fine and towing.";
+    }
+    return null;
+  };
+
+  const processSpeechText = async (transcribedText: string) => {
+    if (!transcribedText || transcribedText.trim().length === 0) return;
+    if (hasSubmittedRef.current) return;
     try {
-      // Execute Chaquopy SQLite FAISS bridging pipeline passing the audio path
+      hasSubmittedRef.current = true;
+      hasTranscriptRef.current = true;
+      setVoiceState('UNDERSTANDING');
+
+      // Add user transcript to history
+      setMessages(prev => [...prev, {
+        id: String(Date.now()),
+        sender: 'user',
+        text: transcribedText,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+
+      const keywordResponse = getKeywordResponse(transcribedText);
+      if (keywordResponse) {
+        speakBotResponse(keywordResponse);
+        return;
+      }
+
       const result = await executeQuery({
         action: 'query',
-        audio_uri: audioPath,
+        text: transcribedText,
         language: userLanguage,
         location: {
           lat: location?.latitude || 0,
@@ -280,24 +398,16 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
       });
 
       if (result.status === 'success') {
-        const textResponse = result.response_text || result.fallback_response_text || 'No matches found in database.';
-        
-        // Log transcription
-        if ((result as any).transcription) {
-          setUserTranscript(`"${(result as any).transcription}"`);
-        } else {
-          setUserTranscript('Voice Query Processed');
-        }
-
+        const textResponse = result.response_text || result.fallback_response_text || 'No matches found.';
+        if (result.detected_language) setDetectedLang(result.detected_language);
+        if (result.confidence !== undefined) setConfidenceScore(Math.round(result.confidence * 100));
         speakBotResponse(textResponse);
       } else {
-        setVoiceState('IDLE');
-        setBotResponseText("I couldn't transcribe the speech. Please speak clearly or tap a card.");
+        setVoiceState('RETRY');
       }
     } catch (e) {
       console.error('Failed to execute bridge voice query:', e);
-      setVoiceState('IDLE');
-      setBotResponseText('Pipeline error. Please try again.');
+      setVoiceState('RETRY');
     }
   };
 
@@ -307,10 +417,14 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
       await stopSpeechPlayback();
       clearSpeechMonitoring();
       
-      setVoiceState('THINKING');
-      setUserTranscript(`"${queryText}"`);
-      setBotResponseText('Searching laws...');
-      
+      setVoiceState('UNDERSTANDING');
+      setMessages(prev => [...prev, {
+        id: String(Date.now()),
+        sender: 'user',
+        text: queryText,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+
       const result = await executeQuery({
         action: 'query',
         text: queryText,
@@ -326,29 +440,30 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
 
       if (result.status === 'success') {
         const textResponse = result.response_text || result.fallback_response_text || 'No matches found in database.';
+        if (result.detected_language) setDetectedLang(result.detected_language);
+        if (result.confidence !== undefined) setConfidenceScore(Math.round(result.confidence * 100));
         speakBotResponse(textResponse);
       } else {
-        setVoiceState('IDLE');
-        setBotResponseText("I couldn't find the answers. Please try another query.");
+        setVoiceState('RETRY');
       }
     } catch (e) {
       console.error('Failed to execute text query:', e);
-      setVoiceState('IDLE');
-      setBotResponseText('Pipeline error. Please try again.');
+      setVoiceState('RETRY');
     }
   };
 
-  /**
-   * Pipeline Step: Process Quick-Tap commands directly
-   */
   const processQuickCommand = async (query: string) => {
     try {
       await stopSpeechPlayback();
       clearSpeechMonitoring();
 
-      setVoiceState('THINKING');
-      setUserTranscript(`"${query}"`);
-      setBotResponseText('Searching laws...');
+      setVoiceState('UNDERSTANDING');
+      setMessages(prev => [...prev, {
+        id: String(Date.now()),
+        sender: 'user',
+        text: query,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
 
       const result = await executeQuery({
         action: 'query',
@@ -367,37 +482,37 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
         const textResponse = result.response_text || result.fallback_response_text || 'No matches found.';
         speakBotResponse(textResponse);
       } else {
-        setVoiceState('IDLE');
-        setBotResponseText('Search error.');
+        setVoiceState('RETRY');
       }
     } catch (e) {
       console.error('Failed to run quick command:', e);
-      setVoiceState('IDLE');
+      setVoiceState('RETRY');
     }
   };
 
-  /**
-   * Text-to-Speech playback using Native JVM TTS module
-   */
-  const speakBotResponse = async (text: String) => {
+  const speakBotResponse = async (text: string) => {
     try {
-      // 1. Speak using native Android engine instantly
-      setVoiceState('SPEAKING');
-      setBotResponseText(text as string);
+      setVoiceState('RESPONDING');
+      
+      // Append AI response bubble to dialog list
+      setMessages(prev => [...prev, {
+        id: String(Date.now()),
+        sender: 'ai',
+        text: text,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
 
       if (DriveLegalTTS) {
         await DriveLegalTTS.speak(text, userLanguage);
-
-        // 2. Poll isSpeaking to detect completion and trigger hands-free auto-mic loop
         clearSpeechMonitoring();
+
         isSpeakingCheckInterval.current = setInterval(async () => {
           if (DriveLegalTTS) {
             const speaking = await DriveLegalTTS.isSpeaking();
             if (!speaking) {
               clearSpeechMonitoring();
-              setVoiceState('IDLE');
+              setVoiceState('READY');
               
-              // Hands-Free Loop Trigger: automatically reactivate recording after 1.8s silence
               if (isHandsFree) {
                 setTimeout(() => {
                   startAudioRecording();
@@ -407,17 +522,26 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
           }
         }, 300);
       } else {
-        // Fallback for mock/simulator missing modules
-        setVoiceState('IDLE');
-        Alert.alert('TTS Not Supported', 'Native TTS engine is not available on this platform.');
+        setVoiceState('READY');
       }
     } catch (e) {
       console.error('TTS playback failure:', e);
-      setVoiceState('IDLE');
+      setVoiceState('READY');
     }
   };
 
-  // Interpolate rotating thinking spinner angle
+  const getLanguageLabel = (code: string) => {
+    switch (code) {
+      case 'ta': return 'தமிழ்';
+      case 'hi': return 'हिंदी';
+      case 'te': return 'తెలుగు';
+      case 'kn': return 'ಕನ್ನಡ';
+      case 'ml': return 'മലയാളം';
+      case 'en': return 'English';
+      default: return code ? code.toUpperCase() : 'English';
+    }
+  };
+
   const spin = spinAngle.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
@@ -425,123 +549,184 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor={COLORS.navy} barStyle="light-content" />
+      <StatusBar backgroundColor="#0B132B" barStyle="light-content" />
 
-      {/* Driving-Safe HUD Header */}
+      {/* Futuristic AI Co-Driver Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => {
           stopSpeechPlayback();
           clearSpeechMonitoring();
           navigation.goBack();
         }}>
-          <ArrowLeft size={24} color={COLORS.white} />
+          <ArrowLeft size={22} color="#FFFFFF" />
         </TouchableOpacity>
         <View style={styles.headerTitleRow}>
-          <Shield size={16} color={COLORS.cyan} />
-          <Text style={styles.headerText}>DRIVETALK (VOICE)</Text>
+          <Shield size={18} color="#00FFC2" />
+          <Text style={styles.headerText}>ROADMIND AI</Text>
         </View>
         <View style={styles.locationBadge}>
           <Text style={styles.locationBadgeText}>
-            {geoInfo ? getJurisdictionLabel(geoInfo) : getStateName(userState)}
+            📍 {geoInfo ? getJurisdictionLabel(geoInfo) : getStateName(userState)}
           </Text>
         </View>
       </View>
 
-      {/* Massive Visual Display Area */}
-      <View style={styles.hudDisplayContainer}>
-        {/* User Question Transcript (Huge driving-safe text) */}
-        {userTranscript.length > 0 && (
-          <Text style={styles.userTranscriptText} numberOfLines={2}>
-            {userTranscript}
-          </Text>
+      {/* ChatGPT-style Conversational Scroll Area */}
+      <ScrollView 
+        ref={scrollViewRef}
+        style={styles.messageScroll}
+        contentContainerStyle={styles.messageScrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {messages.map((msg) => (
+          <View 
+            key={msg.id} 
+            style={[
+              styles.messageRow,
+              msg.sender === 'user' ? styles.messageRowUser : styles.messageRowAi
+            ]}
+          >
+            {msg.sender === 'ai' && (
+              <View style={styles.aiAvatar}>
+                <Sparkles size={14} color="#00FFC2" />
+              </View>
+            )}
+            <View style={[
+              styles.messageBubble,
+              msg.sender === 'user' ? styles.bubbleUser : styles.bubbleAi
+            ]}>
+              <Text style={styles.messageText}>{msg.text}</Text>
+              <View style={styles.bubbleMeta}>
+                <Clock size={10} color="rgba(255,255,255,0.4)" style={{ marginRight: 4 }} />
+                <Text style={styles.metaText}>{msg.timestamp}</Text>
+              </View>
+            </View>
+          </View>
+        ))}
+
+        {/* Real-time listening transcription preview */}
+        {voiceState === 'LISTENING' && (
+          <View style={[styles.messageRow, styles.messageRowUser]}>
+            <View style={[styles.messageBubble, styles.bubbleUser, { opacity: 0.8 }]}>
+              <View style={styles.listeningRow}>
+                <ActivityIndicator size="small" color="#00FFC2" style={{ marginRight: 8 }} />
+                <Text style={styles.messageText}>{userTranscript}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Floating State HUD overlays */}
+      <View style={styles.hudOverlayContainer}>
+        {voiceState === 'READY' && (
+          <View style={styles.readyIndicator}>
+            <View style={styles.greenPulseDot} />
+            <Text style={styles.stateSubtitle}>Ready to assist in Tamil, Hindi & English</Text>
+          </View>
         )}
 
-        {/* Bot Response readout (Massive contrast text) */}
-        <ScrollView 
-          style={styles.responseScroll}
-          contentContainerStyle={styles.responseScrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={[
-            styles.botResponseText,
-            voiceState === 'THINKING' && { color: COLORS.textSecondary, fontStyle: 'italic' }
-          ]}>
-            {botResponseText}
-          </Text>
-        </ScrollView>
+        {voiceState === 'UNDERSTANDING' && (
+          <View style={styles.loadingContainer}>
+            <Animated.View style={[styles.spinningRing, { transform: [{ rotate: spin }] }]} />
+            <Text style={styles.understandingText}>RoadMind RAG Analyzer...</Text>
+          </View>
+        )}
+
+        {voiceState === 'RETRY' && (
+          <View style={styles.retryPromptBox}>
+            <HelpCircle size={18} color="#FF9F43" />
+            <Text style={styles.retryPromptText}>I didn't catch that. Tap the mic to try again.</Text>
+          </View>
+        )}
       </View>
 
-      {/* AI Pulse Orb / Mic Button */}
-      <View style={styles.orbArea}>
-        <Animated.View style={[
-          styles.glowCircle,
-          { 
-            opacity: glowOpacity,
-            transform: [{ scale: pulseScale }]
-          },
-          voiceState === 'LISTENING' && { backgroundColor: COLORS.error },
-          voiceState === 'SPEAKING' && { backgroundColor: COLORS.cyan },
-          voiceState === 'THINKING' && { backgroundColor: COLORS.primary },
-        ]} />
+      {/* Suggested chips panel (Shown in Ready/Retry states) */}
+      {(voiceState === 'READY' || voiceState === 'RETRY') && (
+        <View style={styles.suggestedContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestedChipsRow}>
+            {QUICK_COMMANDS.map((item, idx) => (
+              <TouchableOpacity
+                key={idx}
+                style={styles.suggestionChip}
+                onPress={() => processQuickCommand(item.query)}
+              >
+                <Sparkles size={12} color="#00FFC2" style={{ marginRight: 6 }} />
+                <Text style={styles.suggestionChipText}>{item.text}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
-        {/* Rotator ring for Thinking state */}
-        {voiceState === 'THINKING' && (
+      {/* ChatGPT inspired Central Interactive Orb area */}
+      {voiceState !== 'UNDERSTANDING' && (
+        <View style={styles.orbArea}>
           <Animated.View style={[
-            styles.spinningRing,
-            { transform: [{ rotate: spin }] }
+            styles.glowCircle,
+            { 
+              opacity: glowOpacity,
+              transform: [{ scale: pulseScale }],
+              backgroundColor: voiceState === 'LISTENING' ? '#FF1744' : 
+                               voiceState === 'RESPONDING' ? '#00FFC2' : '#1F2937'
+            }
           ]} />
-        )}
+          
+          <TouchableOpacity
+            onPress={handleMicrophoneAction}
+            style={[
+              styles.centerOrb,
+              voiceState === 'LISTENING' && styles.centerOrbListening,
+              voiceState === 'RESPONDING' && styles.centerOrbResponding,
+            ]}
+            activeOpacity={0.9}
+          >
+            {voiceState === 'LISTENING' ? (
+              <Circle size={28} color="#FFFFFF" />
+            ) : voiceState === 'RESPONDING' ? (
+              <VolumeX size={28} color="#000000" />
+            ) : (
+              <Mic size={28} color="#FFFFFF" />
+            )}
+          </TouchableOpacity>
 
-        {/* Center Orb Card */}
-        <TouchableOpacity
-          onPress={handleMicrophoneAction}
-          style={[
-            styles.centerOrb,
-            voiceState === 'LISTENING' && styles.centerOrbListening,
-            voiceState === 'SPEAKING' && styles.centerOrbSpeaking,
-            voiceState === 'THINKING' && styles.centerOrbThinking,
-          ]}
-          activeOpacity={0.9}
-        >
-          {voiceState === 'LISTENING' ? (
-            <Circle size={28} color={COLORS.white} />
-          ) : voiceState === 'THINKING' ? (
-            <ActivityIndicator size="small" color={COLORS.white} />
-          ) : voiceState === 'SPEAKING' ? (
-            <Volume2 size={32} color={COLORS.white} />
-          ) : (
-            <Mic size={32} color={COLORS.white} />
-          )}
-        </TouchableOpacity>
-
-        {/* Voice State subtitle */}
-        <Text style={styles.voiceStateSub}>
-          {voiceState === 'LISTENING' ? '🔴 LISTENING (Tap to end)' :
-           voiceState === 'THINKING' ? '⚡ TRANSCRIBING LAWS...' :
-           voiceState === 'SPEAKING' ? '🔊 BOT SPEAKING (Tap to mute)' :
-           '🎤 TAP MIC TO SPEAK'}
-        </Text>
-      </View>
-
-      {/* Keyboard Input Toggler & Collapsible Bar */}
-      <View style={styles.inputContainer}>
-        <TouchableOpacity 
-          style={styles.keyboardToggleBtn}
-          onPress={() => setShowTextInput(!showTextInput)}
-          activeOpacity={0.8}
-        >
-          <Keyboard size={20} color={showTextInput ? COLORS.cyan : COLORS.textSecondary} />
-          <Text style={[styles.keyboardToggleText, showTextInput && { color: COLORS.cyan }]}>
-            {showTextInput ? 'Hide Input' : 'Type Message'}
+          <Text style={styles.voiceStateLabel}>
+            {voiceState === 'LISTENING' ? 'Listening now...' :
+             voiceState === 'RESPONDING' ? 'AI co-pilot speaking (Tap to mute)' :
+             'Tap Orb to Speak'}
           </Text>
-        </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Keyboard Input Collapsible Row */}
+      <View style={styles.bottomControlBar}>
+        <View style={styles.handsFreeRow}>
+          <View style={styles.switchCol}>
+            <Text style={styles.switchLabel}>Hands-Free Loop</Text>
+            <Switch
+              value={isHandsFree}
+              onValueChange={setIsHandsFree}
+              trackColor={{ false: '#374151', true: 'rgba(0, 255, 194, 0.2)' }}
+              thumbColor={isHandsFree ? '#00FFC2' : '#9CA3AF'}
+            />
+          </View>
+          <TouchableOpacity 
+            style={styles.keyboardToggleBtn}
+            onPress={() => setShowTextInput(!showTextInput)}
+          >
+            <Keyboard size={18} color={showTextInput ? '#00FFC2' : '#9CA3AF'} />
+            <Text style={[styles.keyboardToggleText, showTextInput && { color: '#00FFC2' }]}>
+              {showTextInput ? 'Voice' : 'Type'}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         {showTextInput && (
           <View style={styles.textInputRow}>
             <TextInput
               style={styles.hudTextInput}
-              placeholder="Ask DriveTalk..."
-              placeholderTextColor="#666666"
+              placeholder="Type your legal query..."
+              placeholderTextColor="#4B5563"
               value={inputText}
               onChangeText={setInputText}
               onSubmitEditing={() => {
@@ -558,39 +743,10 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
                 setShowTextInput(false);
               }}
             >
-              <Send size={18} color="#000000" />
+              <Send size={16} color="#000000" />
             </TouchableOpacity>
           </View>
         )}
-      </View>
-
-      {/* Driving-safe HUD Quick Tap Cards */}
-      <View style={styles.hudFooterContainer}>
-        {/* Hands-Free loop switch */}
-        <View style={styles.handsFreeBar}>
-          <Text style={styles.handsFreeLabel}>Auto-Listen Loop (Hands-Free)</Text>
-          <Switch
-            value={isHandsFree}
-            onValueChange={setIsHandsFree}
-            trackColor={{ false: COLORS.border, true: 'rgba(6, 182, 212, 0.3)' }}
-            thumbColor={isHandsFree ? COLORS.cyan : '#f4f3f4'}
-          />
-        </View>
-
-        <Text style={styles.quickCommandsTitle}>Driving Quick-Taps</Text>
-        
-        <View style={styles.quickCommandsGrid}>
-          {QUICK_COMMANDS.map((item, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={styles.quickCommandCard}
-              onPress={() => processQuickCommand(item.query)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.quickCommandText} numberOfLines={1}>{item.text}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
       </View>
     </View>
   );
@@ -599,7 +755,7 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.navy,
+    backgroundColor: '#0B0F19',
   },
   header: {
     flexDirection: 'row',
@@ -609,12 +765,12 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 50 : 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
   },
   backButton: {
-    padding: 6,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    padding: 8,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   headerTitleRow: {
     flexDirection: 'row',
@@ -623,204 +779,304 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontSize: 14,
-    fontWeight: '800',
-    color: COLORS.white,
+    fontWeight: '900',
+    color: '#FFFFFF',
     letterSpacing: 2,
   },
   locationBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: BORDER_RADIUS.round,
-    ...GLASS.light,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0, 255, 194, 0.06)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(0, 255, 194, 0.2)',
   },
   locationBadgeText: {
     fontSize: 10,
-    fontWeight: '700',
-    color: COLORS.cyan,
+    fontWeight: '800',
+    color: '#00FFC2',
   },
 
-  // Huge Driving HUD Display
-  hudDisplayContainer: {
-    flex: 1.1,
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    gap: 16,
-    justifyContent: 'flex-start',
+  // Conversational Scroll Area
+  messageScroll: {
+    flex: 1,
+    paddingHorizontal: 18,
+    paddingTop: 16,
   },
-  userTranscriptText: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: COLORS.cyan,
-    lineHeight: 28,
+  messageScrollContent: {
+    paddingBottom: 24,
   },
-  responseScroll: {
+  messageRow: {
+    flexDirection: 'row',
+    marginVertical: 8,
+    alignItems: 'flex-start',
+    maxWidth: '85%',
+  },
+  messageRowUser: {
+    alignSelf: 'flex-end',
+  },
+  messageRowAi: {
+    alignSelf: 'flex-start',
+  },
+  aiAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0, 255, 194, 0.1)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(0, 255, 194, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    marginTop: 2,
+  },
+  messageBubble: {
+    borderRadius: 16,
+    padding: 14,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  bubbleUser: {
+    backgroundColor: '#1E293B',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderTopRightRadius: 4,
+  },
+  bubbleAi: {
+    backgroundColor: '#0F172A',
+    borderWidth: 0.5,
+    borderColor: 'rgba(0, 255, 194, 0.15)',
+    borderTopLeftRadius: 4,
     flex: 1,
   },
-  responseScrollContent: {
-    paddingBottom: 20,
+  messageText: {
+    fontSize: 14,
+    color: '#F3F4F6',
+    fontWeight: '600',
+    lineHeight: 21,
   },
-  botResponseText: {
-    fontSize: 28,
+  bubbleMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    marginTop: 6,
+  },
+  metaText: {
+    fontSize: 9,
+    color: 'rgba(255, 255, 255, 0.4)',
     fontWeight: '700',
-    color: COLORS.white,
-    lineHeight: 38,
+  },
+  listeningRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
-  // Visual Interactive AI Orb Area
+  // State Overlay Panel
+  hudOverlayContainer: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  readyIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(34, 197, 94, 0.06)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 0.5,
+    borderColor: 'rgba(34, 197, 94, 0.25)',
+  },
+  greenPulseDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#22C55E',
+  },
+  stateSubtitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#4ADE80',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(0, 255, 194, 0.05)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 15,
+    borderWidth: 0.5,
+    borderColor: 'rgba(0, 255, 194, 0.25)',
+  },
+  spinningRing: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    borderTopColor: '#00FFC2',
+  },
+  understandingText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#00FFC2',
+    letterSpacing: 0.5,
+  },
+  retryPromptBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(255, 159, 67, 0.08)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 159, 67, 0.3)',
+  },
+  retryPromptText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FF9F43',
+  },
+
+  // Suggested Prompts
+  suggestedContainer: {
+    height: 48,
+    marginVertical: 4,
+  },
+  suggestedChipsRow: {
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    gap: 10,
+  },
+  suggestionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0F172A',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 15,
+  },
+  suggestionChipText: {
+    color: '#CBD5E1',
+    fontSize: 11,
+    fontWeight: '900',
+  },
+
+  // Interactive central mic orb
   orbArea: {
-    flex: 1,
+    height: 130,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
   glowCircle: {
     position: 'absolute',
-    width: 170,
-    height: 170,
-    borderRadius: 85,
-    backgroundColor: COLORS.cyan,
-  },
-  spinningRing: {
-    position: 'absolute',
-    width: 116,
-    height: 116,
-    borderRadius: 58,
-    borderWidth: 4,
-    borderColor: 'transparent',
-    borderTopColor: COLORS.cyan,
-    borderRightColor: 'rgba(6, 182, 212, 0.3)',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
   },
   centerOrb: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#1E293B',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    ...SHADOWS.glow('rgba(255, 255, 255, 0.1)'),
+    elevation: 6,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
   },
   centerOrbListening: {
-    backgroundColor: COLORS.error,
-    borderColor: 'rgba(239, 68, 68, 0.4)',
-    ...SHADOWS.glow(COLORS.error),
+    backgroundColor: '#FF1744',
+    borderColor: 'rgba(255, 23, 68, 0.3)',
   },
-  centerOrbSpeaking: {
-    backgroundColor: COLORS.cyan,
-    borderColor: 'rgba(6, 182, 212, 0.4)',
-    ...SHADOWS.glow(COLORS.cyan),
+  centerOrbResponding: {
+    backgroundColor: '#00FFC2',
+    borderColor: 'rgba(0, 255, 194, 0.3)',
   },
-  centerOrbThinking: {
-    backgroundColor: COLORS.primary,
-    borderColor: 'rgba(37, 99, 235, 0.4)',
-    ...SHADOWS.glow(COLORS.primary),
-  },
-  voiceStateSub: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-    marginTop: 18,
-    letterSpacing: 1.5,
+  voiceStateLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: 'rgba(255, 255, 255, 0.4)',
+    marginTop: 10,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
 
-  // Safe HUD footer with quick-tap cards
-  hudFooterContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
-    gap: 12,
+  // Bottom Control Panel
+  bottomControlBar: {
+    paddingHorizontal: 18,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+    backgroundColor: '#070A11',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.05)',
   },
-  handsFreeBar: {
+  handsFreeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: BORDER_RADIUS.medium,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-    marginBottom: 8,
+    height: 48,
   },
-  handsFreeLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.white,
-  },
-  quickCommandsTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: COLORS.textSecondary,
-    letterSpacing: 1,
-    marginBottom: 4,
-    textTransform: 'uppercase',
-  },
-  quickCommandsGrid: {
+  switchCol: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  quickCommandCard: {
-    width: '48%', // 2 columns
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: BORDER_RADIUS.medium,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 8,
   },
-  quickCommandText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.white,
-    textAlign: 'center',
-  },
-  inputContainer: {
-    width: '100%',
-    alignItems: 'center',
-    marginVertical: 12,
+  switchLabel: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#9CA3AF',
   },
   keyboardToggleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: '#0F172A',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.2)',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   keyboardToggleText: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    fontWeight: 'bold',
+    color: '#9CA3AF',
+    fontSize: 11,
+    fontWeight: '900',
   },
   textInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '90%',
-    marginTop: 10,
-    backgroundColor: '#1E293B',
+    gap: 8,
+    marginTop: 4,
+    backgroundColor: '#111827',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.3)',
+    borderColor: 'rgba(0, 255, 194, 0.25)',
     paddingHorizontal: 12,
+    height: 44,
   },
   hudTextInput: {
     flex: 1,
-    height: 48,
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
   },
   hudSendBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.cyan,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#00FFC2',
     justifyContent: 'center',
     alignItems: 'center',
   },

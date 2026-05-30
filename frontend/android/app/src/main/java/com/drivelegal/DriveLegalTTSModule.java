@@ -52,6 +52,12 @@ public class DriveLegalTTSModule extends ReactContextBaseJavaModule implements T
             locale = new Locale("ta", "IN");
         } else if ("hi".equalsIgnoreCase(langCode)) {
             locale = new Locale("hi", "IN");
+        } else if ("te".equalsIgnoreCase(langCode)) {
+            locale = new Locale("te", "IN");
+        } else if ("kn".equalsIgnoreCase(langCode) || "ka".equalsIgnoreCase(langCode)) {
+            locale = new Locale("kn", "IN");
+        } else if ("ml".equalsIgnoreCase(langCode)) {
+            locale = new Locale("ml", "IN");
         }
         
         int result = tts.setLanguage(locale);

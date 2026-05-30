@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
   },
   headerSub: {
     color: '#64748B',
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: '600',
     marginTop: 1,
   },
@@ -526,7 +526,7 @@ const styles = StyleSheet.create({
   },
   locationTitle: {
     color: '#64748B',
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: 'bold',
     letterSpacing: 1.2,
   },
@@ -548,7 +548,7 @@ const styles = StyleSheet.create({
   },
   locationCountry: {
     color: '#64748B',
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '700',
     marginTop: 3,
   },
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
   },
   radiusLabel: {
     color: '#64748B',
-    fontSize: 8.5,
+    fontSize: 8,
     fontWeight: 'bold',
     letterSpacing: 1,
     marginBottom: 8,
@@ -639,7 +639,7 @@ const styles = StyleSheet.create({
   },
   refreshBadgeText: {
     color: COLORS.cyan,
-    fontSize: 8.5,
+    fontSize: 8,
     fontWeight: 'bold',
   },
 
@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: '#64748B',
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: 'bold',
     letterSpacing: 1.2,
   },
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: '#64748B',
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   emergencyDiscoveredContainer: {
@@ -703,12 +703,12 @@ const styles = StyleSheet.create({
   },
   helpName: {
     color: '#FFFFFF',
-    fontSize: 12.5,
+    fontSize: 13,
     fontWeight: 'bold',
   },
   helpAddress: {
     color: '#64748B',
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: '500',
     marginTop: 2,
   },
@@ -761,7 +761,7 @@ const styles = StyleSheet.create({
   },
   safetyTitle: {
     color: COLORS.cyan,
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: 'bold',
     letterSpacing: 1.2,
   },
@@ -784,12 +784,12 @@ const styles = StyleSheet.create({
   },
   safetyItemLabel: {
     color: '#94A3B8',
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: 'bold',
   },
   safetyItemValue: {
     color: '#CBD5E1',
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '600',
   },
 
@@ -815,7 +815,7 @@ const styles = StyleSheet.create({
   },
   hotlineName: {
     color: '#64748B',
-    fontSize: 8.5,
+    fontSize: 8,
     fontWeight: 'bold',
     marginTop: 2,
     letterSpacing: 0.5,
@@ -831,7 +831,7 @@ const styles = StyleSheet.create({
   },
   noticeText: {
     color: '#475569',
-    fontSize: 8.5,
+    fontSize: 8,
     fontWeight: '600',
     lineHeight: 12,
     flex: 1,

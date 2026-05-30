@@ -69,7 +69,7 @@ export const LocationScreen = ({ navigation }: any) => {
 
   const handleDetectLocation = async () => {
     setLocalError(null);
-    await refreshLocation();
+    await refreshLocation(true);
   };
 
   const handleManualSelect = (stateCode: string) => {

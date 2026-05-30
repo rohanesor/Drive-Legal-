@@ -60,6 +60,125 @@ def get_clarification_prompt(text: str, state: str, has_gps: bool) -> str:
     return "Could you provide a little more context? For example, are you asking about a specific fine or a general road rule?"
 
 
+STATE_NAMES = {
+    'TN': 'Tamil Nadu',
+    'KN': 'Karnataka',
+    'KL': 'Kerala',
+    'MH': 'Maharashtra',
+    'DL': 'Delhi',
+    'AP': 'Andhra Pradesh',
+    'TS': 'Telangana',
+    'KA': 'Karnataka'
+}
+
+def get_location_label(state: str, city: str = None, district: str = None, language: str = 'en') -> str:
+    state_fullname = STATE_NAMES.get(state.upper(), state)
+    if language == 'ta':
+        if state.upper() == 'TN': state_fullname = 'தமிழ்நாடு'
+        if state.upper() == 'KN': state_fullname = 'கர்நாடகா'
+        if city and district:
+            return f"{city}, {district}, {state_fullname}"
+        elif district:
+            return f"{district}, {state_fullname}"
+        return state_fullname
+    elif language == 'hi':
+        if state.upper() == 'TN': state_fullname = 'तमिलनाडु'
+        if state.upper() == 'KN': state_fullname = 'कर्नाटक'
+        if city and district:
+            return f"{city}, {district}, {state_fullname}"
+        elif district:
+            return f"{district}, {state_fullname}"
+        return state_fullname
+    else:
+        if city and district:
+            return f"{city}, {district}, {state_fullname}"
+        elif district:
+            return f"{district}, {state_fullname}"
+        return state_fullname
+
+def get_single_fine(violation_type: str, state: str, city: str = None, district: str = None) -> str:
+    """Helper to query localized fines from SQLite."""
+    try:
+        from database import get_penalties
+        p_list = get_penalties(violation_type, state, city, district)
+        if p_list:
+            return p_list[0].get('first_offense', 'N/A')
+    except Exception:
+        pass
+    return 'N/A'
+
+def generate_location_fines_summary(state: str, city: str = None, district: str = None, language: str = 'en') -> str:
+    """Generate a clean, professional, localized summary of the major traffic fines for a location."""
+    speeding_fine = get_single_fine('speeding', state, city, district)
+    if speeding_fine == 'N/A':
+        speeding_fine = get_single_fine('overspeeding_lmv', state, city, district)
+        
+    helmet_fine = get_single_fine('no_helmet', state, city, district)
+    seatbelt_fine = get_single_fine('no_seatbelt', state, city, district)
+    if seatbelt_fine == 'N/A':
+        seatbelt_fine = get_single_fine('no_seat_belt', state, city, district)
+        
+    license_fine = get_single_fine('no_license', state, city, district)
+    if license_fine == 'N/A':
+        license_fine = get_single_fine('driving_without_licence', state, city, district)
+        
+    insurance_fine = get_single_fine('no_insurance', state, city, district)
+    if insurance_fine == 'N/A':
+        insurance_fine = get_single_fine('vehicle_insurance', state, city, district)
+        
+    drunk_fine = get_single_fine('drunk_driving', state, city, district)
+    if drunk_fine == 'N/A':
+        drunk_fine = get_single_fine('road_safety_drunk_driving', state, city, district)
+
+    # Standard fallback values if still N/A
+    if speeding_fine == 'N/A': speeding_fine = '₹500'
+    if helmet_fine == 'N/A': helmet_fine = '₹500'
+    if seatbelt_fine == 'N/A': seatbelt_fine = '₹500'
+    if license_fine == 'N/A': license_fine = '₹5,000'
+    if insurance_fine == 'N/A': insurance_fine = '₹2,000'
+    if drunk_fine == 'N/A': drunk_fine = '₹10,000'
+
+    location_name = get_location_label(state, city, district, language)
+    
+    if language == 'ta':
+        summary = (
+            f"📍 **உங்கள் தற்போதைய இருப்பிடமான {location_name} அடிப்படையில்:**\n\n"
+            f"இங்குள்ள முக்கிய போக்குவரத்து அபராதங்களின் விவரங்கள்:\n"
+            f"• **அதிவேகமாக ஓட்டுதல் (Speeding):** {speeding_fine}\n"
+            f"• **ஹெல்மெட் அணியாமல் ஓட்டுதல் (No Helmet):** {helmet_fine}\n"
+            f"• **சீட் பெல்ட் அணியாமல் ஓட்டுதல் (No Seatbelt):** {seatbelt_fine}\n"
+            f"• **ஓட்டுநர் உரிமம் இல்லாமல் ஓட்டுதல் (No License):** {license_fine}\n"
+            f"• **காப்பீடு இல்லாமல் ஓட்டுதல் (No Insurance):** {insurance_fine}\n"
+            f"• **குடிபோதையில் ஓட்டுதல் (Drunk Driving):** {drunk_fine}\n\n"
+            f"*பாதுகாப்பாக ஓட்டவும்! போக்குவரத்து விதிகளை மதிக்கவும்.*"
+        )
+    elif language == 'hi':
+        summary = (
+            f"📍 **आपके वर्तमान स्थान {location_name} के आधार पर:**\n\n"
+            f"यहाँ के मुख्य ट्रैफिक जुर्माने की सूची:\n"
+            f"• **ओवरस्पीडिंग (Speeding):** {speeding_fine}\n"
+            f"• **बिना हेलमेट ड्राइविंग (No Helmet):** {helmet_fine}\n"
+            f"• **बिना सीट बेल्ट ड्राइविंग (No Seatbelt):** {seatbelt_fine}\n"
+            f"• **बिना लाइसेंस ड्राइविंग (No License):** {license_fine}\n"
+            f"• **बिना बीमा ड्राइविंग (No Insurance):** {insurance_fine}\n"
+            f"• **शराब पीकर ड्राइविंग (Drunk Driving):** {drunk_fine}\n\n"
+            f"*सुरक्षित रूप से चलाएं! ट्रैफिक नियमों का पालन करें।*"
+        )
+    else:
+        summary = (
+            f"📍 **Based on your current location in {location_name}:**\n\n"
+            f"Here are the active traffic fines and details for this location:\n"
+            f"• **Overspeeding:** {speeding_fine}\n"
+            f"• **Driving without Helmet:** {helmet_fine}\n"
+            f"• **Driving without Seatbelt:** {seatbelt_fine}\n"
+            f"• **Driving without License:** {license_fine}\n"
+            f"• **Driving without Insurance:** {insurance_fine}\n"
+            f"• **Drunk Driving:** {drunk_fine}\n\n"
+            f"*Safe driving! Please keep your documents updated.*"
+        )
+    return summary
+
+
 def execute_pipeline(payload: Dict) -> Dict:
     text = payload.get('text', '')
     audio_uri = payload.get('audio_uri')
@@ -67,6 +186,9 @@ def execute_pipeline(payload: Dict) -> Dict:
     language = payload.get('language', 'en')
     state = location.get('state', 'TN')
     lat = location.get('lat', 0)
+    lng = location.get('lng', 0)
+    city = location.get('city')
+    district = location.get('district')
     history = payload.get('history', [])
 
     has_gps = lat != 0
@@ -75,6 +197,38 @@ def execute_pipeline(payload: Dict) -> Dict:
         text = transcribe_audio(audio_uri, language)
         if not text:
             return {'response_text': 'I couldn\'t hear you clearly. Could you repeat that or type it?', 'confidence': 0}
+
+    # Intercept generic queries about fines or rules for user's location
+    text_lower = text.lower().strip()
+    location_keywords = ['my location', 'around me', 'here', 'this place', 'local fines', 'local rules', 'fines and details', 'around here']
+    tamil_location_keywords = ['என் இடம்', 'இங்கே', 'இங்க', 'என் ஏரியா', 'இருப்பிடம்', 'இங்குள்ள அபராதம்', 'என் ஊர்']
+    hindi_location_keywords = ['मेरी जगह', 'यहाँ', 'इधर', 'मेरा लोकेशन', 'यहाँ का जुर्माना', 'लोकल', 'आसपास']
+    
+    is_location_query = any(k in text_lower for k in location_keywords) or \
+                        any(k in text_lower for k in tamil_location_keywords) or \
+                        any(k in text_lower for k in hindi_location_keywords)
+                        
+    fine_keywords = ['fine', 'penalty', 'amount', 'rule', 'charge', 'challan', 'violation', 'detail']
+    tamil_fine_keywords = ['அபராதம்', 'சட்டம்', 'விதி', 'தண்டனை', 'செல்லுபடியாகும்', 'விவரம்']
+    hindi_fine_keywords = ['जुर्माना', 'नियम', 'चालान', 'कितना', 'डिटेल', 'विस्तार']
+    
+    is_fine_query = any(k in text_lower for k in fine_keywords) or \
+                    any(k in text_lower for k in tamil_fine_keywords) or \
+                    any(k in text_lower for k in hindi_fine_keywords)
+                    
+    is_explicit_location_fines = ("fine" in text_lower or "penalty" in text_lower or "rules" in text_lower or "அபராதம்" in text_lower or "जुर्माना" in text_lower) and \
+                                  ("location" in text_lower or "here" in text_lower or "இங்கே" in text_lower or "यहाँ" in text_lower)
+                                  
+    if (is_location_query and is_fine_query) or is_explicit_location_fines or (text_lower in ['fines', 'fines list', 'local fines', 'அபராதங்கள்', 'जुर्माना सूची']):
+        summary = generate_location_fines_summary(state, city, district, language)
+        if summary:
+            return {
+                'response_text': summary,
+                'source_sections': [],
+                'confidence': 0.99,
+                'detected_language': language,
+                'transcription': text,
+            }
 
     # 1. Conversational Clarification Check
     if not history and is_vague_query(text):

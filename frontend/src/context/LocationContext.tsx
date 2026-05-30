@@ -9,7 +9,7 @@ interface LocationContextType {
   isLoading: boolean;
   error: string | null;
   permissionStatus: 'granted' | 'denied' | 'undetermined';
-  refreshLocation: () => Promise<void>;
+  refreshLocation: (showPrompt?: boolean) => Promise<void>;
   setManualLocation: (stateCode: string) => void;
   isMocked: boolean;
 }
@@ -35,7 +35,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  const refreshLocation = useCallback(async () => {
+  const refreshLocation = useCallback(async (showPrompt = false) => {
     setIsLoading(true);
     setError(null);
 
@@ -53,15 +53,17 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (err: any) {
       setError(err.message);
 
-      // Explicit prompt to guide the user to turn on GPS/permissions
-      Alert.alert(
-        'Location Access Required',
-        'Smart Jurisdiction Engine requires location permissions and active GPS sensors to monitor speed laws in the background. Please ensure Location is enabled in system settings.',
-        [
-          { text: 'Use Offline Manual Mode', style: 'cancel' },
-          { text: 'Enable / Retry', onPress: () => refreshLocation() }
-        ]
-      );
+      if (showPrompt) {
+        // Only trigger blocking UI prompt on manual interaction
+        Alert.alert(
+          'Location Access Required',
+          'Smart Jurisdiction Engine requires location permissions and active GPS sensors to monitor speed laws in the background. Please ensure Location is enabled in system settings.',
+          [
+            { text: 'Use Offline Manual Mode', style: 'cancel' },
+            { text: 'Enable / Retry', onPress: () => refreshLocation(true) }
+          ]
+        );
+      }
 
       // Fallback to cache if GPS fails
       try {

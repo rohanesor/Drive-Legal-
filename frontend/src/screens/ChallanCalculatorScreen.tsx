@@ -746,7 +746,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   statusText: {
-    fontSize: 8.5,
+    fontSize: 8,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -806,7 +806,7 @@ const styles = StyleSheet.create({
   },
   riskTitle: {
     color: '#94A3B8',
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: 'bold',
     letterSpacing: 1.2,
   },
@@ -864,7 +864,7 @@ const styles = StyleSheet.create({
   },
   advisoryTitleText: {
     color: COLORS.cyan,
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: 'bold',
     letterSpacing: 1.2,
   },
@@ -916,7 +916,7 @@ const styles = StyleSheet.create({
   },
   switchLabel: {
     color: '#FFFFFF',
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '700',
   },
   switchSub: {
@@ -941,7 +941,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     color: '#FFFFFF',
-    fontSize: 12.5,
+    fontSize: 13,
     fontWeight: '600',
     paddingVertical: 8,
   },
@@ -1033,7 +1033,7 @@ const styles = StyleSheet.create({
   },
   cardPriceLabel: {
     color: '#475569',
-    fontSize: 7.5,
+    fontSize: 8,
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -1061,7 +1061,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: '#64748B',
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: 'bold',
   },
 
@@ -1115,7 +1115,7 @@ const styles = StyleSheet.create({
   },
   breakdownItem: {
     color: '#64748B',
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: '600',
   },
   breakdownItemVal: {
@@ -1134,7 +1134,7 @@ const styles = StyleSheet.create({
   aiButtonText: {
     color: '#000000',
     fontWeight: '900',
-    fontSize: 11.5,
+    fontSize: 12,
     letterSpacing: 0.5,
   },
 });

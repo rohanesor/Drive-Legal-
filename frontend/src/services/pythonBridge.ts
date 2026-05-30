@@ -69,6 +69,7 @@ export interface QueryResult {
   message?: string;              // Error message
   fallback_available?: boolean;  // Whether a template fallback is available
   fallback_response_text?: string; // Fallback response text
+  detected_language?: string;    // Auto-detected language of query
 }
 
 /**
