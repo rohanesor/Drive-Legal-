@@ -41,10 +41,10 @@ import {
   EmergencyLocation, 
   GeocodedAddress 
 } from '../services/emergencyService';
-
-
+import { useLocation } from '../context/LocationContext';
 
 export const EmergencyScreen = () => {
+  const { location: contextLocation, geoInfo: contextGeoInfo } = useLocation();
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -82,39 +82,72 @@ export const EmergencyScreen = () => {
   const loadEmergencySystem = async (forceRadius?: 2 | 5 | 10) => {
     setGpsLoading(true);
     try {
-      // 1. GPS Location and Permissions
-      const coords = await requestGPSCoordinates();
-      setUserLocation(coords);
+      let lat = 11.0168;
+      let lng = 76.9558;
+      let accuracy = 'low';
+
+      // 1. Try to read location from context
+      if (contextLocation) {
+        lat = contextLocation.latitude;
+        lng = contextLocation.longitude;
+        accuracy = 'high';
+        setUserLocation({ lat, lng, accuracy });
+      } else {
+        // Fallback to active GPS fetch if not in context yet
+        try {
+          const coords = await requestGPSCoordinates();
+          lat = coords.lat;
+          lng = coords.lng;
+          accuracy = coords.accuracy;
+          setUserLocation(coords);
+        } catch (gpsErr) {
+          console.warn('GPS Permission or sensor failed, using fallback:', gpsErr);
+          setUserLocation({ lat, lng, accuracy });
+        }
+      }
 
       // 2. Reverse Geocoding
-      const geocoded = await fetchOSMReverseGeocode(coords.lat, coords.lng);
-      setAddress(geocoded);
+      if (contextGeoInfo) {
+        setAddress({
+          city: contextGeoInfo.city || contextGeoInfo.district || 'Coimbatore',
+          state: contextGeoInfo.state || 'Tamil Nadu',
+          country: 'India',
+        });
+      } else {
+        try {
+          const geocoded = await fetchOSMReverseGeocode(lat, lng);
+          setAddress(geocoded);
+        } catch (geoErr) {
+          console.warn('Nominatim reverse geocode failed, using fallback:', geoErr);
+          setAddress({ city: 'Coimbatore', state: 'Tamil Nadu', country: 'India' });
+        }
+      }
 
       // 3. Emergency Discovery via Overpass API
       const selectedRadius = forceRadius || radius;
-      const discovered = await discoverNearbyEmergencies(coords.lat, coords.lng, selectedRadius);
-      setNearbyEmergencies(discovered);
-      setIsOffline(discovered.length === 0);
+      try {
+        const discovered = await discoverNearbyEmergencies(lat, lng, selectedRadius);
+        setNearbyEmergencies(discovered);
+        setIsOffline(discovered.length === 0);
+      } catch (discoverErr) {
+        console.warn('Overpass discovery failed, using cached fallback:', discoverErr);
+        setIsOffline(true);
+        // Load fallback caches safely inside try-catch to prevent crash
+        const discoveredFallback = await discoverNearbyEmergencies(lat, lng, selectedRadius);
+        setNearbyEmergencies(discoveredFallback);
+      }
     } catch (e) {
       console.warn('GPS Emergency platform failed:', e);
       setIsOffline(true);
-      // Fallback fallback simulated TN values if everything crashes
-      const baseLat = 11.0168;
-      const baseLng = 76.9558;
-      setUserLocation({ lat: baseLat, lng: baseLng, accuracy: 'low' });
-      setAddress({ city: 'Coimbatore', state: 'Tamil Nadu', country: 'India' });
-      
-      const discoveredFallback = await discoverNearbyEmergencies(baseLat, baseLng, forceRadius || radius);
-      setNearbyEmergencies(discoveredFallback);
     } finally {
       setGpsLoading(false);
     }
   };
 
-  // Run on mount
+  // Run on mount or when context location changes
   useEffect(() => {
     loadEmergencySystem();
-  }, []);
+  }, [contextLocation, contextGeoInfo]);
 
   // Run when radius changes
   const handleRadiusChange = (newRadius: 2 | 5 | 10) => {

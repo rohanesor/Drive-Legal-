@@ -214,7 +214,6 @@ export const ChallanCalculatorScreen = ({ navigation }: any) => {
   // Selected state override
   const [selectedState, setSelectedState] = useState('TN');
   const [showStateDropdown, setShowStateDropdown] = useState(false);
-  const [showEnforcementMap, setShowEnforcementMap] = useState(false);
 
   // Selections
   const [violations, setViolations] = useState<Violation[]>([]);
@@ -365,27 +364,7 @@ export const ChallanCalculatorScreen = ({ navigation }: any) => {
   // Find active advisories
   const activeAdvisories = violations.filter(v => selectedIds.includes(v.id) && v.advisory);
 
-  const enforcementMarkers: MapMarker[] = useMemo(() => {
-    if (!location) return [];
-    const lat = location.latitude;
-    const lng = location.longitude;
-    return [
-      { id: 'cam_1', type: 'warning', name: '📸 Speed Camera Zone', lat: lat + 0.003, lng: lng + 0.002 },
-      { id: 'cam_2', type: 'warning', name: '📸 Red Light Camera', lat: lat - 0.002, lng: lng + 0.004 },
-      { id: 'tow_1', type: 'rto', name: '🚫 Tow-Away Zone', lat: lat + 0.001, lng: lng - 0.003 },
-      { id: 'park_1', type: 'warning', name: '🅿️ No Parking Zone', lat: lat - 0.004, lng: lng - 0.001 },
-    ];
-  }, [location]);
 
-  const enforcementZones: MapZone[] = useMemo(() => {
-    if (!location) return [];
-    const lat = location.latitude;
-    const lng = location.longitude;
-    return [
-      { id: 'speed_zone', type: 'speed_camera', name: '⚡ Speed Enforcement Zone', coords: [{ lat: lat + 0.003, lng: lng + 0.002 }], radius: 200, severity: 'high' as const },
-      { id: 'no_park', type: 'restricted_zone', name: '🚫 No Parking Area', coords: [{ lat: lat - 0.004, lng: lng - 0.001 }], radius: 150, severity: 'medium' as const },
-    ];
-  }, [location]);
 
   const getGPSStatusText = () => {
     if (isLoading) return 'SEARCHING...';
@@ -567,67 +546,7 @@ export const ChallanCalculatorScreen = ({ navigation }: any) => {
           )}
         </View>
 
-        {/* Enforcement Intelligence Map */}
-        <TouchableOpacity
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            backgroundColor: 'rgba(6, 182, 212, 0.08)',
-            borderWidth: 1,
-            borderColor: 'rgba(6, 182, 212, 0.2)',
-            borderRadius: 12,
-            padding: 12,
-            marginBottom: 16,
-          }}
-          onPress={() => setShowEnforcementMap(!showEnforcementMap)}
-          activeOpacity={0.8}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <MapPin size={18} color="#00E5FF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700', letterSpacing: 0.5 }}>
-              ENFORCEMENT INTELLIGENCE MAP
-            </Text>
-          </View>
-          <ChevronDown
-            size={18}
-            color="#00E5FF"
-            style={{ transform: [{ rotate: showEnforcementMap ? '180deg' : '0deg' }] }}
-          />
-        </TouchableOpacity>
 
-        {showEnforcementMap && (
-          <View style={{ marginBottom: 16, borderRadius: 12, overflow: 'hidden' }}>
-            <LocationMap
-              currentLocation={location ? { lat: location.latitude, lng: location.longitude } : undefined}
-              mapType="fineiq"
-              markers={enforcementMarkers}
-              zones={enforcementZones}
-              height={220}
-              interactive={true}
-            />
-            <View style={{
-              backgroundColor: 'rgba(15, 23, 42, 0.9)',
-              padding: 8,
-              flexDirection: 'row',
-              justifyContent: 'center',
-              gap: 16,
-            }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#EAB308' }} />
-                <Text style={{ color: '#94A3B8', fontSize: 10 }}>Speed Cam</Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#F59E0B' }} />
-                <Text style={{ color: '#94A3B8', fontSize: 10 }}>Tow Zone</Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' }} />
-                <Text style={{ color: '#94A3B8', fontSize: 10 }}>No Parking</Text>
-              </View>
-            </View>
-          </View>
-        )}
 
         {/* CATEGORY TABS NAVIGATION BAR */}
         <ScrollView 

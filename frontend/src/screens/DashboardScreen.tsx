@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS, GLASS } from '../constants/
 import { useLocation } from '../context/LocationContext';
 import { useAppMode } from '../hooks/useAppMode';
 import { getJurisdictionLabel } from '../services/locationService';
-import { LocationMap } from '../components/LocationMap';
+import { LocationMap, MapMarker, MapZone } from '../components/LocationMap';
 import { MessageCircle, Calculator, MapPin, Phone, ShieldCheck, LocateFixed, Sparkles, ChevronRight, ArrowRight, Maximize2, AlertTriangle, Server, Mic } from 'lucide-react-native';
 
 const FEATURES = [
@@ -141,6 +141,28 @@ export const DashboardScreen = ({ navigation }: any) => {
   const { switchMode } = useAppMode();
   const activeAlert = useSelector((state: RootState) => state.alerts.activeAlert);
 
+  const enforcementMarkers: MapMarker[] = useMemo(() => {
+    if (!location) return [];
+    const lat = location.latitude;
+    const lng = location.longitude;
+    return [
+      { id: 'home_cam_1', type: 'warning', name: '📸 Speed Camera Zone', lat: lat + 0.003, lng: lng + 0.002 },
+      { id: 'home_cam_2', type: 'warning', name: '📸 Red Light Camera', lat: lat - 0.002, lng: lng + 0.004 },
+      { id: 'home_tow_1', type: 'rto', name: '🚫 Tow-Away Zone', lat: lat + 0.001, lng: lng - 0.003 },
+      { id: 'home_park_1', type: 'warning', name: '🅿️ No Parking Zone', lat: lat - 0.004, lng: lng - 0.001 },
+    ];
+  }, [location]);
+
+  const enforcementZones: MapZone[] = useMemo(() => {
+    if (!location) return [];
+    const lat = location.latitude;
+    const lng = location.longitude;
+    return [
+      { id: 'home_speed_zone', type: 'speed_camera', name: '⚡ Speed Enforcement Zone', coords: [{ lat: lat + 0.003, lng: lng + 0.002 }], radius: 200, severity: 'high' as const },
+      { id: 'home_no_park', type: 'restricted_zone', name: '🚫 No Parking Area', coords: [{ lat: lat - 0.004, lng: lng - 0.001 }], radius: 150, severity: 'medium' as const },
+    ];
+  }, [location]);
+
   const locationText = geoInfo ? getJurisdictionLabel(geoInfo) : 'Detecting...';
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -259,19 +281,22 @@ export const DashboardScreen = ({ navigation }: any) => {
           </View>
         </TouchableOpacity>
 
-        {/* Mini-map */}
+        {/* Enforcement Intelligence Map */}
         <View style={styles.mapWrapper}>
           <LocationMap
             currentLocation={location ? { lat: location.latitude, lng: location.longitude } : undefined}
+            mapType="fineiq"
+            markers={enforcementMarkers}
+            zones={enforcementZones}
             height={160}
-            interactive={false}
+            interactive={true}
           />
           <TouchableOpacity
             style={styles.mapOverlayButton}
             onPress={() => navigation.navigate('Location')}
           >
             <Maximize2 size={16} color={COLORS.white} />
-            <Text style={styles.mapOverlayText}>View on map</Text>
+            <Text style={styles.mapOverlayText}>Enforcement HUD</Text>
           </TouchableOpacity>
         </View>
 

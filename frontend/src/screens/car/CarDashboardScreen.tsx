@@ -79,11 +79,20 @@ export const CarDashboardScreen = () => {
   // Cockpit map location state (replaces WebView postMessage)
   const [cockpitLocation, setCockpitLocation] = useState<{ lat: number; lng: number; heading?: number }>({ lat: BASE_LAT, lng: BASE_LNG, heading: 42 });
 
-  // Cockpit map markers and lines
+  // Cockpit map markers, lines, and radar zones
   const [cockpitMarkers] = useState<MapMarker[]>([
     { id: 'school_zone_1', type: 'warning', name: '🏥 School Silent Zone: 20 km/h', lat: 11.0212, lng: 76.9602 },
     { id: 'tow_zone_1', type: 'warning', name: '⚠️ Towing Area', lat: 11.0150, lng: 76.9530 },
     { id: 'toll_1', type: 'ev', name: '🎟️ FASTag Toll Gate', lat: 11.0225, lng: 76.9615 },
+    { id: 'car_cam_1', type: 'warning', name: '📸 Speed Camera Radar', lat: 11.0190, lng: 76.9580 },
+    { id: 'car_cam_2', type: 'warning', name: '📸 Red Light Camera', lat: 11.0175, lng: 76.9565 },
+    { id: 'car_tow_1', type: 'rto', name: '🚫 Tow-Away Zone', lat: 11.0150, lng: 76.9530 },
+    { id: 'car_park_1', type: 'warning', name: '🅿️ No Parking Area', lat: 11.0212, lng: 76.9602 }
+  ]);
+  const [cockpitZones] = useState<MapZone[]>([
+    { id: 'car_speed_zone', type: 'speed_camera', name: '⚡ Speed Enforcement Zone', coords: [{ lat: 11.0190, lng: 76.9580 }], radius: 200, severity: 'high' },
+    { id: 'car_no_park_zone', type: 'restricted_zone', name: '🚫 No Parking Area', coords: [{ lat: 11.0150, lng: 76.9530 }], radius: 150, severity: 'medium' },
+    { id: 'car_hospital_zone', type: 'school_zone', name: '🏥 Silent Hospital Zone', coords: [{ lat: 11.0212, lng: 76.9602 }], radius: 250, severity: 'medium' }
   ]);
   const [cockpitLines] = useState<MapLine[]>([
     { id: 'state_border_1', name: '🗺️ TN-KA State Border Line', coords: [
@@ -344,6 +353,7 @@ export const CarDashboardScreen = () => {
           currentLocation={{ lat: cockpitLocation.lat, lng: cockpitLocation.lng, heading: cockpitLocation.heading }}
           mapType="cockpit"
           markers={cockpitMarkers}
+          zones={cockpitZones}
           lines={cockpitLines}
           height={Dimensions.get('window').height * 0.35}
           interactive={true}
