@@ -1,4 +1,7 @@
 package com.drivelegal;
+import android.content.res.Configuration;
+import expo.modules.ApplicationLifecycleDispatcher;
+import expo.modules.ReactNativeHostWrapper;
 
 /**
  * MainApplication - Android Application class
@@ -31,7 +34,7 @@ import java.util.List;
 public class MainApplication extends Application implements ReactApplication {
 
     private final ReactNativeHost mReactNativeHost =
-        new DefaultReactNativeHost(this) {
+        new ReactNativeHostWrapper(this, new DefaultReactNativeHost(this) {
             @Override
             public boolean getUseDeveloperSupport() {
                 return BuildConfig.DEBUG;
@@ -48,7 +51,7 @@ public class MainApplication extends Application implements ReactApplication {
 
             @Override
             protected String getJSMainModuleName() {
-                return "index";
+                return ".expo/.virtual-metro-entry";
             }
 
             @Override
@@ -60,7 +63,7 @@ public class MainApplication extends Application implements ReactApplication {
             protected Boolean isHermesEnabled() {
                 return BuildConfig.IS_HERMES_ENABLED;
             }
-        };
+        });
 
     @Override
     public ReactNativeHost getReactNativeHost() {
@@ -83,10 +86,17 @@ public class MainApplication extends Application implements ReactApplication {
                 Python.start(new AndroidPlatform(this));
             }
         }, "chaquopy-init").start();
-    }
+      ApplicationLifecycleDispatcher.onApplicationCreate(this);
+  }
 
     @Override
     protected void attachBaseContext(android.content.Context base) {
         super.attachBaseContext(base);
     }
+
+  @Override
+  public void onConfigurationChanged(Configuration newConfig) {
+    super.onConfigurationChanged(newConfig);
+    ApplicationLifecycleDispatcher.onConfigurationChanged(this, newConfig);
+  }
 }

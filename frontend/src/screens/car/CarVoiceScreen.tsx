@@ -54,6 +54,8 @@ export const CarVoiceScreen = () => {
   const autoRetryCount = useRef(0);
   const hasTranscriptRef = useRef(false);
   const latestTranscriptRef = useRef('');
+  const hasSubmittedRef = useRef(false);
+  const speechEndTimeoutRef = useRef<any>(null);
 
   useEffect(() => {
     let interval: any = null;
@@ -218,6 +220,25 @@ export const CarVoiceScreen = () => {
       addLog("Speaking started: user voice energy detected.");
     });
 
+    const onEnd = DeviceEventEmitter.addListener('onSpeechEnd', () => {
+      addLog("Speech ended: user stopped talking.");
+      // Safety timeout: if onSpeechResults doesn't arrive within 2.5s,
+      // submit whatever partial transcript we have
+      if (speechEndTimeoutRef.current) clearTimeout(speechEndTimeoutRef.current);
+      speechEndTimeoutRef.current = setTimeout(() => {
+        addLog("Speech End safety timeout fired — checking for pending transcript");
+        const pending = latestTranscriptRef.current?.trim();
+        if (pending && pending.length > 0 && !hasSubmittedRef.current) {
+          addLog(`Submitting partial transcript via safety timeout: "${pending}"`);
+          processSpeechText(pending);
+        } else if (!hasSubmittedRef.current) {
+          // No transcript at all — transition to IDLE so UI isn't stuck
+          setVoiceState('IDLE');
+          setBotResponseText('No speech detected. Tap mic to try again.');
+        }
+      }, 2500);
+    });
+
     const onPartial = DeviceEventEmitter.addListener('onSpeechPartialResults', (e) => {
       const match = e.value && e.value[0];
       if (match) {
@@ -229,27 +250,41 @@ export const CarVoiceScreen = () => {
     });
 
     const onResults = DeviceEventEmitter.addListener('onSpeechResults', (e) => {
+      // Cancel safety timeout since we got real results
+      if (speechEndTimeoutRef.current) {
+        clearTimeout(speechEndTimeoutRef.current);
+        speechEndTimeoutRef.current = null;
+      }
       const match = e.value && e.value[0];
       if (match) {
         hasTranscriptRef.current = true;
         latestTranscriptRef.current = match;
         addLog(`Final match: "${match}"`);
         autoRetryCount.current = 0;
-        processSpeechText(match);
+        if (!hasSubmittedRef.current) {
+          processSpeechText(match);
+        }
       } else {
         addLog("Speech results empty.");
-        if (!hasTranscriptRef.current) {
+        if (!hasTranscriptRef.current && !hasSubmittedRef.current) {
           handleSpeechFailure("No match found.");
         }
       }
     });
 
     const onError = DeviceEventEmitter.addListener('onSpeechError', (e) => {
+      // Cancel safety timeout since error handler will deal with it
+      if (speechEndTimeoutRef.current) {
+        clearTimeout(speechEndTimeoutRef.current);
+        speechEndTimeoutRef.current = null;
+      }
       addLog(`Speech Error [Code: ${e.code}]: ${e.message}`);
       if (hasTranscriptRef.current && latestTranscriptRef.current.trim().length > 0) {
         addLog(`Ignored error [Code ${e.code}]. Auto-submitting captured partial transcript: "${latestTranscriptRef.current}"`);
         autoRetryCount.current = 0;
-        processSpeechText(latestTranscriptRef.current);
+        if (!hasSubmittedRef.current) {
+          processSpeechText(latestTranscriptRef.current);
+        }
         return;
       }
       handleSpeechFailure(e.message, e.code);
@@ -265,9 +300,14 @@ export const CarVoiceScreen = () => {
     return () => {
       onStart.remove();
       onBegan.remove();
+      onEnd.remove();
       onPartial.remove();
       onResults.remove();
       onError.remove();
+      if (speechEndTimeoutRef.current) {
+        clearTimeout(speechEndTimeoutRef.current);
+        speechEndTimeoutRef.current = null;
+      }
       stopSpeechPlayback();
       clearSpeechMonitoring();
     };
@@ -346,6 +386,7 @@ export const CarVoiceScreen = () => {
 
       hasTranscriptRef.current = false;
       latestTranscriptRef.current = '';
+      hasSubmittedRef.current = false;
       setVoiceState('LISTENING');
       setUserTranscript('Listening...');
       setBotResponseText('');
@@ -398,6 +439,8 @@ export const CarVoiceScreen = () => {
 
   const processSpeechText = async (transcribedText: string) => {
     try {
+      if (hasSubmittedRef.current) return;
+      hasSubmittedRef.current = true;
       hasTranscriptRef.current = true;
       setVoiceState('THINKING');
       setShowMicFailFallback(false);

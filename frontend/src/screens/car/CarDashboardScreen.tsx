@@ -167,6 +167,7 @@ export const CarDashboardScreen = () => {
   const hasTranscriptRef = useRef(false);
   const latestTranscriptRef = useRef('');
   const silenceTimerRef = useRef<any>(null);
+  const speechEndTimeoutRef = useRef<any>(null);
   const isSpeakingCheckInterval = useRef<any>(null);
   const hasSubmittedRef = useRef(false);
 
@@ -343,6 +344,24 @@ export const CarDashboardScreen = () => {
       addLog("Speaking started: user voice energy detected.");
     });
 
+    const onEnd = DeviceEventEmitter.addListener('onSpeechEnd', () => {
+      addLog("Speech ended: user stopped talking.");
+      // Safety timeout: if onSpeechResults doesn't arrive within 2.5s,
+      // submit whatever partial transcript we have
+      if (speechEndTimeoutRef.current) clearTimeout(speechEndTimeoutRef.current);
+      speechEndTimeoutRef.current = setTimeout(() => {
+        addLog("Speech End safety timeout fired — checking for pending transcript");
+        const pending = latestTranscriptRef.current?.trim();
+        if (pending && pending.length > 0 && !hasSubmittedRef.current) {
+          addLog(`Submitting partial transcript via safety timeout: "${pending}"`);
+          processSpeechText(pending);
+        } else if (!hasSubmittedRef.current) {
+          setVoiceState('READY');
+          setBotResponseText('No speech detected. Tap mic to try again.');
+        }
+      }, 2500);
+    });
+
     const onPartial = DeviceEventEmitter.addListener('onSpeechPartialResults', (e) => {
       const match = e.value && e.value[0];
       if (match) {
@@ -357,6 +376,11 @@ export const CarDashboardScreen = () => {
     });
 
     const onResults = DeviceEventEmitter.addListener('onSpeechResults', (e) => {
+      // Cancel safety timeout since we got real results
+      if (speechEndTimeoutRef.current) {
+        clearTimeout(speechEndTimeoutRef.current);
+        speechEndTimeoutRef.current = null;
+      }
       const match = e.value && e.value[0];
       if (match) {
         hasTranscriptRef.current = true;
@@ -382,6 +406,11 @@ export const CarDashboardScreen = () => {
     });
 
     const onError = DeviceEventEmitter.addListener('onSpeechError', (e) => {
+      // Cancel safety timeout since error handler will deal with it
+      if (speechEndTimeoutRef.current) {
+        clearTimeout(speechEndTimeoutRef.current);
+        speechEndTimeoutRef.current = null;
+      }
       addLog(`Speech Error [Code: ${e.code}]: ${e.message}`);
       // Treat as successful and submit if we got some transcript, or ignore trailing error code 5
       if (latestTranscriptRef.current.trim().length > 0 || hasSubmittedRef.current || e.code === 5) {
@@ -397,12 +426,17 @@ export const CarDashboardScreen = () => {
     return () => {
       onStart.remove();
       onBegan.remove();
+      onEnd.remove();
       onPartial.remove();
       onResults.remove();
       onError.remove();
       stopSpeechPlayback();
       clearSpeechMonitoring();
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      if (speechEndTimeoutRef.current) {
+        clearTimeout(speechEndTimeoutRef.current);
+        speechEndTimeoutRef.current = null;
+      }
     };
   }, [userLanguage]);
 

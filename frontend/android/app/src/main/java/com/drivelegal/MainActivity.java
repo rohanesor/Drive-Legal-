@@ -1,4 +1,5 @@
 package com.drivelegal;
+import expo.modules.ReactActivityDelegateWrapper;
 
 /**
  * MainActivity - Entry point activity for the React Native app
@@ -21,9 +22,9 @@ public class MainActivity extends ReactActivity {
 
     @Override
     protected ReactActivityDelegate createReactActivityDelegate() {
-        return new DefaultReactActivityDelegate(
+        return new ReactActivityDelegateWrapper(this, BuildConfig.IS_NEW_ARCHITECTURE_ENABLED, new DefaultReactActivityDelegate(
             this,
             getMainComponentName(),
-            DefaultNewArchitectureEntryPoint.getFabricEnabled());
+            DefaultNewArchitectureEntryPoint.getFabricEnabled()));
     }
 }

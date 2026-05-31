@@ -2,26 +2,25 @@
  * Metro bundler configuration
  * Handles JavaScript bundling for React Native
  */
-const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
+const { getDefaultConfig } = require('@expo/metro-config');
 
-const defaultConfig = getDefaultConfig(__dirname);
+const config = getDefaultConfig(__dirname);
+
 const {
-  resolver: {sourceExts, assetExts},
-} = defaultConfig;
+  resolver: { sourceExts, assetExts },
+} = config;
 
-const config = {
-  transformer: {
-    getTransformOptions: async () => ({
-      transform: {
-        experimentalImportSupport: false,
-        inlineRequires: true,
-      },
-    }),
-  },
-  resolver: {
-    assetExts: assetExts.filter(ext => ext !== 'svg'),
-    sourceExts: [...sourceExts, 'svg', 'ts', 'tsx'],
-  },
+config.transformer = {
+  ...config.transformer,
+  getTransformOptions: async () => ({
+    transform: {
+      experimentalImportSupport: false,
+      inlineRequires: true,
+    },
+  }),
 };
 
-module.exports = mergeConfig(defaultConfig, config);
+config.resolver.assetExts = assetExts.filter(ext => ext !== 'svg');
+config.resolver.sourceExts = [...sourceExts, 'svg', 'ts', 'tsx'];
+
+module.exports = config;

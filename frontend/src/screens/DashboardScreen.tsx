@@ -8,6 +8,7 @@ import {
   Animated,
   StatusBar,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../store';
@@ -137,7 +138,7 @@ const FeatureCard = ({ feature, onPress, index }: { feature: typeof FEATURES[0];
 };
 
 export const DashboardScreen = ({ navigation }: any) => {
-  const { location, geoInfo, isLoading, refreshLocation, isMocked } = useLocation();
+  const { location, geoInfo, isLoading, refreshLocation, isMocked, status } = useLocation();
   const { switchMode } = useAppMode();
   const activeAlert = useSelector((state: RootState) => state.alerts.activeAlert);
 
@@ -239,18 +240,24 @@ export const DashboardScreen = ({ navigation }: any) => {
           <View style={styles.spaciousLocationHeader}>
             <LocateFixed size={16} color={isMocked ? COLORS.warning : COLORS.cyan} />
             <Text style={styles.spaciousLocationTitle}>SMART JURISDICTION ENGINE</Text>
-            <View style={[styles.statusDotMedium, isMocked && { backgroundColor: COLORS.warning }]} />
+            {isLoading ? (
+              <ActivityIndicator size="small" color={COLORS.cyan} style={{ marginLeft: 'auto' }} />
+            ) : (
+              <View style={[styles.statusDotMedium, isMocked && { backgroundColor: COLORS.warning }]} />
+            )}
           </View>
           <Text style={styles.spaciousLocationText}>
-            {geoInfo ? `India → ${geoInfo.state} → ${geoInfo.city || geoInfo.district || 'Detecting...'}` : 'Detecting Location...'}
+            {isLoading ? (
+              status === 'Requesting Permission' ? "🔐 GPS: Requesting Permission..." :
+              status === 'Acquiring GPS' ? "📡 GPS: Acquiring Satellite..." :
+              status === 'GPS Acquired' ? "🎯 GPS: Satellite Signal Locked!" :
+              status === 'Determining Jurisdiction' ? "🗺️ GPS: Determining Jurisdiction..." :
+              "📡 GPS: Scanning..."
+            ) : (
+              geoInfo ? `India → ${geoInfo.state} → ${geoInfo.city || geoInfo.district || 'Detecting...'}` : 'Detecting Location...'
+            )}
           </Text>
         </TouchableOpacity>
-
-        {isLoading && (
-          <View style={styles.loadingOverlay}>
-            <Text style={styles.loadingText}>Updating Location...</Text>
-          </View>
-        )}
         {/* AI TrafiAI Avatar Card - Enhanced */}
         <TouchableOpacity
           style={styles.aiCard}

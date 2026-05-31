@@ -96,16 +96,37 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
 
   // Timers and Refs
   const isSpeakingCheckInterval = useRef<any>(null);
+  const speechEndTimeoutRef = useRef<any>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     // Register Android Native SpeechRecognizer JNI event listeners
     const onStart = DeviceEventEmitter.addListener('onSpeechStart', () => {
+      console.log("Speech Started");
       setVoiceState('LISTENING');
+    });
+
+    const onEnd = DeviceEventEmitter.addListener('onSpeechEnd', (e) => {
+      console.log("Speech Ended");
+      // Safety timeout: if onSpeechResults doesn't arrive within 2.5s,
+      // submit whatever partial transcript we have
+      if (speechEndTimeoutRef.current) clearTimeout(speechEndTimeoutRef.current);
+      speechEndTimeoutRef.current = setTimeout(() => {
+        console.log("Speech End safety timeout fired — checking for pending transcript");
+        const pending = latestTranscriptRef.current?.trim();
+        if (pending && pending.length > 0 && !hasSubmittedRef.current) {
+          console.log("Submitting partial transcript via safety timeout:", pending);
+          processSpeechText(pending);
+        } else if (!hasSubmittedRef.current) {
+          // No transcript at all — transition to READY so UI isn't stuck
+          setVoiceState('READY');
+        }
+      }, 2500);
     });
 
     const onPartial = DeviceEventEmitter.addListener('onSpeechPartialResults', (e) => {
       const match = e.value && e.value[0];
+      console.log("Speech Partial Results", e.value);
       if (match) {
         hasTranscriptRef.current = true;
         latestTranscriptRef.current = match;
@@ -117,7 +138,13 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
     });
 
     const onResults = DeviceEventEmitter.addListener('onSpeechResults', (e) => {
+      // Cancel safety timeout since we got real results
+      if (speechEndTimeoutRef.current) {
+        clearTimeout(speechEndTimeoutRef.current);
+        speechEndTimeoutRef.current = null;
+      }
       const match = e.value && e.value[0];
+      console.log("Speech Results", e.value);
       if (match) {
         hasTranscriptRef.current = true;
         latestTranscriptRef.current = match;
@@ -139,27 +166,42 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
     });
 
     const onError = DeviceEventEmitter.addListener('onSpeechError', (e) => {
+      // Cancel safety timeout since error handler will deal with it
+      if (speechEndTimeoutRef.current) {
+        clearTimeout(speechEndTimeoutRef.current);
+        speechEndTimeoutRef.current = null;
+      }
+      console.log("Speech Error", e.message);
       console.log(`JNI onSpeechError caught [Code: ${e.code}]: ${e.message}`);
-      // Treat as successful and submit if we got some transcript, or ignore trailing error code 5
-      if (latestTranscriptRef.current.trim().length > 0 || hasSubmittedRef.current || e.code === 5) {
+      
+      const hasTranscript = latestTranscriptRef.current && latestTranscriptRef.current.trim().length > 0;
+      
+      // Treat as successful and submit if we got some transcript, or ignore trailing errors after submission
+      if (hasTranscript || hasSubmittedRef.current) {
         autoRetryCount.current = 0;
-        if (latestTranscriptRef.current.trim().length > 0 && !hasSubmittedRef.current) {
+        if (hasTranscript && !hasSubmittedRef.current) {
           processSpeechText(latestTranscriptRef.current);
         }
         return;
       }
+      
       handleSpeechFailure(e.message, e.code);
     });
 
     return () => {
       onStart.remove();
+      onEnd.remove();
       onPartial.remove();
       onResults.remove();
       onError.remove();
+      if (speechEndTimeoutRef.current) {
+        clearTimeout(speechEndTimeoutRef.current);
+        speechEndTimeoutRef.current = null;
+      }
       stopSpeechPlayback();
       clearSpeechMonitoring();
     };
-  }, [userLanguage]);
+  }, [userLanguage, location, geoInfo, userState]);
 
   // Continuous rotating spin animation for Understanding state
   useEffect(() => {

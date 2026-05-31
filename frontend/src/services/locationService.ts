@@ -1,5 +1,5 @@
-import { Platform, PermissionsAndroid } from 'react-native';
-import Geolocation from '@react-native-community/geolocation';
+import { Platform } from 'react-native';
+import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // --- Types ---
@@ -64,6 +64,8 @@ const mapStateToCode = (stateName: string): string => {
 const reverseGeocodeNominatim = async (lat: number, lng: number): Promise<GeoInfo> => {
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1&accept-language=en`;
+    console.log(`[Location Audit] Initiating reverse geocode fetch URL: ${url}`);
+    
     const response = await fetch(url, {
       headers: { 'User-Agent': 'DriveLegal/1.2' },
     });
@@ -72,13 +74,12 @@ const reverseGeocodeNominatim = async (lat: number, lng: number): Promise<GeoInf
     const stateName = addr.state || '';
     const stateCode = mapStateToCode(stateName);
 
-    // In India: state_district is the District (e.g. Coimbatore), county is the Taluk (e.g. Anaimalai)
     const district = addr.state_district || addr.county || '';
     const city = (addr.state_district && addr.county)
       ? addr.county
       : (addr.city || addr.town || addr.village || addr.suburb || '');
 
-    return {
+    const result: GeoInfo = {
       city: city,
       district: district,
       state: stateName,
@@ -88,61 +89,83 @@ const reverseGeocodeNominatim = async (lat: number, lng: number): Promise<GeoInf
       confidence: (city || district) ? 'high' : 'medium',
       source: 'nominatim',
     };
+    
+    console.log('[Location Audit] reverse geocode result:', result);
+    return result;
   } catch (error) {
-    console.error('Nominatim Geocoding failed:', error);
+    console.error('[Location Audit] reverse geocode query failed:', error);
     throw error;
   }
 };
 
-// --- Exported Functions (Simpler approach for Metro) ---
+// --- Exported Functions ---
 
 export const requestLocationPermissions = async (): Promise<boolean> => {
-  if (Platform.OS === 'android') {
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        {
-          title: 'DriveLegal Location Permission',
-          message: 'DriveLegal needs access to your location to provide accurate traffic law information.',
-          buttonPositive: 'OK',
-          buttonNegative: 'Cancel',
-        }
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    } catch (e) {
-      console.warn('Permission request failed', e);
-      return false;
-    }
+  console.log('[Location Audit] Verifying permissions natively');
+  try {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    console.log('[Location Audit] permission status:', status);
+    return status === 'granted';
+  } catch (e) {
+    console.warn('[Location Audit] requestForegroundPermissionsAsync failed', e);
+    return false;
   }
-  return true;
 };
 
-export const getCurrentPosition = async (retries = 2): Promise<GPSCoords> => {
-  return new Promise((resolve, reject) => {
-    Geolocation.getCurrentPosition(
-      (position) => {
+export const hasServicesEnabled = async (): Promise<boolean> => {
+  console.log('[Location Audit] Verifying active hardware GPS sensors natively');
+  try {
+    const enabled = await Location.hasServicesEnabledAsync();
+    console.log('[Location Audit] GPS enabled status:', enabled);
+    return enabled;
+  } catch (e) {
+    console.warn('[Location Audit] hasServicesEnabledAsync failed', e);
+    return false;
+  }
+};
+
+export const getCurrentPosition = async (timeoutMs = 10000): Promise<GPSCoords> => {
+  console.log('[Location Audit] Initiating location coordinate fetch via expo-location');
+  
+  return new Promise<GPSCoords>(async (resolve, reject) => {
+    let completed = false;
+    
+    const timer = setTimeout(() => {
+      if (!completed) {
+        completed = true;
+        console.warn(`[Location Audit] GPS timed out after ${timeoutMs / 1000}s`);
+        reject(new Error('Location Timeout'));
+      }
+    }, timeoutMs);
+
+    try {
+      // Fetch with balanced accuracy to avoid heavy battery load and speed up lock
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      
+      if (!completed) {
+        completed = true;
+        clearTimeout(timer);
+        console.log('[Location Audit] coordinate fetch result:', position.coords);
         resolve({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
           accuracy: position.coords.accuracy,
           altitude: position.coords.altitude,
           timestamp: position.timestamp,
+          speed: position.coords.speed,
+          heading: position.coords.heading,
         });
-      },
-      async (error) => {
-        if (retries > 0) {
-          try {
-            const nextCoords = await getCurrentPosition(retries - 1);
-            resolve(nextCoords);
-          } catch (retryErr) {
-            reject(retryErr);
-          }
-        } else {
-          reject(error);
-        }
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-    );
+      }
+    } catch (e: any) {
+      if (!completed) {
+        completed = true;
+        clearTimeout(timer);
+        console.error('[Location Audit] coordinate fetch failed:', e);
+        reject(e);
+      }
+    }
   });
 };
 
@@ -154,8 +177,9 @@ export const saveLastLocation = async (coords: GPSCoords, geo: GeoInfo) => {
   try {
     const data: CachedLocation = { coords, geo, timestamp: Date.now() };
     await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(data));
+    console.log('[Location Audit] Cached current coordinates and geocode details');
   } catch (e) {
-    console.warn('Failed to save location to cache', e);
+    console.warn('[Location Audit] Failed to save location cache', e);
   }
 };
 
@@ -164,7 +188,7 @@ export const getLastLocation = async (): Promise<CachedLocation | null> => {
     const data = await AsyncStorage.getItem(CACHE_KEY);
     return data ? JSON.parse(data) : null;
   } catch (e) {
-    console.warn('Failed to load location from cache', e);
+    console.warn('[Location Audit] Failed to read location cache', e);
     return null;
   }
 };

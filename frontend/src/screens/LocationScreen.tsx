@@ -40,7 +40,8 @@ export const LocationScreen = ({ navigation }: any) => {
     error: locError,
     refreshLocation,
     setManualLocation,
-    isMocked
+    isMocked,
+    status
   } = useLocation();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -248,6 +249,51 @@ export const LocationScreen = ({ navigation }: any) => {
             )}
           </TouchableOpacity>
 
+          {/* Glassmorphic location acquisition status telemetry card */}
+          {status && status !== 'Ready' && (
+            <View style={[
+              styles.telemetryCard,
+              (status === 'Permission Denied' || status === 'GPS Disabled' || status === 'Location Timeout') && styles.telemetryCardError,
+              status === 'Reverse Geocode Failed' && styles.telemetryCardWarning
+            ]}>
+              <View style={styles.telemetryHeader}>
+                {loading && (status === 'Requesting Permission' || status === 'Acquiring GPS' || status === 'Determining Jurisdiction') ? (
+                  <ActivityIndicator size="small" color={COLORS.cyan} style={styles.telemetrySpinner} />
+                ) : (
+                  <Animated.View style={[
+                    styles.statusDot, 
+                    { transform: [{ scale: pulseAnim }] },
+                    (status === 'Permission Denied' || status === 'GPS Disabled' || status === 'Location Timeout') && { backgroundColor: COLORS.error },
+                    status === 'Reverse Geocode Failed' && { backgroundColor: COLORS.warning },
+                    status === 'GPS Acquired' && { backgroundColor: COLORS.success }
+                  ]} />
+                )}
+                <Text style={[
+                  styles.telemetryTitle,
+                  (status === 'Permission Denied' || status === 'GPS Disabled' || status === 'Location Timeout') && { color: COLORS.error },
+                  status === 'Reverse Geocode Failed' && { color: COLORS.warning },
+                  status === 'GPS Acquired' && { color: COLORS.success }
+                ]}>
+                  {status}
+                </Text>
+              </View>
+              <Text style={[
+                styles.telemetryDesc,
+                (status === 'Permission Denied' || status === 'GPS Disabled' || status === 'Location Timeout') && { color: 'rgba(239, 68, 68, 0.85)' },
+                status === 'Reverse Geocode Failed' && { color: 'rgba(245, 158, 11, 0.95)' }
+              ]}>
+                {status === 'Requesting Permission' && "🔐 Requesting location permissions..."}
+                {status === 'Acquiring GPS' && "📡 Acquiring GPS signal (balanced accuracy)..."}
+                {status === 'GPS Acquired' && "🎯 GPS signal acquired!"}
+                {status === 'Determining Jurisdiction' && "🗺️ Querying OpenStreetMap for legal boundaries..."}
+                {status === 'Permission Denied' && "🔐 Permission Denied. Smart Jurisdiction Engine requires location permissions to query local traffic rules."}
+                {status === 'GPS Disabled' && "🛰️ GPS Disabled. System location sensors are inactive. Please enable Location in settings."}
+                {status === 'Location Timeout' && "⏳ Unable to acquire GPS signal. Using cached fallback."}
+                {status === 'Reverse Geocode Failed' && "⚠️ Geocoding query timed out. Displaying coordinates with default local boundaries."}
+              </Text>
+            </View>
+          )}
+
           {/* Glassmorphic jurisdiction status badge */}
           {stateDetail && (
             <View style={styles.detectedCard}>
@@ -289,7 +335,7 @@ export const LocationScreen = ({ navigation }: any) => {
             </View>
           )}
 
-          {error && (
+          {error && !['Permission Denied', 'GPS Disabled', 'Location Timeout'].includes(status) && (
             <View style={styles.errorContainer}>
               <AlertTriangle size={16} color={COLORS.error} />
               <Text style={styles.errorText}>{error}</Text>
@@ -732,5 +778,42 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textSecondary,
     marginTop: 2,
+  },
+  telemetryCard: {
+    marginTop: 12,
+    padding: 14,
+    borderRadius: BORDER_RADIUS.medium,
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.15)',
+  },
+  telemetryCardError: {
+    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+    borderColor: 'rgba(239, 68, 68, 0.2)',
+  },
+  telemetryCardWarning: {
+    backgroundColor: 'rgba(245, 158, 11, 0.05)',
+    borderColor: 'rgba(245, 158, 11, 0.2)',
+  },
+  telemetryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  telemetrySpinner: {
+    marginRight: 2,
+  },
+  telemetryTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.cyan,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  telemetryDesc: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    lineHeight: 18,
   },
 });
