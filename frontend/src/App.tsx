@@ -15,6 +15,21 @@ import { setupLocationListener, removeLocationListener, startLocationService } f
 import { useAppMode } from './hooks/useAppMode';
 import { MobileNavigator } from './navigation/MobileNavigator';
 import { CarNavigator } from './navigation/CarNavigator';
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: 'https://b88b0eb17855b563f2e4ff7f53c6df07@o4511528544370688.ingest.us.sentry.io/4511528546140160',
+
+  // Adds more context data to events (IP address, cookies, user, etc.)
+  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+  sendDefaultPii: true,
+
+  // Enable Logs
+  enableLogs: false,
+
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // spotlight: __DEV__,
+});
 
 const Stack = createStackNavigator();
 
@@ -118,4 +133,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default Sentry.wrap(App);

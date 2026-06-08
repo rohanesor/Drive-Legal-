@@ -18,6 +18,7 @@
     "@react-navigation/native": "^6.1.17",
     "@react-navigation/stack": "^6.3.29",
     "@reduxjs/toolkit": "^2.2.5",
+    "@sentry/react-native": "^8.13.0",
     "babel-preset-expo": "^10.0.0",
     "convex": "^1.39.1",
     "expo": "~50.0.0",

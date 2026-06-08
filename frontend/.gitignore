@@ -24,3 +24,7 @@ coverage/
 *.hprof
 __pycache__/
 *.pyc
+
+.env.local
+sentry.properties
+**/sentry.properties
