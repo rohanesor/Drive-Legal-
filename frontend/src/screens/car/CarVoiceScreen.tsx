@@ -48,7 +48,6 @@ export const CarVoiceScreen = () => {
   const [showMicFailFallback, setShowMicFailFallback] = useState(false);
   const [speechError, setSpeechError] = useState('');
   const [speechAvailable, setSpeechAvailable] = useState(true);
-  const [isTestMode, setIsTestMode] = useState(false);
   const [thinkingStep, setThinkingStep] = useState(1);
   const [sttLogs, setSttLogs] = useState<string[]>([]);
   const autoRetryCount = useRef(0);
@@ -101,31 +100,6 @@ export const CarVoiceScreen = () => {
     const formatted = `[${time}] ${msg}`;
     console.log(formatted);
     setSttLogs(prev => [formatted, ...prev].slice(0, 15));
-  };
-
-  const simulateSpeechTest = () => {
-    addLog("[TEST-MODE] Starting simulated speech recognizer...");
-    addLog("[TEST-MODE] Microphone permission check: GRANTED");
-    
-    setVoiceState('LISTENING');
-    setUserTranscript('Listening...');
-    setBotResponseText('');
-    setSpeechError('');
-    setShowMicFailFallback(false);
-    
-    setTimeout(() => {
-      addLog("[TEST-MODE] Speech started: voice activity detected.");
-      setUserTranscript('Helmet fine in Tamil...');
-      addLog('[TEST-MODE] Partial result: "Helmet fine in Tamil"');
-      
-      setTimeout(() => {
-        const testPhrase = "Helmet fine in Tamil Nadu";
-        setUserTranscript(testPhrase);
-        addLog(`[TEST-MODE] Speech ended. Final Result: "${testPhrase}"`);
-        autoRetryCount.current = 0;
-        processSpeechText(testPhrase);
-      }, 1500);
-    }, 1200);
   };
 
   const getLanguageLabel = (code: string) => {
@@ -596,26 +570,7 @@ export const CarVoiceScreen = () => {
 
       {/* Displays user speech query and answers */}
       <View style={styles.displayArea}>
-        {/* Test Mode panel */}
-        {isTestMode && (
-          <View style={styles.testModePanel}>
-            <View style={styles.testModeHeader}>
-              <Sparkles size={20} color={CAR_COLORS.accent} />
-              <Text style={styles.testModeTitle}>HACKATHON SPEECH TEST MODE</Text>
-            </View>
-            <Text style={styles.testModeInstruction}>
-              Please say: <Text style={styles.testModePhrase}>"Helmet fine in Tamil Nadu"</Text>
-            </Text>
-            <TouchableOpacity 
-              style={styles.simulateBtn}
-              onPress={simulateSpeechTest}
-              activeOpacity={0.8}
-            >
-              <RefreshCw size={18} color="#000000" />
-              <Text style={styles.simulateBtnText}>SIMULATE SPEECH TEST</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+
 
         {/* Multilingual Telemetry Status Row */}
         {(detectedLang !== '' || confidenceScore !== null) && (
@@ -778,15 +733,7 @@ export const CarVoiceScreen = () => {
             thumbColor={preferences.autoVoice ? CAR_COLORS.accent : '#f4f3f4'}
           />
         </View>
-        <View style={styles.switchCol}>
-          <Text style={styles.handsFreeLabel}>Test Mode</Text>
-          <Switch
-            value={isTestMode}
-            onValueChange={setIsTestMode}
-            trackColor={{ false: '#2D3748', true: 'rgba(6, 182, 212, 0.3)' }}
-            thumbColor={isTestMode ? CAR_COLORS.accent : '#f4f3f4'}
-          />
-        </View>
+
       </View>
 
       {/* Driving Safe Quick Suggestions */}

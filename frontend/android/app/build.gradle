@@ -59,6 +59,27 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            def keystorePropsFile = file('../release-keystore.properties')
+            if (keystorePropsFile.exists()) {
+                def keystoreProps = new Properties()
+                keystorePropsFile.withInputStream { keystoreProps.load(it) }
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            } else if (System.getenv("PLAY_STORE_KEYSTORE_FILE") != null) {
+                storeFile file(System.getenv("PLAY_STORE_KEYSTORE_FILE"))
+                storePassword System.getenv("PLAY_STORE_KEY_PASSWORD")
+                keyAlias System.getenv("PLAY_STORE_KEY_ALIAS")
+                keyPassword System.getenv("PLAY_STORE_KEY_PASSWORD")
+            } else {
+                storeFile file('debug.keystore')
+                storePassword 'android'
+                keyAlias 'androiddebugkey'
+                keyPassword 'android'
+            }
+        }
     }
 
     buildTypes {
@@ -68,7 +89,7 @@ android {
         release {
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
     }
 

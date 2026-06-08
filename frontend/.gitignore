@@ -28,3 +28,8 @@ __pycache__/
 .env.local
 sentry.properties
 **/sentry.properties
+
+# Keystores and signing configurations
+android/release-keystore.properties
+android/app/*.keystore
+!android/app/debug.keystore

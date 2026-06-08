@@ -57,24 +57,9 @@ import {
 
 const { DriveLegalTTS, DriveLegalSpeechRecognizer } = NativeModules;
 
-// Coimbatore base coordinates for GPS/simulation tracking
+// Coimbatore base coordinates for GPS tracking
 const BASE_LAT = 11.0168;
 const BASE_LNG = 76.9558;
-
-// Dynamic simulation coordinate checklist (Coimbatore City Loop)
-const SIMULATED_ROUTE = [
-  { latitude: 11.0168, longitude: 76.9558, heading: 42, speed: 25, limit: 40, label: 'Cross Cut Road (Drive Active)' },
-  { latitude: 11.0175, longitude: 76.9565, heading: 45, speed: 38, limit: 40, label: 'Approaching Speed Cam' },
-  { latitude: 11.0182, longitude: 76.9572, heading: 48, speed: 45, limit: 40, label: '⚠️ Speeding Infraction', event: 'speed_camera' },
-  { latitude: 11.0190, longitude: 76.9580, heading: 52, speed: 56, limit: 40, label: 'Speed Camera Warning active', event: 'speed_camera' },
-  { latitude: 11.0198, longitude: 76.9588, heading: 55, speed: 44, limit: 40, label: 'Slowing down, camera passed' },
-  { latitude: 11.0205, longitude: 76.9595, heading: 60, speed: 35, limit: 40, label: 'Entering Sector 4' },
-  { latitude: 11.0212, longitude: 76.9602, heading: 65, speed: 22, limit: 20, label: '🏥 Hospital Zone - strictly no honking', event: 'hospital_zone' },
-  { latitude: 11.0218, longitude: 76.9608, heading: 70, speed: 15, limit: 20, label: 'Hospital Silent Zone active', event: 'hospital_zone' },
-  { latitude: 11.0225, longitude: 76.9615, heading: 80, speed: 28, limit: 50, label: 'Approaching Inter-State Border' },
-  { latitude: 11.0232, longitude: 76.9622, heading: 85, speed: 42, limit: 50, label: '🗺️ Crossed border into Karnataka', event: 'state_border' },
-  { latitude: 11.0240, longitude: 76.9630, heading: 90, speed: 48, limit: 50, label: 'Active Jurisdiction changed', event: 'state_border' }
-];
 
 export const CarDashboardScreen = () => {
   const navigation = useNavigation<any>();
@@ -97,7 +82,7 @@ export const CarDashboardScreen = () => {
   // Cockpit map location state
   const [cockpitLocation, setCockpitLocation] = useState<{ lat: number; lng: number; heading?: number }>({ lat: BASE_LAT, lng: BASE_LNG, heading: 42 });
 
-  // Safety facilities map markers surrounding simulated Coimbatore loop
+  // Safety facilities map markers surrounding Coimbatore
   const [cockpitMarkers] = useState<MapMarker[]>([
     { id: 'police_station_coimbatore', type: 'police', name: '🚓 Gandhipuram CP Junction Police', lat: 11.0180, lng: 76.9560, address: 'Gandhipuram Junction, Coimbatore', phone: '0422-2300250' },
     { id: 'hospital_coimbatore', type: 'hospital', name: '🏥 Ganga Trauma Care Hospital', lat: 11.0210, lng: 76.9590, address: 'CMC Silent Zone Rd, Coimbatore', phone: '0422-2227000' },
@@ -119,11 +104,8 @@ export const CarDashboardScreen = () => {
   ]);
 
   // Dynamic Telemetry States
-  const [demoSpeed, setDemoSpeed] = useState(0);
   const [speedLimit, setSpeedLimit] = useState(40);
-  const [activeTabOverlay, setActiveTabOverlay] = useState<'none' | 'talk' | 'fine' | 'parking' | 'sos' | 'debug'>('none');
-  const [simulatedRouteActive, setSimulatedRouteActive] = useState<string | null>(null);
-  const [simStep, setSimStep] = useState(0);
+  const [activeTabOverlay, setActiveTabOverlay] = useState<'none' | 'talk' | 'fine' | 'parking' | 'sos'>('none');
   const [routeTrail, setRouteTrail] = useState<{ latitude: number, longitude: number }[]>([
     { latitude: BASE_LAT, longitude: BASE_LNG }
   ]);
@@ -145,11 +127,12 @@ export const CarDashboardScreen = () => {
   // Waveform Animated Ref Array (6 lines)
   const waveHeights = useRef(Array(6).fill(null).map(() => new Animated.Value(4))).current;
 
-  const currentSpeed = gpsSpeed > 0 ? gpsSpeed : demoSpeed;
+  const currentSpeed = gpsSpeed;
   const isSpeeding = currentSpeed > speedLimit;
 
   // ── VOICE ASSISTANT STATE & CONTROLS ──
   const [voiceState, setVoiceState] = useState<'READY' | 'LISTENING' | 'UNDERSTANDING' | 'RESPONDING' | 'RETRY'>('READY');
+
   const [userTranscript, setUserTranscript] = useState('');
   const [botResponseText, setBotResponseText] = useState('RoadMind AI co-driver Active.\nTap the mic and speak.');
   const [inputText, setInputText] = useState('');
@@ -289,7 +272,7 @@ export const CarDashboardScreen = () => {
 
   // GPS routing and telemetry synchronization
   useEffect(() => {
-    if (location && location.latitude && location.longitude && !simulatedRouteActive) {
+    if (location && location.latitude && location.longitude) {
       const lat = location.latitude;
       const lng = location.longitude;
       const heading = location.heading || 0;
@@ -313,7 +296,7 @@ export const CarDashboardScreen = () => {
         return prev;
       });
     }
-  }, [location, simulatedRouteActive]);
+  }, [location]);
 
   // JNI speech status mount checks
   useEffect(() => {
@@ -440,76 +423,7 @@ export const CarDashboardScreen = () => {
     };
   }, [userLanguage]);
 
-  // Dynamic route loop simulation
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (simulatedRouteActive) {
-      interval = setInterval(() => {
-        setSimStep(prevStep => {
-          const nextStep = prevStep + 1;
-          if (nextStep >= SIMULATED_ROUTE.length) {
-            setRouteTrail([{ latitude: BASE_LAT, longitude: BASE_LNG }]);
-            setCockpitLocation({ lat: BASE_LAT, lng: BASE_LNG, heading: 42 });
-            return 0;
-          }
 
-          const node = SIMULATED_ROUTE[nextStep];
-          setDemoSpeed(node.speed);
-          setSpeedLimit(node.limit);
-
-          setTelemetry(prev => ({
-            ...prev,
-            lat: node.latitude,
-            lng: node.longitude,
-            bearing: node.heading,
-            direction: node.heading > 67.5 && node.heading <= 112.5 ? 'E' : 'NE'
-          }));
-
-          setCockpitLocation({ lat: node.latitude, lng: node.longitude, heading: node.heading });
-          setRouteTrail(prev => [...prev, { latitude: node.latitude, longitude: node.longitude }]);
-
-          // Proactive dynamic alerts
-          if (node.event === 'speed_camera') {
-            dispatch(addAlert({
-              id: 'mock_speed_alert',
-              zone_type: 'speed_camera',
-              zone_name: 'Cross Cut Road',
-              message: '⚠️ Speed limit exceeded! Active speed camera ahead.',
-              suggested_query: 'What is the speeding fine in Tamil Nadu?',
-              severity: 'high',
-              timestamp: Date.now(),
-              dismissed: false,
-            }));
-          } else if (node.event === 'hospital_zone') {
-            dispatch(addAlert({
-              id: 'mock_hospital_alert',
-              zone_type: 'hospital_zone',
-              zone_name: 'CMC Hospital Area',
-              message: '🏥 Hospital Zone. Speed limit restricted to 20 km/h. Strictly NO honking.',
-              suggested_query: 'What is the fine for honking in a silent zone?',
-              severity: 'high',
-              timestamp: Date.now(),
-              dismissed: false,
-            }));
-          } else if (node.event === 'state_border') {
-            dispatch(addAlert({
-              id: 'mock_border_alert',
-              zone_type: 'state_border',
-              zone_name: 'Entering Karnataka',
-              message: '🗺️ Crossed border into Karnataka. Motor Vehicle law revisions are active.',
-              suggested_query: 'What are the main rule changes in Karnataka?',
-              severity: 'medium',
-              timestamp: Date.now(),
-              dismissed: false,
-            }));
-          }
-
-          return nextStep;
-        });
-      }, 2000);
-    }
-    return () => clearInterval(interval);
-  }, [simulatedRouteActive]);
 
   const addLog = (msg: string) => {
     const time = new Date().toLocaleTimeString();
@@ -777,27 +691,6 @@ export const CarDashboardScreen = () => {
     }
   };
 
-  const simulateSpeechTest = () => {
-    addLog("[TEST-MODE] Starting simulated speech recognizer...");
-    setVoiceState('LISTENING');
-    setUserTranscript('Listening...');
-    setBotResponseText('');
-    setSpeechError('');
-    
-    setTimeout(() => {
-      setUserTranscript('Helmet fine in Tamil...');
-      addLog('[TEST-MODE] Partial result: "Helmet fine in Tamil"');
-      
-      setTimeout(() => {
-        const testPhrase = "Helmet fine in Tamil Nadu";
-        setUserTranscript(testPhrase);
-        addLog(`[TEST-MODE] Speech ended. Final Result: "${testPhrase}"`);
-        autoRetryCount.current = 0;
-        processSpeechText(testPhrase);
-      }, 1200);
-    }, 1000);
-  };
-
   // ── DYNAMIC CHALLAN CALCULATOR HELPERS ──
   const toggleViolation = (key: string) => {
     setCheckedViolations(prev => ({
@@ -806,11 +699,9 @@ export const CarDashboardScreen = () => {
     }));
   };
 
-  const currentJurisdiction = simulatedRouteActive && SIMULATED_ROUTE[simStep].event === 'state_border'
-    ? 'Chamarajanagar, KN'
-    : geoInfo 
-      ? `${geoInfo.city || geoInfo.district || 'Coimbatore'}, ${geoInfo.stateCode || 'TN'}` 
-      : 'Coimbatore, TN';
+  const currentJurisdiction = geoInfo 
+    ? `${geoInfo.city || geoInfo.district || 'Coimbatore'}, ${geoInfo.stateCode || 'TN'}` 
+    : 'Coimbatore, TN';
 
   const fineRates = useMemo(() => {
     const isCoimbatore = currentJurisdiction.includes('Coimbatore') || currentJurisdiction.includes('Anaimalai');
@@ -842,7 +733,7 @@ export const CarDashboardScreen = () => {
     } catch (e) {}
   };
 
-  const handleQuickActionPress = (panelName: 'none' | 'talk' | 'fine' | 'parking' | 'sos' | 'debug') => {
+  const handleQuickActionPress = (panelName: 'none' | 'talk' | 'fine' | 'parking' | 'sos') => {
     triggerHapticFeedback();
     stopSpeechPlayback();
     clearSpeechMonitoring();
@@ -865,29 +756,6 @@ export const CarDashboardScreen = () => {
     Linking.openURL(`tel:${number}`).catch(() => {
       Alert.alert('Unsupported', 'Voice calls not supported on this vehicle dashboard.');
     });
-  };
-
-  // Automated GPS Simulations
-  const startSimulation = () => {
-    triggerHapticFeedback();
-    dispatch(dismissAlert());
-    setRouteTrail([{ latitude: BASE_LAT, longitude: BASE_LNG }]);
-    setSimStep(0);
-    setSimulatedRouteActive('Coimbatore City Loop');
-    setDemoSpeed(SIMULATED_ROUTE[0].speed);
-    setSpeedLimit(SIMULATED_ROUTE[0].limit);
-    setCockpitLocation({ lat: BASE_LAT, lng: BASE_LNG, heading: 42 });
-  };
-
-  const resetSimulation = () => {
-    triggerHapticFeedback();
-    setSimulatedRouteActive(null);
-    setSimStep(0);
-    setDemoSpeed(0);
-    setSpeedLimit(40);
-    dispatch(dismissAlert());
-    setRouteTrail([{ latitude: BASE_LAT, longitude: BASE_LNG }]);
-    setCockpitLocation({ lat: BASE_LAT, lng: BASE_LNG, heading: 42 });
   };
 
   return (
@@ -919,23 +787,6 @@ export const CarDashboardScreen = () => {
           <Text style={styles.brandAccent}>DRIVE</Text>
           <Text style={styles.brandTitle}>COCKPIT</Text>
         </View>
-
-        {/* Simulation Control Trigger */}
-        <TouchableOpacity
-          style={[
-            styles.debugPill,
-            { borderColor: simulatedRouteActive ? CAR_COLORS.success : '#262626' }
-          ]}
-          onPress={() => handleQuickActionPress(activeTabOverlay === 'debug' ? 'none' : 'debug')}
-        >
-          <Wrench color={simulatedRouteActive ? CAR_COLORS.success : CAR_COLORS.textSecondary} size={14} />
-          <Text style={[
-            styles.debugPillText,
-            { color: simulatedRouteActive ? CAR_COLORS.success : CAR_COLORS.textSecondary }
-          ]}>
-            {simulatedRouteActive ? 'SIM ACTIVE' : 'SIMULATE'}
-          </Text>
-        </TouchableOpacity>
       </View>
 
       {/* SECTION 1: LIVE ROADMAP CONSOLE (35% HEIGHT) */}
@@ -1461,51 +1312,7 @@ export const CarDashboardScreen = () => {
         </View>
       )}
 
-      {/* 5. Automated Simulation modal overlay */}
-      {activeTabOverlay === 'debug' && (
-        <View style={styles.overlayBottomCard}>
-          <View style={styles.overlayHeader}>
-            <View style={styles.panelTitleRow}>
-              <Wrench color={CAR_COLORS.accent} size={18} />
-              <Text style={styles.overlayTitle}>RoadMind Simulation Hub</Text>
-            </View>
-            <TouchableOpacity 
-              style={styles.closeOverlayButton}
-              onPress={() => handleQuickActionPress('none')}
-            >
-              <Text style={styles.closeOverlayText}>DISMISS</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <Text style={styles.overlayIntro}>Select an automotive route simulation to test real-time GPS coordinates & alerts:</Text>
-          
-          <View style={styles.simButtonsContainer}>
-            <TouchableOpacity 
-              style={[styles.simButton, { borderColor: CAR_COLORS.accent }]}
-              onPress={() => {
-                setActiveTabOverlay('none');
-                startSimulation();
-              }}
-            >
-              <Play size={16} color={CAR_COLORS.accent} />
-              <View>
-                <Text style={styles.simButtonText}>Coimbatore City Loop Run</Text>
-                <Text style={styles.simButtonSub}>Fires speeding cams, silent hospital zones & border laws</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
 
-          {simulatedRouteActive && (
-            <TouchableOpacity 
-              style={styles.resetSimBtn}
-              onPress={resetSimulation}
-            >
-              <RotateCcw size={16} color="#FFFFFF" />
-              <Text style={styles.resetSimText}>TERMINATE ACTIVE SIMULATION</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
     </View>
   );
 };

@@ -221,19 +221,6 @@ export const SettingsScreen = ({ navigation }: any) => {
             />
           </View>
 
-          <View style={styles.toggleRow}>
-            <TouchableOpacity 
-              style={[styles.toggleInfo, { flexDirection: 'row', alignItems: 'center' }]} 
-              onPress={() => navigation.navigate('SpeechTest')}
-              activeOpacity={0.8}
-            >
-              <Mic size={18} color={COLORS.cyan} />
-              <View style={[styles.toggleTexts, { marginLeft: 12 }]}>
-                <Text style={styles.toggleLabel}>Speech Recognition Lab</Text>
-                <Text style={styles.toggleSub}>Test and compare locale STT quality</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
 
           <View style={[styles.toggleRow, { borderBottomWidth: 0 }]}>
             <View style={styles.toggleInfo}>

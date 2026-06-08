@@ -12,3 +12,4 @@
 # Suppress warnings
 -dontwarn com.chaquo.python.**
 -dontwarn javax.python.**
+-dontwarn android.app.ApplicationStartInfo
