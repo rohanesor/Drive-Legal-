@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 import { MapPin, Calculator, MessageCircle, WifiOff, ShieldCheck, CheckCircle, ArrowRight } from 'lucide-react-native';
+import { AppIntroAnimation } from '../components/AppIntroAnimation';
 
 const { width } = Dimensions.get('window');
 
@@ -41,11 +42,17 @@ const ONBOARDING_DATA = [
 ];
 
 export const SplashScreen = ({ navigation }: any) => {
+  const [showIntro, setShowIntro] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
   const roadAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
+
+  // Show the intro animation first
+  if (showIntro) {
+    return <AppIntroAnimation onFinish={() => setShowIntro(false)} />;
+  }
 
   useEffect(() => {
     Animated.loop(
