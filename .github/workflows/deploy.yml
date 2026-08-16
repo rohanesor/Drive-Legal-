@@ -15,11 +15,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-style: 18.x
+          node-version: 18.x
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run Jest Unit Verification Suite
         run: npm run test
