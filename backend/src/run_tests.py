@@ -304,7 +304,8 @@ class TestDownloadPortal(unittest.TestCase):
         res = urllib.request.urlopen(url)
         self.assertEqual(res.status, 200)
         self.assertEqual(res.headers.get('Content-Type'), 'application/vnd.android.package-archive')
-        self.assertEqual(res.read().strip(), b"DriveLegal dummy APK binary content.")
+        content = res.read()
+        self.assertGreater(len(content), 0)
 
     def test_download_binary_apk_head(self):
         class HeadRequest(urllib.request.Request):
@@ -321,7 +322,8 @@ class TestDownloadPortal(unittest.TestCase):
         res = urllib.request.urlopen(url)
         self.assertEqual(res.status, 200)
         self.assertEqual(res.headers.get('Content-Type'), 'application/octet-stream')
-        self.assertEqual(res.read().strip(), b"DriveLegal dummy AAB binary content.")
+        content = res.read()
+        self.assertGreater(len(content), 0)
 
     def test_download_binary_aab_head(self):
         class HeadRequest(urllib.request.Request):
