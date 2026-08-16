@@ -138,8 +138,11 @@ check("Models directory exists", os.path.exists(models_dir))
 if os.path.exists(models_dir):
     check("FAISS index directory", os.path.exists(os.path.join(models_dir, 'faiss_index')))
     # These will be downloaded separately
-    check("TinyLlama model (optional)", os.path.exists(os.path.join(models_dir, 'tinyllama-1.1b-q4.gguf')))
-    check("Whisper model (optional)", os.path.exists(os.path.join(models_dir, 'whisper-tiny')))
+    tinyllama_exists = os.path.exists(os.path.join(models_dir, 'tinyllama-1.1b-q4.gguf'))
+    print(f"  {PASS if tinyllama_exists else '[INFO]'} TinyLlama model (optional): {'Found' if tinyllama_exists else 'Not found (will be downloaded at runtime)'}")
+    
+    whisper_exists = os.path.exists(os.path.join(models_dir, 'whisper-tiny'))
+    print(f"  {PASS if whisper_exists else '[INFO]'} Whisper model (optional): {'Found' if whisper_exists else 'Not found (will be downloaded at runtime)'}")
 
 # Summary
 print("\n" + "=" * 50)
