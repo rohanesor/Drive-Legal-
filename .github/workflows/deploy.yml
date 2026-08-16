@@ -58,7 +58,7 @@ jobs:
         run: |
           cd frontend/android
           chmod +x gradlew
-          ./gradlew assembleRelease bundleRelease --no-daemon
+          ./gradlew assembleRelease bundleRelease --no-daemon -Psentry.autoUpload=false
 
       - name: Calculate Release Checksums
         run: |

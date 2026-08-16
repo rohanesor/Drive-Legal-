@@ -21,6 +21,9 @@ react {
 
 def enableProguardInReleaseBuilds = true
 
+project.ext.sentryCli = [
+    autoUpload: false
+]
 apply from: new File(["node", "--print", "require.resolve('@sentry/react-native/package.json')"].execute().text.trim(), "../sentry.gradle")
 android {
     ndkVersion rootProject.ext.ndkVersion
