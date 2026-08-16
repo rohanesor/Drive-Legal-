@@ -69,5 +69,20 @@ def run(port=8000):
     print(json.dumps({"event": "server_stopped"}), flush=True)
 
 if __name__ == '__main__':
+    # Ensure database is initialized and seeded on server startup if not present
+    db_dir = os.path.join(os.path.dirname(__file__), 'data')
+    db_path = os.path.join(db_dir, 'drivelegal.db')
+    if not os.path.exists(db_path):
+        try:
+            print("Database not found. Initializing and seeding...", flush=True)
+            os.makedirs(db_dir, exist_ok=True)
+            from database import initialize_database
+            from ingest.seed import seed_database
+            initialize_database()
+            seed_database()
+            print("Database initialized and seeded successfully.", flush=True)
+        except Exception as e:
+            print(f"Error seeding database: {e}", flush=True)
+
     port = int(os.environ.get('PORT', 8000))
     run(port)
