@@ -41,8 +41,8 @@ jobs:
 
       - name: Pull, Build and Deploy to AWS EC2 via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_SSH_HOST }} << 'EOF'
-            cd /home/ec2-user/DriveLegal
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_SSH_HOST }} << 'EOF'
+            cd /home/ubuntu/DriveLegal
             
             # Fetch latest git commits
             git pull origin master
