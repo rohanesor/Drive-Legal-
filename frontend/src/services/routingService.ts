@@ -1,7 +1,7 @@
 import type { Route, RouteSearchParams } from '../types';
 import { MockRoutingProvider } from './mockRoutingProvider';
 import { OSMRoutingProvider } from './osmRoutingProvider';
-import { checkZones } from './pythonBridge';
+import { driveLegalService } from './driveLegalService';
 import { speedLimitService } from './speedLimitService';
 
 class RoutingService {
@@ -74,16 +74,13 @@ class RoutingService {
     for (const idx of sampledIndices) {
       const point = coords[idx];
       try {
-        const result = await checkZones({
-          action: 'check_zone',
-          location: {
-            lat: point.lat,
-            lng: point.lng,
-            state: 'TN', // Default fallback state
-            speed: 40,
-            heading: null,
-          }
-        });
+        const result = await driveLegalService.zoneCheck(
+          point.lat,
+          point.lng,
+          'TN',
+          null,
+          40,
+        );
 
         if (result.status === 'zone_alert' && result.message) {
           const zoneKey = result.zone_name || 'Unknown Zone';

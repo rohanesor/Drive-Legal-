@@ -45,7 +45,7 @@ import {
   Activity,
   Award,
 } from 'lucide-react-native';
-import { executeQuery } from '../services/pythonBridge';
+import { driveLegalService } from '../services/driveLegalService';
 import type { IconComponent } from '../types';
 
 interface Violation {
@@ -279,21 +279,10 @@ export const ChallanCalculatorScreen = ({
       setLoading(true);
       setSelectedIds([]); // Clear selection when state changes
       try {
-        const response: QueryResponse = await executeQuery({
-          action: 'get_penalties',
-          state: selectedState,
-          language: 'en',
-          location: {
-            lat: location?.latitude || 0,
-            lng: location?.longitude || 0,
-            state: selectedState,
-            city: geoInfo?.city || undefined,
-            district: geoInfo?.district || undefined,
-          },
-        });
+        const response = await driveLegalService.getPenalties(selectedState);
 
-        if (response.status === 'success' && response.penalties) {
-          const dbPenalties = response.penalties;
+        if (response.penalties) {
+          const dbPenalties = (response.penalties as unknown) as PenaltyRecord[];
           const mappedViolations: Violation[] = dbPenalties.map(
             (p: PenaltyRecord) => {
               const violationType = p.violation_type || '';

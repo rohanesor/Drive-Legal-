@@ -21,7 +21,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { useLocation } from '../../context/LocationContext';
 import { useAppMode } from '../../hooks/useAppMode';
-import { executeQuery } from '../../services/pythonBridge';
+import { driveLegalService } from '../../services/driveLegalService';
 import { CAR_COLORS, CAR_TYPOGRAPHY, CAR_SPACING } from '../../constants/theme';
 import {
   Mic,
@@ -550,40 +550,29 @@ export const CarVoiceScreen = () => {
       }
 
       addLog('RoadMind AI: Request Sent...');
-      const result = await executeQuery({
-        action: 'query',
-        text: transcribedText,
-        language: userLanguage,
-        concise_mode: true,
-        location: {
-          lat: location?.latitude || 0,
-          lng: location?.longitude || 0,
-          state: userState,
-          city: geoInfo?.city || undefined,
-          district: geoInfo?.district || undefined,
-        },
-      });
+      const result = await driveLegalService.query(
+        transcribedText,
+        userState,
+        userLanguage,
+        location ? { lat: location.latitude, lng: location.longitude } : undefined,
+      );
 
-      if (result.status === 'success') {
-        const textResponse =
-          result.response_text ||
-          result.fallback_response_text ||
-          'No matches found.';
+      const textResponse =
+        result.response ||
+        (result as any).response_text ||
+        (result as any).fallback_response_text ||
+        result.message ||
+        'No matches found.';
 
-        if (result.detected_language) {
-          setDetectedLang(result.detected_language);
-        }
-        if (result.confidence !== undefined) {
-          setConfidenceScore(Math.round(result.confidence * 100));
-        }
-
-        addLog('RoadMind AI: Response Received successfully.');
-        speakResponse(textResponse);
-      } else {
-        setVoiceState('IDLE');
-        setBotResponseText("I couldn't hear that clearly. Try again.");
-        setShowMicFailFallback(true);
+      if ((result as any).detected_language) {
+        setDetectedLang((result as any).detected_language);
       }
+      if ((result as any).confidence !== undefined) {
+        setConfidenceScore(Math.round((result as any).confidence * 100));
+      }
+
+      addLog('RoadMind AI: Response Received successfully.');
+      speakResponse(textResponse);
     } catch (e) {
       console.error('Voice processing failure:', e);
       setVoiceState('IDLE');
@@ -604,30 +593,21 @@ export const CarVoiceScreen = () => {
       setUserTranscript(`"${queryText}"`);
       setBotResponseText('Thinking...');
 
-      const result = await executeQuery({
-        action: 'query',
-        text: queryText,
-        language: userLanguage,
-        concise_mode: true,
-        location: {
-          lat: location?.latitude || 0,
-          lng: location?.longitude || 0,
-          state: userState,
-          city: geoInfo?.city || undefined,
-          district: geoInfo?.district || undefined,
-        },
-      });
+      const result = await driveLegalService.query(
+        queryText,
+        userState,
+        userLanguage,
+        location ? { lat: location.latitude, lng: location.longitude } : undefined,
+      );
 
-      if (result.status === 'success') {
-        const textResponse =
-          result.response_text ||
-          result.fallback_response_text ||
-          'No matches found.';
-        speakResponse(textResponse);
-      } else {
-        setVoiceState('IDLE');
-        setBotResponseText('Did not catch that. Tap to retry.');
-      }
+      const textResponse =
+        result.response ||
+        (result as any).response_text ||
+        (result as any).fallback_response_text ||
+        result.message ||
+        'No matches found.';
+
+      speakResponse(textResponse);
     } catch (e) {
       console.error('Text processing failure:', e);
       setVoiceState('IDLE');

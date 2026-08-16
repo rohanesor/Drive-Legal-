@@ -309,7 +309,6 @@ def execute_pipeline(payload: Dict) -> Dict:
     navigation_context = payload.get('navigationContext', {})
     nav_response = handle_navigation_query(text, navigation_context, language)
     if nav_response:
-        from tts import speak_text
         response_audio_uri = speak_text(nav_response, language)
         return {
             'response_text': nav_response,

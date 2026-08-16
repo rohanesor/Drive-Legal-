@@ -159,35 +159,20 @@
             </div>
 
             <p class="description">
-                Apple security policy requires application packages (IPAs) to be distributed through official Apple distribution pipelines. To install and validate DriveLegal on iOS devices, choose one of the options below.
+                iOS version is coming soon. DriveLegal is currently available for Android.
             </p>
 
             <div class="actions-grid">
-                <a href="#" id="tf-btn" class="btn-action btn-cyan">Join TestFlight Beta</a>
-                <a href="#" id="store-btn" class="btn-action btn-outline">Open App Store</a>
+                <a href="/download/android" class="btn-action btn-cyan">Get Android App</a>
             </div>
 
             <div class="info-box">
-                <h3>Installation Guidelines</h3>
+                <h3>iOS Availability</h3>
                 <p>
-                    <strong>Beta Testers</strong>: Joining the TestFlight program will automatically send you notifications when new release candidates are verified by our CI/CD pipeline.
+                    The DriveLegal iOS app is currently in active development. When ready for internal testing, builds will be made available via TestFlight and published to the Apple App Store.
                 </p>
             </div>
         </div>
     </div>
-
-    <script>
-        fetch('/releases/latest.json')
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('tf-btn').href = data.ios.testflight;
-                document.getElementById('store-btn').href = data.ios.appStore;
-            })
-            .catch(err => {
-                console.error("Error loading release manifest:", err);
-                document.getElementById('tf-btn').href = 'https://testflight.apple.com/join/xxxxxx';
-                document.getElementById('store-btn').href = 'https://apps.apple.com/app/drivelegal/idxxxxxx';
-            });
-    </script>
 </body>
 </html>

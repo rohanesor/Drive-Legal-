@@ -72,6 +72,9 @@ class DriveLegalServer(BaseHTTPRequestHandler):
         self.handle_get_or_head(write_body=True)
 
     def handle_get_or_head(self, write_body=True):
+        import time, uuid
+        req_id = self.headers.get('X-Request-ID') or str(uuid.uuid4())
+        start_time = time.time()
         clean_path = self.path.rstrip('/')
         if clean_path == '':
             clean_path = '/'
@@ -79,10 +82,14 @@ class DriveLegalServer(BaseHTTPRequestHandler):
         if clean_path == '/health' or clean_path == '/':
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
+            self.send_header('X-Request-ID', req_id)
+            this_headers_done = True
             self.end_headers()
             if write_body:
                 health_response = handle_query(json.dumps({'action': 'health'}))
                 self.wfile.write(health_response.encode('utf-8'))
+            latency_ms = round((time.time() - start_time) * 1000, 2)
+            print(json.dumps({"request_id": req_id, "method": self.command, "path": clean_path, "status": 200, "latency_ms": latency_ms}), flush=True)
             
         elif clean_path == '/download':
             self.serve_static_file('download.html', 'text/html', write_body)
@@ -114,30 +121,50 @@ class DriveLegalServer(BaseHTTPRequestHandler):
         else:
             self.send_response(404)
             self.send_header('Content-Type', 'application/json')
+            self.send_header('X-Request-ID', req_id)
             self.end_headers()
             if write_body:
                 self.wfile.write(json.dumps({'status': 'error', 'message': 'Not Found'}).encode('utf-8'))
 
     def do_POST(self):
+        import time, uuid
+        req_id = self.headers.get('X-Request-ID') or str(uuid.uuid4())
+        start_time = time.time()
         if self.path == '/query':
             try:
                 content_length = int(self.headers.get('Content-Length', 0))
                 post_data = self.rfile.read(content_length).decode('utf-8')
                 
+                # Parse action for logging (do not log sensitive user text/data)
+                action_name = 'unknown'
+                try:
+                    parsed_body = json.loads(post_data)
+                    action_name = parsed_body.get('action', 'query')
+                except Exception:
+                    pass
+
                 response = handle_query(post_data)
+                latency_ms = round((time.time() - start_time) * 1000, 2)
                 
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
                 self.end_headers()
                 self.wfile.write(response.encode('utf-8'))
+                
+                print(json.dumps({"request_id": req_id, "action": action_name, "status": 200, "latency_ms": latency_ms}), flush=True)
             except Exception as e:
+                latency_ms = round((time.time() - start_time) * 1000, 2)
                 self.send_response(500)
                 self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
                 self.end_headers()
                 error_response = json.dumps({'status': 'error', 'message': str(e)})
                 self.wfile.write(error_response.encode('utf-8'))
+                print(json.dumps({"request_id": req_id, "status": 500, "error": str(e), "latency_ms": latency_ms}), flush=True)
         else:
             self.send_response(404)
+            self.send_header('X-Request-ID', req_id)
             self.end_headers()
             self.wfile.write(json.dumps({'status': 'error', 'message': 'Not Found'}).encode('utf-8'))
 

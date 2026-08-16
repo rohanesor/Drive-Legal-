@@ -2,11 +2,8 @@ import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Provider, useDispatch } from 'react-redux';
-import { ConvexProvider } from 'convex/react';
 import { store } from './store';
-import { convexClient } from './convex/client';
-import { syncService } from './services/syncService';
-import { setSyncStatus, setLastSync } from './store/convexSlice';
+import { connectionManager } from './services/connectionManager';
 import { SplashScreen } from './screens/SplashScreen';
 import { PaperProvider } from 'react-native-paper';
 import { LocationProvider } from './context/LocationContext';
@@ -34,43 +31,6 @@ if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
 }
 
 const Stack = createStackNavigator();
-
-const SyncInitializer = ({ children }: { children: React.ReactNode }) => {
-  const dispatch = useDispatch();
-
-  useEffect(() => {
-    const initSync = async () => {
-      dispatch(setSyncStatus('syncing'));
-
-      const unsub = syncService.subscribe({
-        onStatusChange: (status) => {
-          dispatch(setSyncStatus(status));
-        },
-        onSyncComplete: () => {
-          dispatch(setLastSync(Date.now()));
-        },
-      });
-
-      const needsSync = await syncService.needsSync();
-      if (needsSync) {
-        syncService.syncAll();
-      } else {
-        syncService.checkConnection().then((online) => {
-          dispatch(setSyncStatus(online ? 'online' : 'offline'));
-        });
-      }
-
-      return unsub;
-    };
-
-    const cleanup = initSync();
-    return () => {
-      cleanup.then((fn) => fn?.());
-    };
-  }, [dispatch]);
-
-  return <>{children}</>;
-};
 
 const AppContent = () => {
   const { mode } = useAppMode();
@@ -106,6 +66,9 @@ const AppContent = () => {
 
 const App = () => {
   useEffect(() => {
+    // Initialize connection manager
+    connectionManager.start();
+
     // Initialize push notifications
     notificationService.configure();
     notificationService.createChannels();
@@ -129,25 +92,16 @@ const App = () => {
 
     return () => {
       removeLocationListener();
+      connectionManager.stop();
     };
   }, []);
 
   return (
     <Provider store={store}>
       <LocationProvider>
-        {convexClient ? (
-          <ConvexProvider client={convexClient}>
-            <SyncInitializer>
-              <ThemeProvider>
-                <AppContent />
-              </ThemeProvider>
-            </SyncInitializer>
-          </ConvexProvider>
-        ) : (
-          <ThemeProvider>
-            <AppContent />
-          </ThemeProvider>
-        )}
+        <ThemeProvider>
+          <AppContent />
+        </ThemeProvider>
       </LocationProvider>
     </Provider>
   );

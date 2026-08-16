@@ -54,24 +54,16 @@ jobs:
         run: |
           python backend/src/run_tests.py
 
-      - name: Setup Chaquopy Bundle Assets
-        run: |
-          python backend/src/setup_build.py
-
-      - name: Run Build Verification Checks
-        run: |
-          python backend/src/verify_build.py
-
-      - name: Build Android Unsigned Debug APK
+      - name: Build Android Production Release APK and AAB
         run: |
           cd frontend/android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleRelease bundleRelease --no-daemon
 
-      - name: Calculate APK SHA-256 Checksum
+      - name: Calculate Release Checksums
         run: |
-          sha256sum frontend/android/app/build/outputs/apk/debug/app-debug.apk | cut -d' ' -f1 > checksum.txt
-          echo "APK SHA-256 Checksum is: $(cat checksum.txt)"
+          sha256sum frontend/android/app/build/outputs/apk/release/app-release.apk | cut -d' ' -f1 > checksum.txt
+          echo "APK SHA-256 Checksum: $(cat checksum.txt)"
 
       - name: Update Latest Release Manifest
         run: |
@@ -86,12 +78,13 @@ jobs:
               json.dump(data, f, indent=2)
           "
 
-      - name: Upload APK and Manifest Artifacts
+      - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-build-assets
           path: |
-            frontend/android/app/build/outputs/apk/debug/app-debug.apk
+            frontend/android/app/build/outputs/apk/release/app-release.apk
+            frontend/android/app/build/outputs/bundle/release/app-release.aab
             backend/src/static/latest.json
             backend/src/static/releases.json
 
@@ -140,7 +133,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_SSH_HOST }} "mkdir -p /home/ubuntu/DriveLegal/backend/src/static/files"
           
           # Copy APK to the versioned static files directory
-          scp -o StrictHostKeyChecking=no frontend/android/app/build/outputs/apk/debug/app-debug.apk ubuntu@${{ secrets.EC2_SSH_HOST }}:/home/ubuntu/DriveLegal/backend/src/static/files/DriveLegal-v1.0.0.apk
+          scp -o StrictHostKeyChecking=no frontend/android/app/build/outputs/apk/release/app-release.apk ubuntu@${{ secrets.EC2_SSH_HOST }}:/home/ubuntu/DriveLegal/backend/src/static/files/DriveLegal-v1.0.0.apk
           
           # Copy Manifests to the static directory
           scp -o StrictHostKeyChecking=no backend/src/static/latest.json ubuntu@${{ secrets.EC2_SSH_HOST }}:/home/ubuntu/DriveLegal/backend/src/static/latest.json

@@ -1,0 +1,10 @@
+[
+  {"id": "emergency_police", "name": "Police", "number": "100", "type": "police", "description": "All India Police Emergency Number", "available": "24/7"},
+  {"id": "emergency_ambulance", "name": "Ambulance", "number": "108", "type": "ambulance", "description": "Emergency Medical Services", "available": "24/7"},
+  {"id": "emergency_fire", "name": "Fire Brigade", "number": "101", "type": "fire", "description": "Fire Emergency Services", "available": "24/7"},
+  {"id": "emergency_traffic", "name": "Traffic Police", "number": "103", "type": "traffic", "description": "Traffic Police Helpline", "available": "24/7"},
+  {"id": "emergency_women", "name": "Women Helpline", "number": "181", "type": "women", "description": "Women Helpline for emergency assistance", "available": "24/7"},
+  {"id": "emergency_highway", "name": "Highway Patrol", "number": "1033", "type": "highway", "description": "National Highway Patrol", "available": "24/7"},
+  {"id": "emergency_unified", "name": "Unified Emergency", "number": "112", "type": "unified", "description": "Unified Emergency Response Number (Police, Fire, Ambulance)", "available": "24/7"},
+  {"id": "emergency_roadside", "name": "Roadside Assistance", "number": "1800-180-1111", "type": "roadside", "description": "NHAI Toll-Free Highway Helpline", "available": "24/7"}
+]

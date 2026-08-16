@@ -3,7 +3,7 @@ package com.drivelegal;
 /**
  * DriveLegalPackage - React Native Package registration
  * 
- * This class registers our custom NativeModules (PythonBridgeModule)
+ * This class registers our custom NativeModules
  * with React Native so they can be accessed from JavaScript.
  * 
  * Think of this as a plugin that adds extra capabilities to React Native.
@@ -23,7 +23,6 @@ public class DriveLegalPackage implements ReactPackage {
     public List<NativeModule> createNativeModules(ReactApplicationContext reactContext) {
         // Register our Python bridge module, Location Service module, TTS module, and Native SpeechRecognizer module
         return Arrays.<NativeModule>asList(
-            new PythonBridgeModule(reactContext),
             new DriveLegalLocationServiceModule(reactContext),
             new DriveLegalTTSModule(reactContext),
             new DriveLegalSpeechRecognizerModule(reactContext)

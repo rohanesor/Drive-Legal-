@@ -10,17 +10,13 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
-apply plugin: "com.chaquo.python"
 
 // React Native autolinking - generates PackageList.java and adds native module dependencies
 apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
 
 react {
-    //
-    // Added by install-expo-modules
-    entryFile = file(["node", "-e", "require('expo/scripts/resolveAppEntry')", rootDir.getAbsoluteFile().getParentFile().getAbsolutePath(), "android", "absolute"].execute(null, rootDir).text.trim())
-    cliFile = new File(["node", "--print", "require.resolve('@expo/cli')"].execute(null, rootDir).text.trim())
-    bundleCommand = "export:embed"
+    root = file("../../")
+    entryFile = file("../../index.js")
 }
 
 def enableProguardInReleaseBuilds = true
@@ -89,30 +85,10 @@ android {
         release {
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.debug
         }
     }
 
-    sourceSets {
-        main {
-            // Tells Chaquopy where to find Python modules
-            python.srcDir "src/main/python"
-        }
-    }
-    chaquopy {
-        defaultConfig {
-            if (System.getenv("GITHUB_ACTIONS") != null) {
-                buildPython "python3"
-            } else {
-                buildPython "C:/Users/kille/AppData/Local/Programs/Python/Python311/python.exe"
-            }
-            pip {
-                // Use unpinned numpy so Chaquopy auto-selects its pre-built Android wheel.
-                // Pinning to 1.24.3 caused source compilation failure (no native C compiler).
-                install "numpy"
-            }
-        }
-    }
 }
 
 dependencies {

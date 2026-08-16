@@ -7,11 +7,11 @@
  *
  * Dependencies:
  * - Redux store (for dispatching alerts)
- * - pythonBridge.checkZones (for zone geometry lookup)
+ * - driveLegalService.zoneCheck (for zone geometry lookup)
  */
 import { store } from '../store';
 import { addAlert } from '../store/alertSlice';
-import { checkZones } from './pythonBridge';
+import { driveLegalService } from './driveLegalService';
 import { Alert, AppState } from 'react-native';
 import { notificationService } from './notificationService';
 
@@ -79,18 +79,15 @@ class PredictiveEngine {
     this.lastPosition = { latitude, longitude, timestamp: now };
     this.heading = heading;
 
-    // Send check payload to high-performance Python engine
+    // Send check payload to DriveLegal service
     try {
-      const result = await checkZones({
-        action: 'check_zone',
-        location: {
-          lat: latitude,
-          lng: longitude,
-          state: currentStateCode,
-          heading: heading,
-          speed: speed * 3.6, // Convert m/s to km/h for python checks
-        },
-      });
+      const result = await driveLegalService.zoneCheck(
+        latitude,
+        longitude,
+        currentStateCode,
+        heading,
+        speed * 3.6,
+      );
 
       if (result.status === 'zone_alert' && result.message) {
         const zoneAlert = {

@@ -1,9 +1,14 @@
 import { routingService } from '../../frontend/src/services/routingService';
-import { checkZones } from '../../frontend/src/services/pythonBridge';
+import { driveLegalService } from '../../frontend/src/services/driveLegalService';
 
-// Mock PythonBridge checkZones
-jest.mock('../../frontend/src/services/pythonBridge', () => ({
-  checkZones: jest.fn()
+// Mock driveLegalService zoneCheck
+jest.mock('../../frontend/src/services/driveLegalService', () => ({
+  driveLegalService: {
+    zoneCheck: jest.fn().mockResolvedValue({ status: 'no_alert' }),
+    query: jest.fn(),
+    getPenalties: jest.fn(),
+    getSpeedLimit: jest.fn(),
+  }
 }));
 
 // Mock speedLimitService
@@ -25,7 +30,7 @@ describe('RoutingService Tests', () => {
 
   it('should calculate route, falling back to mock provider if network is offline', async () => {
     (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
-    (checkZones as jest.Mock).mockResolvedValue({ status: 'no_alert' });
+    (driveLegalService.zoneCheck as jest.Mock).mockResolvedValue({ status: 'no_alert' });
 
     const origin = { lat: 11.0168, lng: 76.9558 };
     const destination = { lat: 11.0200, lng: 76.9600 };
@@ -45,8 +50,8 @@ describe('RoutingService Tests', () => {
   it('should apply safety deduction if route passes through hazard zone', async () => {
     (global.fetch as jest.Mock).mockRejectedValue(new Error('Network offline'));
     
-    // Simulate checkZones returning an accident zone warning on query
-    (checkZones as jest.Mock).mockResolvedValue({
+    // Simulate zoneCheck returning an accident zone warning on query
+    (driveLegalService.zoneCheck as jest.Mock).mockResolvedValue({
       status: 'zone_alert',
       zone_name: 'Avinashi Road Hotspot',
       zone_type: 'accident_zone',
@@ -70,7 +75,7 @@ describe('RoutingService Tests', () => {
 
   it('should generate structured SafetyAssessment metrics', async () => {
     (global.fetch as jest.Mock).mockRejectedValue(new Error('Network offline'));
-    (checkZones as jest.Mock).mockResolvedValue({
+    (driveLegalService.zoneCheck as jest.Mock).mockResolvedValue({
       status: 'zone_alert',
       zone_name: 'Airport School Zone',
       zone_type: 'school_zone',

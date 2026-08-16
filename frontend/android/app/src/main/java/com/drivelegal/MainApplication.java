@@ -8,8 +8,7 @@ import expo.modules.ReactNativeHostWrapper;
  * 
  * This class initializes:
  * 1. SoLoader - loads native libraries for React Native
- * 2. Chaquopy Python runtime - starts the embedded Python interpreter
- * 3. React Native host - manages the JS bundle and native modules
+ * 2. React Native host - manages the JS bundle and native modules
  * 
  * The Python interpreter is started here so it's available when
  * React Native components need to call Python functions.
@@ -26,8 +25,7 @@ import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint;
 import com.facebook.react.defaults.DefaultReactHost;
 import com.facebook.react.defaults.DefaultReactNativeHost;
 import com.facebook.soloader.SoLoader;
-import com.chaquo.python.android.AndroidPlatform;
-import com.chaquo.python.Python;
+
 
 import java.util.List;
 
@@ -79,13 +77,7 @@ public class MainApplication extends Application implements ReactApplication {
         }
         ReactNativeFlipper.initializeFlipper(this, getReactNativeHost().getReactInstanceManager());
 
-        // Start Chaquopy Python interpreter on a background thread
-        // to avoid ANR during cold start (first init can take 10-30s)
-        new Thread(() -> {
-            if (!Python.isStarted()) {
-                Python.start(new AndroidPlatform(this));
-            }
-        }, "chaquopy-init").start();
+
       ApplicationLifecycleDispatcher.onApplicationCreate(this);
   }
 

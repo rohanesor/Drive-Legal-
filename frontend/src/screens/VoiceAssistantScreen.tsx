@@ -31,7 +31,7 @@ import {
   getStateName,
   getJurisdictionLabel,
 } from '../services/locationService';
-import { executeQuery } from '../services/pythonBridge';
+import { driveLegalService } from '../services/driveLegalService';
 import { navigationState } from '../services/navigationState';
 import {
   Mic,
@@ -548,35 +548,26 @@ export const VoiceAssistantScreen = ({
         return;
       }
 
-      const result = await executeQuery({
-        action: 'query',
-        text: transcribedText,
-        language: userLanguage,
-        location: {
-          lat: location?.latitude || 0,
-          lng: location?.longitude || 0,
-          state: userState,
-          city: geoInfo?.city || undefined,
-          district: geoInfo?.district || undefined,
-        },
-        navigationContext: navigationState.getContext(),
-      });
+      const result = await driveLegalService.query(
+        transcribedText,
+        userState,
+        userLanguage,
+        location ? { lat: location.latitude, lng: location.longitude } : undefined,
+      );
 
-      if (result.status === 'success') {
-        const textResponse =
-          result.response_text ||
-          result.fallback_response_text ||
-          'No matches found.';
-        if (result.detected_language) {
-          setDetectedLang(result.detected_language);
-        }
-        if (result.confidence !== undefined) {
-          setConfidenceScore(Math.round(result.confidence * 100));
-        }
-        speakBotResponse(textResponse);
-      } else {
-        setVoiceState('RETRY');
+      const textResponse =
+        result.response ||
+        (result as any).response_text ||
+        (result as any).fallback_response_text ||
+        result.message ||
+        'No matches found.';
+      if ((result as any).detected_language) {
+        setDetectedLang((result as any).detected_language);
       }
+      if ((result as any).confidence !== undefined) {
+        setConfidenceScore(Math.round((result as any).confidence * 100));
+      }
+      speakBotResponse(textResponse);
     } catch (e) {
       console.error('Failed to execute bridge voice query:', e);
       setVoiceState('RETRY');
@@ -605,35 +596,26 @@ export const VoiceAssistantScreen = ({
         },
       ]);
 
-      const result = await executeQuery({
-        action: 'query',
-        text: queryText,
-        language: userLanguage,
-        location: {
-          lat: location?.latitude || 0,
-          lng: location?.longitude || 0,
-          state: userState,
-          city: geoInfo?.city || undefined,
-          district: geoInfo?.district || undefined,
-        },
-        navigationContext: navigationState.getContext(),
-      });
+      const result = await driveLegalService.query(
+        queryText,
+        userState,
+        userLanguage,
+        location ? { lat: location.latitude, lng: location.longitude } : undefined,
+      );
 
-      if (result.status === 'success') {
-        const textResponse =
-          result.response_text ||
-          result.fallback_response_text ||
-          'No matches found in database.';
-        if (result.detected_language) {
-          setDetectedLang(result.detected_language);
-        }
-        if (result.confidence !== undefined) {
-          setConfidenceScore(Math.round(result.confidence * 100));
-        }
-        speakBotResponse(textResponse);
-      } else {
-        setVoiceState('RETRY');
+      const textResponse =
+        result.response ||
+        (result as any).response_text ||
+        (result as any).fallback_response_text ||
+        result.message ||
+        'No matches found in database.';
+      if ((result as any).detected_language) {
+        setDetectedLang((result as any).detected_language);
       }
+      if ((result as any).confidence !== undefined) {
+        setConfidenceScore(Math.round((result as any).confidence * 100));
+      }
+      speakBotResponse(textResponse);
     } catch (e) {
       console.error('Failed to execute text query:', e);
       setVoiceState('RETRY');
@@ -659,29 +641,26 @@ export const VoiceAssistantScreen = ({
         },
       ]);
 
-      const result = await executeQuery({
-        action: 'query',
-        text: query,
-        language: userLanguage,
-        location: {
-          lat: location?.latitude || 0,
-          lng: location?.longitude || 0,
-          state: userState,
-          city: geoInfo?.city || undefined,
-          district: geoInfo?.district || undefined,
-        },
-        navigationContext: navigationState.getContext(),
-      });
+      const result = await driveLegalService.query(
+        query,
+        userState,
+        userLanguage,
+        location ? { lat: location.latitude, lng: location.longitude } : undefined,
+      );
 
-      if (result.status === 'success') {
-        const textResponse =
-          result.response_text ||
-          result.fallback_response_text ||
-          'No matches found.';
-        speakBotResponse(textResponse);
-      } else {
-        setVoiceState('RETRY');
+      const textResponse =
+        result.response ||
+        (result as any).response_text ||
+        (result as any).fallback_response_text ||
+        result.message ||
+        'No matches found.';
+      if ((result as any).detected_language) {
+        setDetectedLang((result as any).detected_language);
       }
+      if ((result as any).confidence !== undefined) {
+        setConfidenceScore(Math.round((result as any).confidence * 100));
+      }
+      speakBotResponse(textResponse);
     } catch (e) {
       console.error('Failed to run quick command:', e);
       setVoiceState('RETRY');

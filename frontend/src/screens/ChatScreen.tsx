@@ -12,8 +12,6 @@ import {
   ScrollView,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
-import { convexClient } from '../convex/client';
-import { api } from '../../convex/_generated/api';
 import type { RootState, AppDispatch } from '../store';
 import {
   addMessage,
@@ -21,11 +19,8 @@ import {
   setLoading,
   clearChat,
 } from '../store/chatSlice';
-import {
-  executeQuery,
-  QueryPayload,
-  QueryResult,
-} from '../services/pythonBridge';
+import { driveLegalService } from '../services/driveLegalService';
+import { connectionManager, ConnectionStatus } from '../services/connectionManager';
 import { useLocation } from '../context/LocationContext';
 import { navigationState } from '../services/navigationState';
 import { getJurisdictionLabel } from '../services/locationService';
@@ -185,7 +180,14 @@ export const ChatScreen = ({
     (state: RootState) => state.chat.suggestedPrompts,
   );
   const language = useSelector((state: RootState) => state.settings.language);
-  const isOnline = useSelector((state: RootState) => state.convex.isOnline);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
+
+  useEffect(() => {
+    const unsub = connectionManager.subscribe((status) => {
+      setConnectionStatus(status);
+    });
+    return unsub;
+  }, []);
 
   const [inputText, setInputText] = useState('');
   const [showDisclaimer, setShowDisclaimer] = useState(false);
@@ -268,19 +270,11 @@ export const ChatScreen = ({
 
   useEffect(() => {
     checkDisclaimer();
-    initPython();
   }, []);
 
   const checkDisclaimer = async () => {
     const shown = await isDisclaimerShown();
     setShowDisclaimer(!shown);
-  };
-
-  const initPython = async () => {
-    try {
-      const { initializePython } = await import('../services/pythonBridge');
-      await initializePython();
-    } catch (e) {}
   };
 
   const checkForLocationQuery = (query: string, _responseText: string) => {
@@ -402,56 +396,25 @@ export const ChatScreen = ({
     }));
 
     try {
-      // 1. Online Logic (Claude via Convex)
-      if (isOnline && convexClient) {
-        try {
-          const result = (await convexClient.action(api.chat.askClaude, {
-            query,
-            language,
-            locationContext: locationName,
-            history: chatHistory,
-          } as any)) as any;
-
-          streamBotResponse(
-            result.response,
-            undefined,
-            undefined,
-            result.suggestions || [],
-          );
-          checkForLocationQuery(query, result.response || '');
-          return;
-        } catch (e) {
-          console.warn('Claude failed, falling back...');
-        }
-      }
-
-      // 2. Offline Logic (Local Python)
-      const payload: QueryPayload = {
-        action: 'query',
-        text: query,
-        location: {
-          lat: location?.latitude || 0,
-          lng: location?.longitude || 0,
-          state: currentState,
-          city: geoInfo?.city || undefined,
-          district: geoInfo?.district || undefined,
-        },
+      // Send query via DriveLegal service (routes to server or offline)
+      const result = await driveLegalService.query(
+        query,
+        currentState,
         language,
-        history: chatHistory,
-        navigationContext: navigationState.getContext(),
-      };
-
-      const result: QueryResult = await executeQuery(payload);
+        location ? { lat: location.latitude, lng: location.longitude } : undefined,
+        chatHistory,
+      );
 
       const botText =
+        result.response ||
         (result as any).response_text ||
         (result as any).fallback_response_text ||
-        (result as any).message ||
+        result.message ||
         'I encountered an issue. Please try again.';
       streamBotResponse(
         botText,
-        result.source_sections,
-        result.confidence,
+        (result as any).source_sections,
+        (result as any).confidence,
         (result as any).suggested_prompts || [],
       );
       checkForLocationQuery(query, botText);
@@ -499,6 +462,8 @@ export const ChatScreen = ({
             <View style={styles.locationRow}>
               <MapPin size={12} color={colors.cyan} />
               <Text style={styles.locationTxt}>{locationName}</Text>
+              <View style={[styles.connectionDot, { backgroundColor: connectionStatus === 'online' ? '#4CAF50' : connectionStatus === 'offline' ? '#F44336' : connectionStatus === 'server_error' ? '#FF9800' : '#2196F3' }]} />
+              <Text style={[styles.locationTxt, { fontSize: 10 }]}>{connectionStatus === 'online' ? 'Online' : connectionStatus === 'offline' ? 'Offline' : connectionStatus === 'server_error' ? 'Server Error' : 'Connecting...'}</Text>
             </View>
           </View>
         </View>
@@ -669,6 +634,13 @@ const createStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   locationTxt: { ...TYPOGRAPHY.caption, color: colors.cyan },
+  connectionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginLeft: 6,
+    marginRight: 2,
+  },
   headerActions: { flexDirection: 'row', alignItems: 'center' },
 
   messageList: { padding: 16, paddingBottom: 24 },

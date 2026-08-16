@@ -180,7 +180,7 @@
                     androidTd.innerHTML = rel.android.apk ? `<a href="${rel.android.apk}" class="download-link">Available</a>` : 'N/A';
                     
                     const iosTd = document.createElement('td');
-                    iosTd.innerText = rel.ios.appStore ? 'App Store' : (rel.ios.testflight ? 'TestFlight' : 'N/A');
+                    iosTd.innerText = rel.ios && rel.ios.status === 'coming_soon' ? 'Coming Soon' : (rel.ios && rel.ios.appStore ? 'App Store' : 'N/A');
                     
                     const autoTd = document.createElement('td');
                     autoTd.innerText = rel.androidAuto.supported ? 'Supported' : 'No';

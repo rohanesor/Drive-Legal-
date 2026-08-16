@@ -37,9 +37,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:allowBackup="false"
         android:theme="@style/AppTheme"
-        android:largeHeap="true"
         android:supportsRtl="true"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="false">
 
         <!-- Map uses OpenStreetMap tiles via Leaflet (no API key required).
              OpenRouteService key for routing/geocoding is in constants/config.ts -->
