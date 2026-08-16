@@ -21,10 +21,9 @@ react {
 
 def enableProguardInReleaseBuilds = true
 
-project.ext.sentryCli = [
-    autoUpload: false
-]
-apply from: new File(["node", "--print", "require.resolve('@sentry/react-native/package.json')"].execute().text.trim(), "../sentry.gradle")
+if (System.getenv("SENTRY_AUTH_TOKEN") != null && project.findProperty("sentry.autoUpload") != "false") {
+    apply from: new File(["node", "--print", "require.resolve('@sentry/react-native/package.json')"].execute().text.trim(), "../sentry.gradle")
+}
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
