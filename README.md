@@ -2,6 +2,8 @@
 
 A multilingual (Tamil / Hindi / English), fully offline AI-powered traffic law assistant for Indian citizens. Built with React Native + embedded Python (Chaquopy) for Android 8+.
 
+*Deployment Status: Production AWS environment configured and verified.*
+
 ## Features
 
 - **Chat Interface** — ask traffic law questions in EN/TA/HI, get answers with source citations & confidence indicators
