@@ -113,6 +113,27 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
+      - name: Deploy to AWS EC2 via SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_SSH_HOST }} << 'EOF'
+            cd /home/ubuntu/DriveLegal
+            
+            # Fetch latest git commits and force reset to origin master
+            git fetch origin master
+            git reset --hard origin/master
+            
+            # Load production environmental variables from SSM Parameter Store
+            export DB_PASSWORD=$(aws ssm get-parameter --name "/drivelegal/prod/db_password" --with-decryption --query "Parameter.Value" --output text || echo "default_pass")
+            
+            # Rebuild and run containers
+            docker compose -f backend/docker-compose.prod.yml down
+            docker compose -f backend/docker-compose.prod.yml up -d --build
+            
+            # Smoke check health endpoint
+            sleep 10
+            curl -f http://localhost:8000/health || (echo "Deployment failed health checks." && exit 1)
+          EOF
+
       - name: Copy Build Artifacts to EC2 static files folder
         run: |
           # Create static folders on the EC2 host if they don't exist
@@ -125,25 +146,15 @@ jobs:
           scp -o StrictHostKeyChecking=no backend/src/static/latest.json ubuntu@${{ secrets.EC2_SSH_HOST }}:/home/ubuntu/DriveLegal/backend/src/static/latest.json
           scp -o StrictHostKeyChecking=no backend/src/static/releases.json ubuntu@${{ secrets.EC2_SSH_HOST }}:/home/ubuntu/DriveLegal/backend/src/static/releases.json
 
-      - name: Deploy to AWS EC2 via SSH
+      - name: Run Live Verification and Smoke Tests
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_SSH_HOST }} << 'EOF'
-            cd /home/ubuntu/DriveLegal
-            
-            # Fetch latest git commits
-            git pull origin master
-            
-            # Load production environmental variables from SSM Parameter Store
-            export DB_PASSWORD=$(aws ssm get-parameter --name "/drivelegal/prod/db_password" --with-decryption --query "Parameter.Value" --output text || echo "default_pass")
-            
-            # Rebuild and run containers
-            docker compose -f backend/docker-compose.prod.yml down
-            docker compose -f backend/docker-compose.prod.yml up -d --build
-            
             # Smoke check health endpoint and verify download URL is online
-            sleep 10
-            curl -f http://localhost:8000/health || (echo "Deployment failed health checks. Reverting..." && docker compose -f backend/docker-compose.prod.yml rollback)
+            curl -f http://localhost:8000/health || (echo "Verification failed: API server unhealthy" && exit 1)
             
             # Verify download URL returns HTTP 200
-            curl -f -I http://localhost:8000/download/files/DriveLegal-v1.0.0.apk || (echo "Deployment failed APK download check. Reverting..." && docker compose -f backend/docker-compose.prod.yml rollback)
+            curl -f -I http://localhost:8000/download/files/DriveLegal-v1.0.0.apk || (echo "Verification failed: APK file download check failed" && exit 1)
+            
+            # Verify latest release JSON manifest returns HTTP 200
+            curl -f http://localhost:8000/releases/latest.json || (echo "Verification failed: Latest release manifest unreachable" && exit 1)
           EOF
