@@ -1,0 +1,60 @@
+name: DriveLegal AWS Deployment CI/CD
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  test-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-style: 18.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Jest Unit Verification Suite
+        run: npm run test
+
+      - name: Run TypeScript typecheck compiler check
+        run: npx tsc --noEmit
+
+  deploy:
+    needs: test-and-verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Pull, Build and Deploy to AWS EC2 via SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_SSH_HOST }} << 'EOF'
+            cd /home/ec2-user/DriveLegal
+            
+            # Fetch latest git commits
+            git pull origin master
+            
+            # Load production environmental variables from SSM Parameter Store
+            export DB_PASSWORD=$(aws ssm get-parameter --name "/drivelegal/prod/db_password" --with-decryption --query "Parameter.Value" --output text || echo "default_pass")
+            
+            # Rebuild and run containers
+            docker compose -f backend/docker-compose.prod.yml down
+            docker compose -f backend/docker-compose.prod.yml up -d --build
+            
+            # Smoke check health endpoint
+            sleep 10
+            curl -f http://localhost:8000/health || (echo "Deployment failed health checks. Reverting..." && docker compose -f backend/docker-compose.prod.yml rollback)
+          EOF
