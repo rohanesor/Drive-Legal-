@@ -25,6 +25,7 @@
     "node_modules",
     "frontend/android",
     "frontend/__tests__",
+    "frontend/convex",
     "convex/_generated"
   ]
 }
