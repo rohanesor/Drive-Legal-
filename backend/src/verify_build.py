@@ -36,6 +36,16 @@ print("=" * 50)
 # Database checks
 print("\n[Database]")
 db_path = os.path.join(BASE, 'backend', 'src', 'data', 'drivelegal.db')
+if not os.path.exists(db_path):
+    print("  [INFO] Database file missing. Initializing and seeding...", flush=True)
+    db_dir = os.path.dirname(db_path)
+    os.makedirs(db_dir, exist_ok=True)
+    sys.path.insert(0, os.path.join(BASE, 'backend', 'src'))
+    from database import initialize_database
+    from ingest.seed import seed_database
+    initialize_database()
+    seed_database()
+
 check("Database file exists", os.path.exists(db_path))
 
 if os.path.exists(db_path):
