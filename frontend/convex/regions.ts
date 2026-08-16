@@ -1,9 +1,9 @@
-import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { v } from 'convex/values';
+import { mutation, query } from './_generated/server';
 
 export const list = query({
   handler: async (ctx) => {
-    return await ctx.db.query("regions").collect();
+    return await ctx.db.query('regions').collect();
   },
 });
 
@@ -11,9 +11,9 @@ export const getByLocation = query({
   args: { country: v.string(), state: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("regions")
-      .withIndex("by_location", (q) =>
-        q.eq("country", args.country).eq("state", args.state)
+      .query('regions')
+      .withIndex('by_location', (q) =>
+        q.eq('country', args.country).eq('state', args.state),
       )
       .first();
   },
@@ -29,9 +29,9 @@ export const upsert = mutation({
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
-      .query("regions")
-      .withIndex("by_location", (q) =>
-        q.eq("country", args.country).eq("state", args.state)
+      .query('regions')
+      .withIndex('by_location', (q) =>
+        q.eq('country', args.country).eq('state', args.state),
       )
       .first();
 
@@ -39,6 +39,6 @@ export const upsert = mutation({
       await ctx.db.patch(existing._id, args);
       return existing._id;
     }
-    return await ctx.db.insert("regions", args);
+    return await ctx.db.insert('regions', args);
   },
 });

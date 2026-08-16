@@ -4,16 +4,23 @@ import { setMode } from '../store/appModeSlice';
 
 export const useAppMode = () => {
   const dispatch = useDispatch();
-  
+
   const mode = useSelector((state: RootState) => state.appMode.mode);
   const isCar = mode === 'car';
   const isMobile = mode === 'mobile';
-  
+
   const isDriving = useSelector((state: RootState) => state.appMode.isDriving);
-  const isCarDocked = useSelector((state: RootState) => state.appMode.isCarDocked);
-  const preferences = useSelector((state: RootState) => state.appMode.carModePreferences);
-  
-  const switchMode = (newMode: 'mobile' | 'car', method: 'auto' | 'manual' = 'manual') => {
+  const isCarDocked = useSelector(
+    (state: RootState) => state.appMode.isCarDocked,
+  );
+  const preferences = useSelector(
+    (state: RootState) => state.appMode.carModePreferences,
+  );
+
+  const switchMode = (
+    newMode: 'mobile' | 'car',
+    method: 'auto' | 'manual' = 'manual',
+  ) => {
     dispatch(setMode({ mode: newMode, method }));
   };
 

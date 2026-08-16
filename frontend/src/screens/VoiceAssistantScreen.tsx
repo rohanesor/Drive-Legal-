@@ -18,24 +18,36 @@ import {
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../store';
-import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS, GLASS } from '../constants/theme';
+import {
+  TYPOGRAPHY,
+  BORDER_RADIUS,
+  SHADOWS,
+  GLASS,
+} from '../constants/theme';
+import { useThemeColors } from '../context/ThemeContext';
+import { useMemo } from 'react';
 import { useLocation } from '../context/LocationContext';
-import { getStateName, getJurisdictionLabel } from '../services/locationService';
+import {
+  getStateName,
+  getJurisdictionLabel,
+} from '../services/locationService';
 import { executeQuery } from '../services/pythonBridge';
-import { 
-  Mic, 
-  Sparkles, 
-  Volume2, 
-  Shield, 
-  Circle, 
-  RefreshCw, 
-  ArrowLeft, 
-  Keyboard, 
-  Send, 
-  VolumeX, 
+import { navigationState } from '../services/navigationState';
+import {
+  Mic,
+  Sparkles,
+  Volume2,
+  Shield,
+  Circle,
+  RefreshCw,
+  ArrowLeft,
+  Keyboard,
+  Send,
+  VolumeX,
   HelpCircle,
-  Clock
+  Clock,
 } from 'lucide-react-native';
+import type { Message } from '../types';
 
 const { width } = Dimensions.get('window');
 const { DriveLegalSpeechRecognizer, DriveLegalTTS } = NativeModules;
@@ -44,23 +56,36 @@ import { DeviceEventEmitter } from 'react-native';
 // Driving safe quick commands
 const QUICK_COMMANDS = [
   { text: 'Can I park here?', query: 'Can I park here?' },
-  { text: 'Helmet fine?', query: 'What is the fine for driving without a helmet?' },
+  {
+    text: 'Helmet fine?',
+    query: 'What is the fine for driving without a helmet?',
+  },
   { text: 'Speed limit?', query: 'What is the speed limit here?' },
-  { text: 'Charging rules?', query: 'What are the rules and penalties for EV charging zones?' },
+  {
+    text: 'Charging rules?',
+    query: 'What are the rules and penalties for EV charging zones?',
+  },
 ];
 
-type VoiceState = 'READY' | 'LISTENING' | 'UNDERSTANDING' | 'RESPONDING' | 'RETRY';
+type VoiceState =
+  | 'READY'
+  | 'LISTENING'
+  | 'UNDERSTANDING'
+  | 'RESPONDING'
+  | 'RETRY';
 
-interface Message {
-  id: string;
-  sender: 'user' | 'ai';
-  text: string;
-  timestamp: string;
-}
+import type { AppNavigationProp } from '../types';
 
-export const VoiceAssistantScreen = ({ navigation }: any) => {
+export const VoiceAssistantScreen = ({
+  navigation,
+}: {
+  navigation: AppNavigationProp;
+}) => {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const userState = useSelector((state: RootState) => state.settings.state);
-  const userLanguage = useSelector((state: RootState) => state.settings.language) || 'en';
+  const userLanguage =
+    useSelector((state: RootState) => state.settings.language) || 'en';
   const { location, geoInfo } = useLocation();
 
   // Voice Interaction States
@@ -76,8 +101,11 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
       id: 'welcome',
       sender: 'ai',
       text: 'RoadMind AI co-driver is active. Tap the microphone and tell me what is happening, or select a quick query below.',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    },
   ]);
 
   // Multilingual Telemetry States
@@ -102,20 +130,27 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
   useEffect(() => {
     // Register Android Native SpeechRecognizer JNI event listeners
     const onStart = DeviceEventEmitter.addListener('onSpeechStart', () => {
-      console.log("Speech Started");
+      console.log('Speech Started');
       setVoiceState('LISTENING');
     });
 
     const onEnd = DeviceEventEmitter.addListener('onSpeechEnd', (e) => {
-      console.log("Speech Ended");
+      console.log('Speech Ended');
       // Safety timeout: if onSpeechResults doesn't arrive within 2.5s,
       // submit whatever partial transcript we have
-      if (speechEndTimeoutRef.current) clearTimeout(speechEndTimeoutRef.current);
+      if (speechEndTimeoutRef.current) {
+        clearTimeout(speechEndTimeoutRef.current);
+      }
       speechEndTimeoutRef.current = setTimeout(() => {
-        console.log("Speech End safety timeout fired — checking for pending transcript");
+        console.log(
+          'Speech End safety timeout fired — checking for pending transcript',
+        );
         const pending = latestTranscriptRef.current?.trim();
         if (pending && pending.length > 0 && !hasSubmittedRef.current) {
-          console.log("Submitting partial transcript via safety timeout:", pending);
+          console.log(
+            'Submitting partial transcript via safety timeout:',
+            pending,
+          );
           processSpeechText(pending);
         } else if (!hasSubmittedRef.current) {
           // No transcript at all — transition to READY so UI isn't stuck
@@ -124,18 +159,21 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
       }, 2500);
     });
 
-    const onPartial = DeviceEventEmitter.addListener('onSpeechPartialResults', (e) => {
-      const match = e.value && e.value[0];
-      console.log("Speech Partial Results", e.value);
-      if (match) {
-        hasTranscriptRef.current = true;
-        latestTranscriptRef.current = match;
-        setUserTranscript(match);
-        if (e.confidence !== undefined) {
-          setConfidenceScore(Math.round(e.confidence * 100));
+    const onPartial = DeviceEventEmitter.addListener(
+      'onSpeechPartialResults',
+      (e) => {
+        const match = e.value && e.value[0];
+        console.log('Speech Partial Results', e.value);
+        if (match) {
+          hasTranscriptRef.current = true;
+          latestTranscriptRef.current = match;
+          setUserTranscript(match);
+          if (e.confidence !== undefined) {
+            setConfidenceScore(Math.round(e.confidence * 100));
+          }
         }
-      }
-    });
+      },
+    );
 
     const onResults = DeviceEventEmitter.addListener('onSpeechResults', (e) => {
       // Cancel safety timeout since we got real results
@@ -144,23 +182,23 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
         speechEndTimeoutRef.current = null;
       }
       const match = e.value && e.value[0];
-      console.log("Speech Results", e.value);
+      console.log('Speech Results', e.value);
       if (match) {
         hasTranscriptRef.current = true;
         latestTranscriptRef.current = match;
         autoRetryCount.current = 0;
-        
+
         // Save recognition confidence returned from native module
         if (e.confidence !== undefined) {
           setConfidenceScore(Math.round(e.confidence * 100));
         }
-        
+
         if (!hasSubmittedRef.current) {
           processSpeechText(match);
         }
       } else {
         if (!hasTranscriptRef.current && !hasSubmittedRef.current) {
-          handleSpeechFailure("No speech matches found.");
+          handleSpeechFailure('No speech matches found.');
         }
       }
     });
@@ -171,11 +209,13 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
         clearTimeout(speechEndTimeoutRef.current);
         speechEndTimeoutRef.current = null;
       }
-      console.log("Speech Error", e.message);
+      console.log('Speech Error', e.message);
       console.log(`JNI onSpeechError caught [Code: ${e.code}]: ${e.message}`);
-      
-      const hasTranscript = latestTranscriptRef.current && latestTranscriptRef.current.trim().length > 0;
-      
+
+      const hasTranscript =
+        latestTranscriptRef.current &&
+        latestTranscriptRef.current.trim().length > 0;
+
       // Treat as successful and submit if we got some transcript, or ignore trailing errors after submission
       if (hasTranscript || hasSubmittedRef.current) {
         autoRetryCount.current = 0;
@@ -184,7 +224,7 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
         }
         return;
       }
-      
+
       handleSpeechFailure(e.message, e.code);
     });
 
@@ -214,12 +254,14 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
           duration: 1500,
           easing: Easing.linear,
           useNativeDriver: true,
-        })
+        }),
       );
       animation.start();
     }
     return () => {
-      if (animation) animation.stop();
+      if (animation) {
+        animation.stop();
+      }
     };
   }, [voiceState]);
 
@@ -231,30 +273,62 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
     if (voiceState === 'LISTENING') {
       pulseLoop = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseScale, { toValue: 1.16, duration: 600, useNativeDriver: true }),
-          Animated.timing(pulseScale, { toValue: 1.0, duration: 600, useNativeDriver: true }),
-        ])
+          Animated.timing(pulseScale, {
+            toValue: 1.16,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseScale, {
+            toValue: 1.0,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+        ]),
       );
       glowLoop = Animated.loop(
         Animated.sequence([
-          Animated.timing(glowOpacity, { toValue: 0.65, duration: 600, useNativeDriver: true }),
-          Animated.timing(glowOpacity, { toValue: 0.15, duration: 600, useNativeDriver: true }),
-        ])
+          Animated.timing(glowOpacity, {
+            toValue: 0.65,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowOpacity, {
+            toValue: 0.15,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+        ]),
       );
       pulseLoop.start();
       glowLoop.start();
     } else if (voiceState === 'RESPONDING') {
       pulseLoop = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseScale, { toValue: 1.08, duration: 850, useNativeDriver: true }),
-          Animated.timing(pulseScale, { toValue: 1.0, duration: 850, useNativeDriver: true }),
-        ])
+          Animated.timing(pulseScale, {
+            toValue: 1.08,
+            duration: 850,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseScale, {
+            toValue: 1.0,
+            duration: 850,
+            useNativeDriver: true,
+          }),
+        ]),
       );
       glowLoop = Animated.loop(
         Animated.sequence([
-          Animated.timing(glowOpacity, { toValue: 0.45, duration: 850, useNativeDriver: true }),
-          Animated.timing(glowOpacity, { toValue: 0.1, duration: 850, useNativeDriver: true }),
-        ])
+          Animated.timing(glowOpacity, {
+            toValue: 0.45,
+            duration: 850,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowOpacity, {
+            toValue: 0.1,
+            duration: 850,
+            useNativeDriver: true,
+          }),
+        ]),
       );
       pulseLoop.start();
       glowLoop.start();
@@ -263,16 +337,28 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
       glowOpacity.setValue(0.15);
       pulseLoop = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseScale, { toValue: 1.03, duration: 2000, useNativeDriver: true }),
-          Animated.timing(pulseScale, { toValue: 1.0, duration: 2000, useNativeDriver: true }),
-        ])
+          Animated.timing(pulseScale, {
+            toValue: 1.03,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseScale, {
+            toValue: 1.0,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+        ]),
       );
       pulseLoop.start();
     }
 
     return () => {
-      if (pulseLoop) pulseLoop.stop();
-      if (glowLoop) glowLoop.stop();
+      if (pulseLoop) {
+        pulseLoop.stop();
+      }
+      if (glowLoop) {
+        glowLoop.stop();
+      }
     };
   }, [voiceState]);
 
@@ -302,17 +388,22 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
 
   const requestPermission = async (): Promise<boolean> => {
     if (Platform.OS === 'android') {
-      const hasPermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
-      if (hasPermission) return true;
-      
+      const hasPermission = await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+      );
+      if (hasPermission) {
+        return true;
+      }
+
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
         {
           title: 'Microphone Permission',
-          message: 'DriveTalk needs access to your microphone for hands-free queries.',
+          message:
+            'DriveTalk needs access to your microphone for hands-free queries.',
           buttonPositive: 'OK',
           buttonNegative: 'Cancel',
-        }
+        },
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     }
@@ -339,7 +430,7 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
     try {
       const hasPermission = await requestPermission();
       if (!hasPermission) {
-        handleSpeechFailure("Microphone permission was denied.");
+        handleSpeechFailure('Microphone permission was denied.');
         return;
       }
 
@@ -355,11 +446,14 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
       if (DriveLegalSpeechRecognizer) {
         await DriveLegalSpeechRecognizer.startListening(userLanguage);
       } else {
-        handleSpeechFailure("Native SpeechRecognizer module unavailable.");
+        handleSpeechFailure('Native SpeechRecognizer module unavailable.');
       }
-
-    } catch (err: any) {
-      handleSpeechFailure(err.message || "Failed to initialize Speech Recognizer.");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Failed to initialize Speech Recognizer.';
+      handleSpeechFailure(message);
     }
   };
 
@@ -375,48 +469,78 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
   };
 
   const handleSpeechFailure = (errorMsg: string, errorCode?: number) => {
-    if (hasTranscriptRef.current) return;
+    if (hasTranscriptRef.current) {
+      return;
+    }
     setVoiceState('RETRY');
   };
 
   const getKeywordResponse = (text: string) => {
     const lower = text.toLowerCase();
-    if (lower.includes("speed limit")) {
-      return "📍 Speed Limit Regulations:\nUnder Section 112 of the Motor Vehicles Act, exceeding speed limits attracts a fine of ₹1,000 to ₹2,000 for LMV vehicles.";
+    if (lower.includes('speed limit')) {
+      return '📍 Speed Limit Regulations:\nUnder Section 112 of the Motor Vehicles Act, exceeding speed limits attracts a fine of ₹1,000 to ₹2,000 for LMV vehicles.';
     }
-    if (lower.includes("helmet fine") || lower.includes("helmet") || lower.includes("ஹெல்மெட்") || lower.includes("हेलमेट")) {
-      return "🪖 Helmet Violation Fine:\nUnder Section 194D of the Motor Vehicles Act, riding without a helmet attracts a fine of ₹1,000 and 3-month license disqualification.";
+    if (
+      lower.includes('helmet fine') ||
+      lower.includes('helmet') ||
+      lower.includes('ஹெல்மெட்') ||
+      lower.includes('हेलमेट')
+    ) {
+      return '🪖 Helmet Violation Fine:\nUnder Section 194D of the Motor Vehicles Act, riding without a helmet attracts a fine of ₹1,000 and 3-month license disqualification.';
     }
-    if (lower.includes("parking") || lower.includes("park")) {
+    if (lower.includes('parking') || lower.includes('park')) {
       return "🚗 Parking Regulations:\nParking in a designated 'No Parking' zone attracts a fine of ₹500 under Section 122/177 of the Motor Vehicles Act, plus towing fees.";
     }
-    if (lower.includes("police station") || lower.includes("police") || lower.includes("காவல் நிலையம்") || lower.includes("पुलिस")) {
-      return "🚓 Nearest Police Station:\nLocated 500m ahead at Gandhipuram Junction. Dial 100 for immediate emergency dispatch.";
+    if (
+      lower.includes('police station') ||
+      lower.includes('police') ||
+      lower.includes('காவல் நிலையம்') ||
+      lower.includes('पुलिस')
+    ) {
+      return '🚓 Nearest Police Station:\nLocated 500m ahead at Gandhipuram Junction. Dial 100 for immediate emergency dispatch.';
     }
-    if (lower.includes("emergency") || lower.includes("sos") || lower.includes("accident")) {
-      return "🚨 Emergency SOS Active:\nEmergency response services notified. Dial 108 for medical trauma support.";
+    if (
+      lower.includes('emergency') ||
+      lower.includes('sos') ||
+      lower.includes('accident')
+    ) {
+      return '🚨 Emergency SOS Active:\nEmergency response services notified. Dial 108 for medical trauma support.';
     }
-    if (lower.includes("ev charging") || lower.includes("ev") || lower.includes("charging")) {
-      return "🔌 EV charging rules:\nParking standard non-EVs in designated charging ports attracts a ₹500 fine and towing.";
+    if (
+      lower.includes('ev charging') ||
+      lower.includes('ev') ||
+      lower.includes('charging')
+    ) {
+      return '🔌 EV charging rules:\nParking standard non-EVs in designated charging ports attracts a ₹500 fine and towing.';
     }
     return null;
   };
 
   const processSpeechText = async (transcribedText: string) => {
-    if (!transcribedText || transcribedText.trim().length === 0) return;
-    if (hasSubmittedRef.current) return;
+    if (!transcribedText || transcribedText.trim().length === 0) {
+      return;
+    }
+    if (hasSubmittedRef.current) {
+      return;
+    }
     try {
       hasSubmittedRef.current = true;
       hasTranscriptRef.current = true;
       setVoiceState('UNDERSTANDING');
 
       // Add user transcript to history
-      setMessages(prev => [...prev, {
-        id: String(Date.now()),
-        sender: 'user',
-        text: transcribedText,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: String(Date.now()),
+          sender: 'user',
+          text: transcribedText,
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        },
+      ]);
 
       const keywordResponse = getKeywordResponse(transcribedText);
       if (keywordResponse) {
@@ -434,13 +558,21 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
           state: userState,
           city: geoInfo?.city || undefined,
           district: geoInfo?.district || undefined,
-        }
+        },
+        navigationContext: navigationState.getContext(),
       });
 
       if (result.status === 'success') {
-        const textResponse = result.response_text || result.fallback_response_text || 'No matches found.';
-        if (result.detected_language) setDetectedLang(result.detected_language);
-        if (result.confidence !== undefined) setConfidenceScore(Math.round(result.confidence * 100));
+        const textResponse =
+          result.response_text ||
+          result.fallback_response_text ||
+          'No matches found.';
+        if (result.detected_language) {
+          setDetectedLang(result.detected_language);
+        }
+        if (result.confidence !== undefined) {
+          setConfidenceScore(Math.round(result.confidence * 100));
+        }
         speakBotResponse(textResponse);
       } else {
         setVoiceState('RETRY');
@@ -452,18 +584,26 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
   };
 
   const processTextQuery = async (queryText: string) => {
-    if (!queryText.trim()) return;
+    if (!queryText.trim()) {
+      return;
+    }
     try {
       await stopSpeechPlayback();
       clearSpeechMonitoring();
-      
+
       setVoiceState('UNDERSTANDING');
-      setMessages(prev => [...prev, {
-        id: String(Date.now()),
-        sender: 'user',
-        text: queryText,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: String(Date.now()),
+          sender: 'user',
+          text: queryText,
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        },
+      ]);
 
       const result = await executeQuery({
         action: 'query',
@@ -475,13 +615,21 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
           state: userState,
           city: geoInfo?.city || undefined,
           district: geoInfo?.district || undefined,
-        }
+        },
+        navigationContext: navigationState.getContext(),
       });
 
       if (result.status === 'success') {
-        const textResponse = result.response_text || result.fallback_response_text || 'No matches found in database.';
-        if (result.detected_language) setDetectedLang(result.detected_language);
-        if (result.confidence !== undefined) setConfidenceScore(Math.round(result.confidence * 100));
+        const textResponse =
+          result.response_text ||
+          result.fallback_response_text ||
+          'No matches found in database.';
+        if (result.detected_language) {
+          setDetectedLang(result.detected_language);
+        }
+        if (result.confidence !== undefined) {
+          setConfidenceScore(Math.round(result.confidence * 100));
+        }
         speakBotResponse(textResponse);
       } else {
         setVoiceState('RETRY');
@@ -498,12 +646,18 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
       clearSpeechMonitoring();
 
       setVoiceState('UNDERSTANDING');
-      setMessages(prev => [...prev, {
-        id: String(Date.now()),
-        sender: 'user',
-        text: query,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: String(Date.now()),
+          sender: 'user',
+          text: query,
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        },
+      ]);
 
       const result = await executeQuery({
         action: 'query',
@@ -515,11 +669,15 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
           state: userState,
           city: geoInfo?.city || undefined,
           district: geoInfo?.district || undefined,
-        }
+        },
+        navigationContext: navigationState.getContext(),
       });
 
       if (result.status === 'success') {
-        const textResponse = result.response_text || result.fallback_response_text || 'No matches found.';
+        const textResponse =
+          result.response_text ||
+          result.fallback_response_text ||
+          'No matches found.';
         speakBotResponse(textResponse);
       } else {
         setVoiceState('RETRY');
@@ -533,14 +691,20 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
   const speakBotResponse = async (text: string) => {
     try {
       setVoiceState('RESPONDING');
-      
+
       // Append AI response bubble to dialog list
-      setMessages(prev => [...prev, {
-        id: String(Date.now()),
-        sender: 'ai',
-        text: text,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: String(Date.now()),
+          sender: 'ai',
+          text: text,
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        },
+      ]);
 
       if (DriveLegalTTS) {
         await DriveLegalTTS.speak(text, userLanguage);
@@ -552,7 +716,7 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
             if (!speaking) {
               clearSpeechMonitoring();
               setVoiceState('READY');
-              
+
               if (isHandsFree) {
                 setTimeout(() => {
                   startAudioRecording();
@@ -572,13 +736,20 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
 
   const getLanguageLabel = (code: string) => {
     switch (code) {
-      case 'ta': return 'தமிழ்';
-      case 'hi': return 'हिंदी';
-      case 'te': return 'తెలుగు';
-      case 'kn': return 'ಕನ್ನಡ';
-      case 'ml': return 'മലയാളം';
-      case 'en': return 'English';
-      default: return code ? code.toUpperCase() : 'English';
+      case 'ta':
+        return 'தமிழ்';
+      case 'hi':
+        return 'हिंदी';
+      case 'te':
+        return 'తెలుగు';
+      case 'kn':
+        return 'ಕನ್ನಡ';
+      case 'ml':
+        return 'മലയാളം';
+      case 'en':
+        return 'English';
+      default:
+        return code ? code.toUpperCase() : 'English';
     }
   };
 
@@ -593,11 +764,14 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
 
       {/* Futuristic AI Co-Driver Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => {
-          stopSpeechPlayback();
-          clearSpeechMonitoring();
-          navigation.goBack();
-        }}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => {
+            stopSpeechPlayback();
+            clearSpeechMonitoring();
+            navigation.goBack();
+          }}
+        >
           <ArrowLeft size={22} color="#FFFFFF" />
         </TouchableOpacity>
         <View style={styles.headerTitleRow}>
@@ -606,24 +780,27 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
         </View>
         <View style={styles.locationBadge}>
           <Text style={styles.locationBadgeText}>
-            📍 {geoInfo ? getJurisdictionLabel(geoInfo) : getStateName(userState)}
+            📍{' '}
+            {geoInfo ? getJurisdictionLabel(geoInfo) : getStateName(userState)}
           </Text>
         </View>
       </View>
 
       {/* ChatGPT-style Conversational Scroll Area */}
-      <ScrollView 
+      <ScrollView
         ref={scrollViewRef}
         style={styles.messageScroll}
         contentContainerStyle={styles.messageScrollContent}
         showsVerticalScrollIndicator={false}
       >
         {messages.map((msg) => (
-          <View 
-            key={msg.id} 
+          <View
+            key={msg.id}
             style={[
               styles.messageRow,
-              msg.sender === 'user' ? styles.messageRowUser : styles.messageRowAi
+              msg.sender === 'user'
+                ? styles.messageRowUser
+                : styles.messageRowAi,
             ]}
           >
             {msg.sender === 'ai' && (
@@ -631,13 +808,19 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
                 <Sparkles size={14} color="#00FFC2" />
               </View>
             )}
-            <View style={[
-              styles.messageBubble,
-              msg.sender === 'user' ? styles.bubbleUser : styles.bubbleAi
-            ]}>
+            <View
+              style={[
+                styles.messageBubble,
+                msg.sender === 'user' ? styles.bubbleUser : styles.bubbleAi,
+              ]}
+            >
               <Text style={styles.messageText}>{msg.text}</Text>
               <View style={styles.bubbleMeta}>
-                <Clock size={10} color="rgba(255,255,255,0.4)" style={{ marginRight: 4 }} />
+                <Clock
+                  size={10}
+                  color="rgba(255,255,255,0.4)"
+                  style={{ marginRight: 4 }}
+                />
                 <Text style={styles.metaText}>{msg.timestamp}</Text>
               </View>
             </View>
@@ -647,9 +830,19 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
         {/* Real-time listening transcription preview */}
         {voiceState === 'LISTENING' && (
           <View style={[styles.messageRow, styles.messageRowUser]}>
-            <View style={[styles.messageBubble, styles.bubbleUser, { opacity: 0.8 }]}>
+            <View
+              style={[
+                styles.messageBubble,
+                styles.bubbleUser,
+                { opacity: 0.8 },
+              ]}
+            >
               <View style={styles.listeningRow}>
-                <ActivityIndicator size="small" color="#00FFC2" style={{ marginRight: 8 }} />
+                <ActivityIndicator
+                  size="small"
+                  color="#00FFC2"
+                  style={{ marginRight: 8 }}
+                />
                 <Text style={styles.messageText}>{userTranscript}</Text>
               </View>
             </View>
@@ -662,21 +855,29 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
         {voiceState === 'READY' && (
           <View style={styles.readyIndicator}>
             <View style={styles.greenPulseDot} />
-            <Text style={styles.stateSubtitle}>Ready to assist in Tamil, Hindi & English</Text>
+            <Text style={styles.stateSubtitle}>
+              Ready to assist in Tamil, Hindi & English
+            </Text>
           </View>
         )}
 
         {voiceState === 'UNDERSTANDING' && (
           <View style={styles.loadingContainer}>
-            <Animated.View style={[styles.spinningRing, { transform: [{ rotate: spin }] }]} />
-            <Text style={styles.understandingText}>RoadMind RAG Analyzer...</Text>
+            <Animated.View
+              style={[styles.spinningRing, { transform: [{ rotate: spin }] }]}
+            />
+            <Text style={styles.understandingText}>
+              RoadMind RAG Analyzer...
+            </Text>
           </View>
         )}
 
         {voiceState === 'RETRY' && (
           <View style={styles.retryPromptBox}>
             <HelpCircle size={18} color="#FF9F43" />
-            <Text style={styles.retryPromptText}>I didn't catch that. Tap the mic to try again.</Text>
+            <Text style={styles.retryPromptText}>
+              I didn't catch that. Tap the mic to try again.
+            </Text>
           </View>
         )}
       </View>
@@ -684,14 +885,22 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
       {/* Suggested chips panel (Shown in Ready/Retry states) */}
       {(voiceState === 'READY' || voiceState === 'RETRY') && (
         <View style={styles.suggestedContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestedChipsRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.suggestedChipsRow}
+          >
             {QUICK_COMMANDS.map((item, idx) => (
               <TouchableOpacity
                 key={idx}
                 style={styles.suggestionChip}
                 onPress={() => processQuickCommand(item.query)}
               >
-                <Sparkles size={12} color="#00FFC2" style={{ marginRight: 6 }} />
+                <Sparkles
+                  size={12}
+                  color="#00FFC2"
+                  style={{ marginRight: 6 }}
+                />
                 <Text style={styles.suggestionChipText}>{item.text}</Text>
               </TouchableOpacity>
             ))}
@@ -702,16 +911,22 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
       {/* ChatGPT inspired Central Interactive Orb area */}
       {voiceState !== 'UNDERSTANDING' && (
         <View style={styles.orbArea}>
-          <Animated.View style={[
-            styles.glowCircle,
-            { 
-              opacity: glowOpacity,
-              transform: [{ scale: pulseScale }],
-              backgroundColor: voiceState === 'LISTENING' ? '#FF1744' : 
-                               voiceState === 'RESPONDING' ? '#00FFC2' : '#1F2937'
-            }
-          ]} />
-          
+          <Animated.View
+            style={[
+              styles.glowCircle,
+              {
+                opacity: glowOpacity,
+                transform: [{ scale: pulseScale }],
+                backgroundColor:
+                  voiceState === 'LISTENING'
+                    ? '#FF1744'
+                    : voiceState === 'RESPONDING'
+                    ? '#00FFC2'
+                    : '#1F2937',
+              },
+            ]}
+          />
+
           <TouchableOpacity
             onPress={handleMicrophoneAction}
             style={[
@@ -731,9 +946,11 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
           </TouchableOpacity>
 
           <Text style={styles.voiceStateLabel}>
-            {voiceState === 'LISTENING' ? 'Listening now...' :
-             voiceState === 'RESPONDING' ? 'AI co-pilot speaking (Tap to mute)' :
-             'Tap Orb to Speak'}
+            {voiceState === 'LISTENING'
+              ? 'Listening now...'
+              : voiceState === 'RESPONDING'
+              ? 'AI co-pilot speaking (Tap to mute)'
+              : 'Tap Orb to Speak'}
           </Text>
         </View>
       )}
@@ -750,12 +967,17 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
               thumbColor={isHandsFree ? '#00FFC2' : '#9CA3AF'}
             />
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.keyboardToggleBtn}
             onPress={() => setShowTextInput(!showTextInput)}
           >
             <Keyboard size={18} color={showTextInput ? '#00FFC2' : '#9CA3AF'} />
-            <Text style={[styles.keyboardToggleText, showTextInput && { color: '#00FFC2' }]}>
+            <Text
+              style={[
+                styles.keyboardToggleText,
+                showTextInput && { color: '#00FFC2' },
+              ]}
+            >
               {showTextInput ? 'Voice' : 'Type'}
             </Text>
           </TouchableOpacity>
@@ -775,7 +997,7 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
                 setShowTextInput(false);
               }}
             />
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.hudSendBtn}
               onPress={() => {
                 processTextQuery(inputText);
@@ -792,10 +1014,10 @@ export const VoiceAssistantScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0F19',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -805,12 +1027,12 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 50 : 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomColor: colors.border,
   },
   backButton: {
     padding: 8,
     borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: colors.border,
   },
   headerTitleRow: {
     flexDirection: 'row',
@@ -820,7 +1042,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 14,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     letterSpacing: 2,
   },
   locationBadge: {
@@ -834,7 +1056,7 @@ const styles = StyleSheet.create({
   locationBadgeText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#00FFC2',
+    color: colors.cyan,
   },
 
   // Conversational Scroll Area
@@ -880,13 +1102,13 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   bubbleUser: {
-    backgroundColor: '#1E293B',
+    backgroundColor: colors.border,
     borderWidth: 0.5,
     borderColor: 'rgba(255, 255, 255, 0.08)',
     borderTopRightRadius: 4,
   },
   bubbleAi: {
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.surface,
     borderWidth: 0.5,
     borderColor: 'rgba(0, 255, 194, 0.15)',
     borderTopLeftRadius: 4,
@@ -894,7 +1116,7 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 14,
-    color: '#F3F4F6',
+    color: colors.textPrimary,
     fontWeight: '600',
     lineHeight: 21,
   },
@@ -906,7 +1128,7 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 9,
-    color: 'rgba(255, 255, 255, 0.4)',
+    color: colors.textSecondary,
     fontWeight: '700',
   },
   listeningRow: {
@@ -963,7 +1185,7 @@ const styles = StyleSheet.create({
   understandingText: {
     fontSize: 11,
     fontWeight: '900',
-    color: '#00FFC2',
+    color: colors.cyan,
     letterSpacing: 0.5,
   },
   retryPromptBox: {
@@ -996,15 +1218,15 @@ const styles = StyleSheet.create({
   suggestionChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 15,
   },
   suggestionChipText: {
-    color: '#CBD5E1',
+    color: colors.textPrimary,
     fontSize: 11,
     fontWeight: '900',
   },
@@ -1026,7 +1248,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#1E293B',
+    backgroundColor: colors.border,
     borderWidth: 1.5,
     borderColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
@@ -1048,7 +1270,7 @@ const styles = StyleSheet.create({
   voiceStateLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: 'rgba(255, 255, 255, 0.4)',
+    color: colors.textSecondary,
     marginTop: 10,
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -1058,9 +1280,9 @@ const styles = StyleSheet.create({
   bottomControlBar: {
     paddingHorizontal: 18,
     paddingBottom: Platform.OS === 'ios' ? 34 : 16,
-    backgroundColor: '#070A11',
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+    borderTopColor: colors.border,
   },
   handsFreeRow: {
     flexDirection: 'row',
@@ -1076,7 +1298,7 @@ const styles = StyleSheet.create({
   switchLabel: {
     fontSize: 12,
     fontWeight: '900',
-    color: '#9CA3AF',
+    color: colors.textSecondary,
   },
   keyboardToggleBtn: {
     flexDirection: 'row',
@@ -1084,13 +1306,13 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 6,
     paddingHorizontal: 12,
-    backgroundColor: '#111827',
+    backgroundColor: colors.background,
     borderRadius: 12,
     borderWidth: 0.5,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   keyboardToggleText: {
-    color: '#9CA3AF',
+    color: colors.textSecondary,
     fontSize: 11,
     fontWeight: '900',
   },
@@ -1099,16 +1321,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginTop: 4,
-    backgroundColor: '#111827',
+    backgroundColor: colors.background,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(0, 255, 194, 0.25)',
+    borderColor: colors.cyan,
     paddingHorizontal: 12,
     height: 44,
   },
   hudTextInput: {
     flex: 1,
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     fontSize: 13,
     fontWeight: '700',
   },

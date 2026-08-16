@@ -1,6 +1,19 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+/**
+ * Offline Cache
+ *
+ * AsyncStorage-based key-value cache for offline operation. Stores:
+ * - rules:            Traffic violation rules
+ * - regions:          Jurisdiction/state geometry
+ * - emergencyContacts: Nearby emergency locations
+ * - advisories:       AI advisories and announcements
+ * - settings:         User preferences
+ * - lastSync:         Timestamp of last successful Convex sync
+ *
+ * All data is local to the device and survives app restarts.
+ */
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const CACHE_PREFIX = "@drivelegal:";
+const CACHE_PREFIX = '@drivelegal:';
 
 export const cacheKeys = {
   rules: (regionId: string) => `${CACHE_PREFIX}rules:${regionId}`,
@@ -27,7 +40,7 @@ export const offlineCache = {
     try {
       await AsyncStorage.setItem(key, JSON.stringify(value));
     } catch (e) {
-      console.warn("offlineCache.set error:", key, e);
+      console.warn('offlineCache.set error:', key, e);
     }
   },
 
@@ -35,19 +48,19 @@ export const offlineCache = {
     try {
       await AsyncStorage.removeItem(key);
     } catch (e) {
-      console.warn("offlineCache.remove error:", key, e);
+      console.warn('offlineCache.remove error:', key, e);
     }
   },
 
   async clearAll(): Promise<void> {
     try {
       const keys = await AsyncStorage.getAllKeys();
-      const cacheKeys = keys.filter((k) => k.startsWith(CACHE_PREFIX));
-      if (cacheKeys.length > 0) {
-        await AsyncStorage.multiRemove(cacheKeys);
+      const scopedKeys = keys.filter((k) => k.startsWith(CACHE_PREFIX));
+      if (scopedKeys.length > 0) {
+        await AsyncStorage.multiRemove(scopedKeys);
       }
     } catch (e) {
-      console.warn("offlineCache.clearAll error:", e);
+      console.warn('offlineCache.clearAll error:', e);
     }
   },
 

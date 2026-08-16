@@ -1,4 +1,4 @@
-import { ConvexReactClient } from "convex/react";
+import { ConvexReactClient } from 'convex/react';
 
 /**
  * Convex client for online AI features (Claude API).
@@ -8,7 +8,7 @@ import { ConvexReactClient } from "convex/react";
 
 let CONVEX_URL: string | null = null;
 
-if (typeof process !== "undefined" && process.env?.CONVEX_URL) {
+if (typeof process !== 'undefined' && process.env?.CONVEX_URL) {
   CONVEX_URL = process.env.CONVEX_URL;
 }
 

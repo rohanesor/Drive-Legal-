@@ -1,20 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StatusBar, 
-  ActivityIndicator, 
-  NativeModules, 
-  Platform, 
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  StatusBar,
+  ActivityIndicator,
+  NativeModules,
+  Platform,
   PermissionsAndroid,
   Animated,
   Easing,
   TextInput,
   Switch,
   ScrollView,
-  DeviceEventEmitter
+  DeviceEventEmitter,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -23,7 +23,15 @@ import { useLocation } from '../../context/LocationContext';
 import { useAppMode } from '../../hooks/useAppMode';
 import { executeQuery } from '../../services/pythonBridge';
 import { CAR_COLORS, CAR_TYPOGRAPHY, CAR_SPACING } from '../../constants/theme';
-import { Mic, ArrowLeft, Volume2, Circle, AlertCircle, Keyboard, Send, Sparkles, RefreshCw } from 'lucide-react-native';
+import {
+  Mic,
+  ArrowLeft,
+  Volume2,
+  AlertCircle,
+  Keyboard,
+  Send,
+  Sparkles,
+} from 'lucide-react-native';
 
 const { DriveLegalTTS, DriveLegalSpeechRecognizer } = NativeModules;
 
@@ -32,13 +40,16 @@ type VoiceState = 'IDLE' | 'LISTENING' | 'THINKING' | 'SPEAKING';
 export const CarVoiceScreen = () => {
   const navigation = useNavigation();
   const userState = useSelector((state: RootState) => state.settings.state);
-  const userLanguage = useSelector((state: RootState) => state.settings.language) || 'en';
+  const userLanguage =
+    useSelector((state: RootState) => state.settings.language) || 'en';
   const { location, geoInfo } = useLocation();
   const { preferences } = useAppMode();
 
   const [voiceState, setVoiceState] = useState<VoiceState>('IDLE');
   const [userTranscript, setUserTranscript] = useState('');
-  const [botResponseText, setBotResponseText] = useState('DriveTalk Active\nTap the mic and speak.');
+  const [botResponseText, setBotResponseText] = useState(
+    'DriveTalk Active\nTap the mic and speak.',
+  );
   const [inputText, setInputText] = useState('');
   const [showTextInput, setShowTextInput] = useState(false);
 
@@ -57,40 +68,60 @@ export const CarVoiceScreen = () => {
   const speechEndTimeoutRef = useRef<any>(null);
 
   useEffect(() => {
-    let interval: any = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
     if (voiceState === 'THINKING') {
       setThinkingStep(1);
       interval = setInterval(() => {
-        setThinkingStep(prev => (prev < 3 ? prev + 1 : 3));
+        setThinkingStep((prev) => (prev < 3 ? prev + 1 : 3));
       }, 950);
     } else {
       setThinkingStep(1);
     }
     return () => {
-      if (interval) clearInterval(interval);
+      if (interval) {
+        clearInterval(interval);
+      }
     };
   }, [voiceState]);
 
   const getKeywordResponse = (text: string) => {
     const lower = text.toLowerCase();
-    
-    if (lower.includes("speed limit")) {
-      return "📍 Speed Limit Regulations:\nUnder Section 112 of the Motor Vehicles Act, exceeding speed limits attracts a fine of ₹1,000 to ₹2,000 for light motor vehicles, and license suspension for repeat offenses.";
+
+    if (lower.includes('speed limit')) {
+      return '📍 Speed Limit Regulations:\nUnder Section 112 of the Motor Vehicles Act, exceeding speed limits attracts a fine of ₹1,000 to ₹2,000 for light motor vehicles, and license suspension for repeat offenses.';
     }
-    if (lower.includes("helmet fine") || lower.includes("helmet") || lower.includes("ஹெல்மெட்") || lower.includes("हेलमेट")) {
-      return "🪖 Helmet Violation Fine:\nUnder Section 194D of the Motor Vehicles Act, riding without a helmet attracts a fine of ₹1,000 and disqualification of your driving license for 3 months.";
+    if (
+      lower.includes('helmet fine') ||
+      lower.includes('helmet') ||
+      lower.includes('ஹெல்மெட்') ||
+      lower.includes('हेलमेट')
+    ) {
+      return '🪖 Helmet Violation Fine:\nUnder Section 194D of the Motor Vehicles Act, riding without a helmet attracts a fine of ₹1,000 and disqualification of your driving license for 3 months.';
     }
-    if (lower.includes("parking") || lower.includes("park")) {
+    if (lower.includes('parking') || lower.includes('park')) {
       return "🚗 Parking Regulations:\nParking in a designated 'No Parking' zone or causing obstruction attracts a fine of ₹500 under Section 122/177 of the Motor Vehicles Act, plus towing charges.";
     }
-    if (lower.includes("police station") || lower.includes("police") || lower.includes("காவல் நிலையம்") || lower.includes("पुलिस")) {
-      return "🚓 Police Assistance:\nThe nearest police station is situated 500 meters ahead at Gandhipuram Junction. Dial 100 for immediate emergency police dispatch.";
+    if (
+      lower.includes('police station') ||
+      lower.includes('police') ||
+      lower.includes('காவல் நிலையம்') ||
+      lower.includes('पुलिस')
+    ) {
+      return '🚓 Police Assistance:\nThe nearest police station is situated 500 meters ahead at Gandhipuram Junction. Dial 100 for immediate emergency police dispatch.';
     }
-    if (lower.includes("emergency") || lower.includes("sos") || lower.includes("accident")) {
-      return "🚨 Emergency SOS Active:\nEmergency response services notified. Dial 108 for ambulance or 112 for national emergency services. Proceed with safety.";
+    if (
+      lower.includes('emergency') ||
+      lower.includes('sos') ||
+      lower.includes('accident')
+    ) {
+      return '🚨 Emergency SOS Active:\nEmergency response services notified. Dial 108 for ambulance or 112 for national emergency services. Proceed with safety.';
     }
-    if (lower.includes("ev charging") || lower.includes("ev") || lower.includes("charging")) {
-      return "🔌 EV Charging Zone Rules:\nParking non-EV vehicles in designated EV charging bays is a violation attracting a ₹500 fine and immediate towing of the offending vehicle.";
+    if (
+      lower.includes('ev charging') ||
+      lower.includes('ev') ||
+      lower.includes('charging')
+    ) {
+      return '🔌 EV Charging Zone Rules:\nParking non-EV vehicles in designated EV charging bays is a violation attracting a ₹500 fine and immediate towing of the offending vehicle.';
     }
     return null;
   };
@@ -99,23 +130,29 @@ export const CarVoiceScreen = () => {
     const time = new Date().toLocaleTimeString();
     const formatted = `[${time}] ${msg}`;
     console.log(formatted);
-    setSttLogs(prev => [formatted, ...prev].slice(0, 15));
+    setSttLogs((prev) => [formatted, ...prev].slice(0, 15));
   };
 
   const getLanguageLabel = (code: string) => {
     switch (code) {
-      case 'ta': return '🇮🇳 தமிழ் (Tamil)';
-      case 'hi': return '🇮🇳 हिंदी (Hindi)';
-      case 'te': return '🇮🇳 తెలుగు (Telugu)';
-      case 'kn': return '🇮🇳 ಕನ್ನಡ (Kannada)';
-      case 'ml': return '🇮🇳 മലയാളം (Malayalam)';
-      case 'en': return '🇬🇧 English';
-      default: return code ? code.toUpperCase() : 'Unknown';
+      case 'ta':
+        return '🇮🇳 தமிழ் (Tamil)';
+      case 'hi':
+        return '🇮🇳 हिंदी (Hindi)';
+      case 'te':
+        return '🇮🇳 తెలుగు (Telugu)';
+      case 'kn':
+        return '🇮🇳 ಕನ್ನಡ (Kannada)';
+      case 'ml':
+        return '🇮🇳 മലയാളം (Malayalam)';
+      case 'en':
+        return '🇬🇧 English';
+      default:
+        return code ? code.toUpperCase() : 'Unknown';
     }
   };
 
   // Timing refs
-  const recordingTimer = useRef<any>(null);
   const isSpeakingCheckInterval = useRef<any>(null);
 
   // Simple clean animation values
@@ -123,6 +160,8 @@ export const CarVoiceScreen = () => {
   const glowOpacity = useRef(new Animated.Value(0.15)).current;
 
   // Pulse loop for visual state feedback
+  // This effect owns the long-lived voice animation loop.
+
   useEffect(() => {
     let pulseLoop: Animated.CompositeAnimation;
     let glowLoop: Animated.CompositeAnimation;
@@ -130,80 +169,133 @@ export const CarVoiceScreen = () => {
     if (voiceState === 'LISTENING') {
       pulseLoop = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseScale, { toValue: 1.15, duration: 600, useNativeDriver: true, easing: Easing.ease }),
-          Animated.timing(pulseScale, { toValue: 1.0, duration: 600, useNativeDriver: true, easing: Easing.ease }),
-        ])
+          Animated.timing(pulseScale, {
+            toValue: 1.15,
+            duration: 600,
+            useNativeDriver: true,
+            easing: Easing.ease,
+          }),
+          Animated.timing(pulseScale, {
+            toValue: 1.0,
+            duration: 600,
+            useNativeDriver: true,
+            easing: Easing.ease,
+          }),
+        ]),
       );
       glowLoop = Animated.loop(
         Animated.sequence([
-          Animated.timing(glowOpacity, { toValue: 0.7, duration: 600, useNativeDriver: true }),
-          Animated.timing(glowOpacity, { toValue: 0.15, duration: 600, useNativeDriver: true }),
-        ])
+          Animated.timing(glowOpacity, {
+            toValue: 0.7,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowOpacity, {
+            toValue: 0.15,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+        ]),
       );
       pulseLoop.start();
       glowLoop.start();
     } else if (voiceState === 'SPEAKING') {
       pulseLoop = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseScale, { toValue: 1.08, duration: 800, useNativeDriver: true, easing: Easing.ease }),
-          Animated.timing(pulseScale, { toValue: 1.0, duration: 800, useNativeDriver: true, easing: Easing.ease }),
-        ])
+          Animated.timing(pulseScale, {
+            toValue: 1.08,
+            duration: 800,
+            useNativeDriver: true,
+            easing: Easing.ease,
+          }),
+          Animated.timing(pulseScale, {
+            toValue: 1.0,
+            duration: 800,
+            useNativeDriver: true,
+            easing: Easing.ease,
+          }),
+        ]),
       );
       glowLoop = Animated.loop(
         Animated.sequence([
-          Animated.timing(glowOpacity, { toValue: 0.5, duration: 800, useNativeDriver: true }),
-          Animated.timing(glowOpacity, { toValue: 0.1, duration: 800, useNativeDriver: true }),
-        ])
+          Animated.timing(glowOpacity, {
+            toValue: 0.5,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowOpacity, {
+            toValue: 0.1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ]),
       );
       pulseLoop.start();
       glowLoop.start();
     }
 
     return () => {
-      if (pulseLoop) pulseLoop.stop();
-      if (glowLoop) glowLoop.stop();
+      if (pulseLoop) {
+        pulseLoop.stop();
+      }
+      if (glowLoop) {
+        glowLoop.stop();
+      }
     };
   }, [voiceState]);
 
   // Mount logic: verify SpeechRecognizer is active on device
+  // This effect wires native speech listeners once per language/config change.
+
   useEffect(() => {
     const checkSpeechServices = async () => {
       try {
         if (DriveLegalSpeechRecognizer) {
-          const available = await DriveLegalSpeechRecognizer.isSpeechServicesAvailable();
+          const available =
+            await DriveLegalSpeechRecognizer.isSpeechServicesAvailable();
           setSpeechAvailable(available);
-          addLog(available ? "Android Speech Services: ACTIVE" : "Android Speech Services: OFFLINE");
+          addLog(
+            available
+              ? 'Android Speech Services: ACTIVE'
+              : 'Android Speech Services: OFFLINE',
+          );
         } else {
           setSpeechAvailable(false);
-          addLog("DriveLegalSpeechRecognizer Module not found.");
+          addLog('DriveLegalSpeechRecognizer Module not found.');
         }
       } catch (e) {
         setSpeechAvailable(false);
-        addLog("Failed to query Speech Services.");
+        addLog('Failed to query Speech Services.');
       }
     };
     checkSpeechServices();
 
     // Register Android Native SpeechRecognizer JNI event listeners
     const onStart = DeviceEventEmitter.addListener('onSpeechStart', () => {
-      addLog("Speech recognition ready. Microphone is listening.");
+      addLog('Speech recognition ready. Microphone is listening.');
       setVoiceState('LISTENING');
     });
 
     const onBegan = DeviceEventEmitter.addListener('onSpeechBegan', () => {
-      addLog("Speaking started: user voice energy detected.");
+      addLog('Speaking started: user voice energy detected.');
     });
 
     const onEnd = DeviceEventEmitter.addListener('onSpeechEnd', () => {
-      addLog("Speech ended: user stopped talking.");
+      addLog('Speech ended: user stopped talking.');
       // Safety timeout: if onSpeechResults doesn't arrive within 2.5s,
       // submit whatever partial transcript we have
-      if (speechEndTimeoutRef.current) clearTimeout(speechEndTimeoutRef.current);
+      if (speechEndTimeoutRef.current) {
+        clearTimeout(speechEndTimeoutRef.current);
+      }
       speechEndTimeoutRef.current = setTimeout(() => {
-        addLog("Speech End safety timeout fired — checking for pending transcript");
+        addLog(
+          'Speech End safety timeout fired — checking for pending transcript',
+        );
         const pending = latestTranscriptRef.current?.trim();
         if (pending && pending.length > 0 && !hasSubmittedRef.current) {
-          addLog(`Submitting partial transcript via safety timeout: "${pending}"`);
+          addLog(
+            `Submitting partial transcript via safety timeout: "${pending}"`,
+          );
           processSpeechText(pending);
         } else if (!hasSubmittedRef.current) {
           // No transcript at all — transition to IDLE so UI isn't stuck
@@ -213,15 +305,18 @@ export const CarVoiceScreen = () => {
       }, 2500);
     });
 
-    const onPartial = DeviceEventEmitter.addListener('onSpeechPartialResults', (e) => {
-      const match = e.value && e.value[0];
-      if (match) {
-        hasTranscriptRef.current = true;
-        latestTranscriptRef.current = match;
-        setUserTranscript(match);
-        addLog(`Partial: "${match}"`);
-      }
-    });
+    const onPartial = DeviceEventEmitter.addListener(
+      'onSpeechPartialResults',
+      (e) => {
+        const match = e.value && e.value[0];
+        if (match) {
+          hasTranscriptRef.current = true;
+          latestTranscriptRef.current = match;
+          setUserTranscript(match);
+          addLog(`Partial: "${match}"`);
+        }
+      },
+    );
 
     const onResults = DeviceEventEmitter.addListener('onSpeechResults', (e) => {
       // Cancel safety timeout since we got real results
@@ -239,9 +334,9 @@ export const CarVoiceScreen = () => {
           processSpeechText(match);
         }
       } else {
-        addLog("Speech results empty.");
+        addLog('Speech results empty.');
         if (!hasTranscriptRef.current && !hasSubmittedRef.current) {
-          handleSpeechFailure("No match found.");
+          handleSpeechFailure('No match found.');
         }
       }
     });
@@ -253,8 +348,13 @@ export const CarVoiceScreen = () => {
         speechEndTimeoutRef.current = null;
       }
       addLog(`Speech Error [Code: ${e.code}]: ${e.message}`);
-      if (hasTranscriptRef.current && latestTranscriptRef.current.trim().length > 0) {
-        addLog(`Ignored error [Code ${e.code}]. Auto-submitting captured partial transcript: "${latestTranscriptRef.current}"`);
+      if (
+        hasTranscriptRef.current &&
+        latestTranscriptRef.current.trim().length > 0
+      ) {
+        addLog(
+          `Ignored error [Code ${e.code}]. Auto-submitting captured partial transcript: "${latestTranscriptRef.current}"`,
+        );
         autoRetryCount.current = 0;
         if (!hasSubmittedRef.current) {
           processSpeechText(latestTranscriptRef.current);
@@ -306,25 +406,32 @@ export const CarVoiceScreen = () => {
 
   const requestAudioPermission = async (): Promise<boolean> => {
     if (Platform.OS === 'android') {
-      addLog("Checking microphone permission...");
-      const hasPermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
+      addLog('Checking microphone permission...');
+      const hasPermission = await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+      );
       if (hasPermission) {
-        addLog("Microphone Permission: GRANTED");
+        addLog('Microphone Permission: GRANTED');
         return true;
       }
 
-      addLog("Microphone Permission: NOT GRANTED. Requesting...");
+      addLog('Microphone Permission: NOT GRANTED. Requesting...');
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
         {
           title: 'Microphone Access',
-          message: 'RoadMind AI needs microphone access to listen to driver voice queries.',
+          message:
+            'RoadMind AI needs microphone access to listen to driver voice queries.',
           buttonPositive: 'Allow',
           buttonNegative: 'Deny',
-        }
+        },
       );
       const isGranted = granted === PermissionsAndroid.RESULTS.GRANTED;
-      addLog(isGranted ? "Microphone Permission: APPROVED / GRANTED" : "Microphone Permission: DENIED");
+      addLog(
+        isGranted
+          ? 'Microphone Permission: APPROVED / GRANTED'
+          : 'Microphone Permission: DENIED',
+      );
       return isGranted;
     }
     return true;
@@ -351,7 +458,7 @@ export const CarVoiceScreen = () => {
     try {
       const hasPermission = await requestAudioPermission();
       if (!hasPermission) {
-        handleSpeechFailure("Microphone permission denied.");
+        handleSpeechFailure('Microphone permission denied.');
         return;
       }
 
@@ -371,17 +478,20 @@ export const CarVoiceScreen = () => {
         addLog(`Starting native listener in language: ${userLanguage}`);
         await DriveLegalSpeechRecognizer.startListening(userLanguage);
       } else {
-        handleSpeechFailure("Native Speech Recognizer module missing.");
+        handleSpeechFailure('Native Speech Recognizer module missing.');
       }
-
-    } catch (err: any) {
-      handleSpeechFailure(err.message || "Failed to initialize Speech Recognizer.");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Failed to initialize Speech Recognizer.';
+      handleSpeechFailure(message);
     }
   };
 
   const stopRecordingFlow = async () => {
     try {
-      addLog("Stopping listener...");
+      addLog('Stopping listener...');
       if (DriveLegalSpeechRecognizer) {
         await DriveLegalSpeechRecognizer.stopListening();
       }
@@ -393,16 +503,22 @@ export const CarVoiceScreen = () => {
 
   const handleSpeechFailure = (errorMsg: string, errorCode?: number) => {
     if (hasTranscriptRef.current) {
-      addLog("Speech failure ignored because valid transcript was already captured.");
+      addLog(
+        'Speech failure ignored because valid transcript was already captured.',
+      );
       return;
     }
     setVoiceState('IDLE');
     setSpeechError(errorMsg);
-    setBotResponseText("Could not hear clearly. Tap to retry.");
+    setBotResponseText('Could not hear clearly. Tap to retry.');
     setShowMicFailFallback(true);
 
     // Auto-retry once under hands-free
-    if (preferences.autoVoice && autoRetryCount.current < 1 && (errorCode === 7 || errorCode === 6 || errorCode === 8)) {
+    if (
+      preferences.autoVoice &&
+      autoRetryCount.current < 1 &&
+      (errorCode === 7 || errorCode === 6 || errorCode === 8)
+    ) {
       autoRetryCount.current += 1;
       addLog(`Speech timeout. Auto-retrying #${autoRetryCount.current}...`);
       setTimeout(() => {
@@ -413,7 +529,9 @@ export const CarVoiceScreen = () => {
 
   const processSpeechText = async (transcribedText: string) => {
     try {
-      if (hasSubmittedRef.current) return;
+      if (hasSubmittedRef.current) {
+        return;
+      }
       hasSubmittedRef.current = true;
       hasTranscriptRef.current = true;
       setVoiceState('THINKING');
@@ -424,14 +542,14 @@ export const CarVoiceScreen = () => {
       // Keyword routing local fast-path bypass
       const keywordResponse = getKeywordResponse(transcribedText);
       if (keywordResponse) {
-        addLog("Local Router: Keyword matched! Bypassing Python RAG.");
-        addLog("RoadMind AI: Request Sent...");
-        addLog("RoadMind AI: Response Received successfully (Fast-Path).");
+        addLog('Local Router: Keyword matched! Bypassing Python RAG.');
+        addLog('RoadMind AI: Request Sent...');
+        addLog('RoadMind AI: Response Received successfully (Fast-Path).');
         speakResponse(keywordResponse);
         return;
       }
 
-      addLog("RoadMind AI: Request Sent...");
+      addLog('RoadMind AI: Request Sent...');
       const result = await executeQuery({
         action: 'query',
         text: transcribedText,
@@ -443,12 +561,15 @@ export const CarVoiceScreen = () => {
           state: userState,
           city: geoInfo?.city || undefined,
           district: geoInfo?.district || undefined,
-        }
+        },
       });
 
       if (result.status === 'success') {
-        const textResponse = result.response_text || result.fallback_response_text || 'No matches found.';
-        
+        const textResponse =
+          result.response_text ||
+          result.fallback_response_text ||
+          'No matches found.';
+
         if (result.detected_language) {
           setDetectedLang(result.detected_language);
         }
@@ -456,7 +577,7 @@ export const CarVoiceScreen = () => {
           setConfidenceScore(Math.round(result.confidence * 100));
         }
 
-        addLog("RoadMind AI: Response Received successfully.");
+        addLog('RoadMind AI: Response Received successfully.');
         speakResponse(textResponse);
       } else {
         setVoiceState('IDLE');
@@ -466,21 +587,23 @@ export const CarVoiceScreen = () => {
     } catch (e) {
       console.error('Voice processing failure:', e);
       setVoiceState('IDLE');
-      setBotResponseText("Error processing speech.");
+      setBotResponseText('Error processing speech.');
       setShowMicFailFallback(true);
     }
   };
 
   const processTextQuery = async (queryText: string) => {
-    if (!queryText.trim()) return;
+    if (!queryText.trim()) {
+      return;
+    }
     try {
       await stopSpeechPlayback();
       clearSpeechMonitoring();
-      
+
       setVoiceState('THINKING');
       setUserTranscript(`"${queryText}"`);
       setBotResponseText('Thinking...');
-      
+
       const result = await executeQuery({
         action: 'query',
         text: queryText,
@@ -492,11 +615,14 @@ export const CarVoiceScreen = () => {
           state: userState,
           city: geoInfo?.city || undefined,
           district: geoInfo?.district || undefined,
-        }
+        },
       });
 
       if (result.status === 'success') {
-        const textResponse = result.response_text || result.fallback_response_text || 'No matches found.';
+        const textResponse =
+          result.response_text ||
+          result.fallback_response_text ||
+          'No matches found.';
         speakResponse(textResponse);
       } else {
         setVoiceState('IDLE');
@@ -512,11 +638,10 @@ export const CarVoiceScreen = () => {
   const speakResponse = async (text: string) => {
     try {
       setVoiceState('SPEAKING');
-      
+
       // Enforce driving-safe absolute maximum string boundary of 90 characters
-      const conciseText = text.length > 90 
-        ? text.substring(0, 87) + '...' 
-        : text;
+      const conciseText =
+        text.length > 90 ? text.substring(0, 87) + '...' : text;
 
       setBotResponseText(conciseText);
 
@@ -548,8 +673,8 @@ export const CarVoiceScreen = () => {
 
       {/* Header Area */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
           onPress={() => {
             stopSpeechPlayback();
             clearSpeechMonitoring();
@@ -561,8 +686,18 @@ export const CarVoiceScreen = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>DriveTalk (Voice)</Text>
         <View style={styles.speechStatusCol}>
-          <View style={[styles.statusIndicator, { backgroundColor: speechAvailable ? '#22C55E' : '#EF4444' }]} />
-          <Text style={[styles.statusText, { color: speechAvailable ? '#22C55E' : '#EF4444' }]}>
+          <View
+            style={[
+              styles.statusIndicator,
+              { backgroundColor: speechAvailable ? '#22C55E' : '#EF4444' },
+            ]}
+          />
+          <Text
+            style={[
+              styles.statusText,
+              { color: speechAvailable ? '#22C55E' : '#EF4444' },
+            ]}
+          >
             {speechAvailable ? 'ACTIVE' : 'OFFLINE'}
           </Text>
         </View>
@@ -570,8 +705,6 @@ export const CarVoiceScreen = () => {
 
       {/* Displays user speech query and answers */}
       <View style={styles.displayArea}>
-
-
         {/* Multilingual Telemetry Status Row */}
         {(detectedLang !== '' || confidenceScore !== null) && (
           <View style={styles.telemetryRow}>
@@ -583,7 +716,15 @@ export const CarVoiceScreen = () => {
               </View>
             )}
             {confidenceScore !== null && (
-              <View style={[styles.telemetryBadge, { borderColor: 'rgba(34, 197, 94, 0.4)', backgroundColor: 'rgba(34, 197, 94, 0.08)' }]}>
+              <View
+                style={[
+                  styles.telemetryBadge,
+                  {
+                    borderColor: 'rgba(34, 197, 94, 0.4)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.08)',
+                  },
+                ]}
+              >
                 <Text style={[styles.telemetryBadgeText, { color: '#4ADE80' }]}>
                   {confidenceScore}% Accuracy
                 </Text>
@@ -593,38 +734,75 @@ export const CarVoiceScreen = () => {
         )}
 
         {/* You Said Raw Transcribed Panel */}
-        {userTranscript.length > 0 && userTranscript !== 'Listening...' && userTranscript !== 'Thinking...' && (
-          <View style={styles.youSaidContainer}>
-            <Text style={styles.youSaidHeader}>You Said:</Text>
-            <Text style={styles.youSaidText}>{userTranscript}</Text>
-          </View>
-        )}
-        
+        {userTranscript.length > 0 &&
+          userTranscript !== 'Listening...' &&
+          userTranscript !== 'Thinking...' && (
+            <View style={styles.youSaidContainer}>
+              <Text style={styles.youSaidHeader}>You Said:</Text>
+              <Text style={styles.youSaidText}>{userTranscript}</Text>
+            </View>
+          )}
+
         {voiceState === 'THINKING' ? (
           <View style={styles.thinkingContainer}>
             <View style={styles.thinkingStep}>
-              <Text style={[styles.thinkingStepText, { color: '#22C55E' }]}>Voice Captured ✓</Text>
+              <Text style={[styles.thinkingStepText, { color: '#22C55E' }]}>
+                Voice Captured ✓
+              </Text>
             </View>
             <View style={styles.thinkingStep}>
               {thinkingStep >= 2 ? (
-                <Text style={[styles.thinkingStepText, { color: '#22C55E' }]}>Understanding Request ✓</Text>
+                <Text style={[styles.thinkingStepText, { color: '#22C55E' }]}>
+                  Understanding Request ✓
+                </Text>
               ) : (
                 <View style={styles.thinkingStepRow}>
-                  <ActivityIndicator size="small" color={CAR_COLORS.accent} style={{ marginRight: 8 }} />
-                  <Text style={[styles.thinkingStepText, { color: CAR_COLORS.accent }]}>Understanding Request...</Text>
+                  <ActivityIndicator
+                    size="small"
+                    color={CAR_COLORS.accent}
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text
+                    style={[
+                      styles.thinkingStepText,
+                      { color: CAR_COLORS.accent },
+                    ]}
+                  >
+                    Understanding Request...
+                  </Text>
                 </View>
               )}
             </View>
             <View style={styles.thinkingStep}>
               {thinkingStep >= 3 ? (
-                <Text style={[styles.thinkingStepText, { color: '#22C55E' }]}>Generating Legal Guidance ✓</Text>
+                <Text style={[styles.thinkingStepText, { color: '#22C55E' }]}>
+                  Generating Legal Guidance ✓
+                </Text>
               ) : thinkingStep === 2 ? (
                 <View style={styles.thinkingStepRow}>
-                  <ActivityIndicator size="small" color={CAR_COLORS.accent} style={{ marginRight: 8 }} />
-                  <Text style={[styles.thinkingStepText, { color: CAR_COLORS.accent }]}>Generating Legal Guidance...</Text>
+                  <ActivityIndicator
+                    size="small"
+                    color={CAR_COLORS.accent}
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text
+                    style={[
+                      styles.thinkingStepText,
+                      { color: CAR_COLORS.accent },
+                    ]}
+                  >
+                    Generating Legal Guidance...
+                  </Text>
                 </View>
               ) : (
-                <Text style={[styles.thinkingStepText, { color: 'rgba(255, 255, 255, 0.4)' }]}>Generating Legal Guidance...</Text>
+                <Text
+                  style={[
+                    styles.thinkingStepText,
+                    { color: 'rgba(255, 255, 255, 0.4)' },
+                  ]}
+                >
+                  Generating Legal Guidance...
+                </Text>
               )}
             </View>
           </View>
@@ -632,12 +810,16 @@ export const CarVoiceScreen = () => {
           <View style={styles.fallbackCard}>
             <View style={styles.fallbackHeader}>
               <AlertCircle size={28} color={CAR_COLORS.danger} />
-              <Text style={styles.fallbackHeaderText}>COULD NOT HEAR CLEARLY</Text>
+              <Text style={styles.fallbackHeaderText}>
+                COULD NOT HEAR CLEARLY
+              </Text>
             </View>
             <Text style={styles.fallbackBodyText}>
-              Reason: {speechError || "No speech detected. Please speak closer to microphone."}
+              Reason:{' '}
+              {speechError ||
+                'No speech detected. Please speak closer to microphone.'}
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.retryButton}
               onPress={() => {
                 setShowMicFailFallback(false);
@@ -649,21 +831,27 @@ export const CarVoiceScreen = () => {
             </TouchableOpacity>
           </View>
         ) : (
-          <Text style={styles.botText}>
-            {botResponseText}
-          </Text>
+          <Text style={styles.botText}>{botResponseText}</Text>
         )}
       </View>
 
       {/* Keyboard Input Toggler & Collapsible Bar */}
       <View style={styles.inputContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.keyboardToggleBtn}
           onPress={() => setShowTextInput(!showTextInput)}
           activeOpacity={0.8}
         >
-          <Keyboard size={20} color={showTextInput ? CAR_COLORS.accent : CAR_COLORS.textSecondary} />
-          <Text style={[styles.keyboardToggleText, showTextInput && { color: CAR_COLORS.accent }]}>
+          <Keyboard
+            size={20}
+            color={showTextInput ? CAR_COLORS.accent : CAR_COLORS.textSecondary}
+          />
+          <Text
+            style={[
+              styles.keyboardToggleText,
+              showTextInput && { color: CAR_COLORS.accent },
+            ]}
+          >
             {showTextInput ? 'Hide Input' : 'Type Message'}
           </Text>
         </TouchableOpacity>
@@ -682,7 +870,7 @@ export const CarVoiceScreen = () => {
                 setShowTextInput(false);
               }}
             />
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.hudSendBtn}
               onPress={() => {
                 processTextQuery(inputText);
@@ -699,24 +887,30 @@ export const CarVoiceScreen = () => {
       {/* Scrollable Diagnostics Log Terminal for Car Mode */}
       <View style={styles.diagnosticsContainer}>
         <View style={styles.diagnosticsHeader}>
-          <Text style={styles.diagnosticsTitle}>LIVE SPEECH DIAGNOSTICS LOGS</Text>
-          <TouchableOpacity 
+          <Text style={styles.diagnosticsTitle}>
+            LIVE SPEECH DIAGNOSTICS LOGS
+          </Text>
+          <TouchableOpacity
             style={styles.clearLogsBtn}
             onPress={() => setSttLogs([])}
           >
             <Text style={styles.clearLogsBtnText}>CLEAR</Text>
           </TouchableOpacity>
         </View>
-        <ScrollView 
+        <ScrollView
           style={styles.diagnosticsScroll}
           contentContainerStyle={styles.diagnosticsScrollContent}
           nestedScrollEnabled={true}
         >
           {sttLogs.length === 0 ? (
-            <Text style={styles.noLogsText}>No speech recognition events logged yet.</Text>
+            <Text style={styles.noLogsText}>
+              No speech recognition events logged yet.
+            </Text>
           ) : (
             sttLogs.map((log, index) => (
-              <Text key={index} style={styles.logLineText}>{log}</Text>
+              <Text key={index} style={styles.logLineText}>
+                {log}
+              </Text>
             ))
           )}
         </ScrollView>
@@ -733,7 +927,6 @@ export const CarVoiceScreen = () => {
             thumbColor={preferences.autoVoice ? CAR_COLORS.accent : '#f4f3f4'}
           />
         </View>
-
       </View>
 
       {/* Driving Safe Quick Suggestions */}
@@ -742,7 +935,7 @@ export const CarVoiceScreen = () => {
           {[
             { label: 'Helmet Fine', query: 'helmet fine' },
             { label: 'Speed Limit', query: 'speed limit' },
-            { label: 'Drunk Drive', query: 'drunk driving fine' }
+            { label: 'Drunk Drive', query: 'drunk driving fine' },
           ].map((chip, index) => (
             <TouchableOpacity
               key={index}
@@ -758,21 +951,29 @@ export const CarVoiceScreen = () => {
 
       {/* Premium Visual Voice Orb HUD */}
       <View style={styles.orbContainer}>
-        <Animated.View style={[
-          styles.pulseGlow,
-          { 
-            opacity: glowOpacity,
-            transform: [{ scale: pulseScale }]
-          },
-          voiceState === 'LISTENING' && { backgroundColor: CAR_COLORS.danger },
-          voiceState === 'SPEAKING' && { backgroundColor: CAR_COLORS.accent },
-          voiceState === 'THINKING' && { backgroundColor: CAR_COLORS.success },
-        ]} />
+        <Animated.View
+          style={[
+            styles.pulseGlow,
+            {
+              opacity: glowOpacity,
+              transform: [{ scale: pulseScale }],
+            },
+            voiceState === 'LISTENING' && {
+              backgroundColor: CAR_COLORS.danger,
+            },
+            voiceState === 'SPEAKING' && { backgroundColor: CAR_COLORS.accent },
+            voiceState === 'THINKING' && {
+              backgroundColor: CAR_COLORS.success,
+            },
+          ]}
+        />
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
             styles.touchOrb,
-            voiceState === 'LISTENING' && { backgroundColor: CAR_COLORS.danger },
+            voiceState === 'LISTENING' && {
+              backgroundColor: CAR_COLORS.danger,
+            },
             voiceState === 'SPEAKING' && { backgroundColor: CAR_COLORS.accent },
             voiceState === 'THINKING' && { backgroundColor: '#1E293B' },
           ]}
@@ -784,15 +985,21 @@ export const CarVoiceScreen = () => {
           ) : voiceState === 'SPEAKING' ? (
             <Volume2 size={44} color="#000000" />
           ) : (
-            <Mic size={44} color={voiceState === 'LISTENING' ? '#FFFFFF' : '#000000'} />
+            <Mic
+              size={44}
+              color={voiceState === 'LISTENING' ? '#FFFFFF' : '#000000'}
+            />
           )}
         </TouchableOpacity>
 
         <Text style={styles.stateSubtitle}>
-          {voiceState === 'LISTENING' ? '🔴 LISTENING...' :
-           voiceState === 'THINKING' ? '⚡ TRANSLATING...' :
-           voiceState === 'SPEAKING' ? '🔊 BOT SPEAKING' :
-           '🎤 TAP TO ASK'}
+          {voiceState === 'LISTENING'
+            ? '🔴 LISTENING...'
+            : voiceState === 'THINKING'
+            ? '⚡ TRANSLATING...'
+            : voiceState === 'SPEAKING'
+            ? '🔊 BOT SPEAKING'
+            : '🎤 TAP TO ASK'}
         </Text>
       </View>
     </View>

@@ -91,7 +91,7 @@ frontend_files = [
     'frontend/src/components/ConfidenceIndicator.tsx',
     'frontend/src/services/pythonBridge.ts',
     'frontend/src/services/backgroundService.ts',
-    'frontend/src/services/location.ts',
+    'frontend/src/services/locationService.ts',
     'frontend/src/services/storage.ts',
     'frontend/src/store/index.ts',
     'frontend/src/store/chatSlice.ts',

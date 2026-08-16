@@ -1,6 +1,6 @@
 /**
  * Settings Slice - Redux state for user preferences
- * 
+ *
  * Manages:
  * - language: UI and TTS language (en/ta/hi)
  * - state: Current Indian state for law lookup (TN/KN/AP/etc.)
@@ -10,23 +10,16 @@
  * - showDisclaimerAlways: Show legal disclaimer on every response
  */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-
-interface SettingsState {
-  language: 'en' | 'ta' | 'hi';
-  state: string;
-  darkMode: boolean;
-  notificationsEnabled: boolean;
-  locationAlertsEnabled: boolean;
-  showDisclaimerAlways: boolean;
-  preferredMode: 'auto' | 'mobile' | 'car';
-  autoModeDetection: boolean;
-}
+import type { SettingsState } from '../types';
 
 const initialState: SettingsState = {
   language: 'en',
-  state: 'TN',  // Default to Tamil Nadu
+  state: 'TN', // Default to Tamil Nadu
   darkMode: false,
   notificationsEnabled: true,
+  zoneAlertsNotificationEnabled: true,
+  speedWarningsNotificationEnabled: true,
+  remindersNotificationEnabled: true,
   locationAlertsEnabled: false,
   showDisclaimerAlways: false,
   preferredMode: 'auto',
@@ -49,13 +42,25 @@ const settingsSlice = createSlice({
     toggleNotifications: (state) => {
       state.notificationsEnabled = !state.notificationsEnabled;
     },
+    toggleZoneAlertsNotification: (state) => {
+      state.zoneAlertsNotificationEnabled = !state.zoneAlertsNotificationEnabled;
+    },
+    toggleSpeedWarningsNotification: (state) => {
+      state.speedWarningsNotificationEnabled = !state.speedWarningsNotificationEnabled;
+    },
+    toggleRemindersNotification: (state) => {
+      state.remindersNotificationEnabled = !state.remindersNotificationEnabled;
+    },
     toggleLocationAlerts: (state) => {
       state.locationAlertsEnabled = !state.locationAlertsEnabled;
     },
     toggleDisclaimerAlways: (state) => {
       state.showDisclaimerAlways = !state.showDisclaimerAlways;
     },
-    setPreferredMode: (state, action: PayloadAction<'auto' | 'mobile' | 'car'>) => {
+    setPreferredMode: (
+      state,
+      action: PayloadAction<'auto' | 'mobile' | 'car'>,
+    ) => {
       state.preferredMode = action.payload;
     },
     toggleAutoModeDetection: (state) => {
@@ -73,6 +78,9 @@ export const {
   setState,
   toggleDarkMode,
   toggleNotifications,
+  toggleZoneAlertsNotification,
+  toggleSpeedWarningsNotification,
+  toggleRemindersNotification,
   toggleLocationAlerts,
   toggleDisclaimerAlways,
   setPreferredMode,

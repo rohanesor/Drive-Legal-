@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StatusBar, 
-  Alert, 
-  Animated, 
-  Easing, 
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  StatusBar,
+  Alert,
+  Animated,
+  Easing,
   Platform,
   Dimensions,
   NativeModules,
@@ -17,7 +17,7 @@ import {
   Switch,
   ScrollView,
   ActivityIndicator,
-  Linking
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
@@ -26,15 +26,22 @@ import { useAppMode } from '../../hooks/useAppMode';
 import { dismissAlert, addAlert } from '../../store/alertSlice';
 import { RootState } from '../../store';
 import { CAR_COLORS, CAR_TYPOGRAPHY, CAR_SPACING } from '../../constants/theme';
-import { LocationMap, MapMarker, MapZone, MapLine } from '../../components/LocationMap';
+import {
+  LocationMap,
+  MapMarker,
+  MapZone,
+  MapLine,
+} from '../../components/LocationMap';
 import { executeQuery } from '../../services/pythonBridge';
-import { 
-  Mic, 
-  MapPin, 
-  AlertOctagon, 
-  Phone, 
-  Scale, 
-  ArrowLeft, 
+import { speedLimitService } from '../../services/speedLimitService';
+import { SpeedLimitDisplay } from '../../components/SpeedLimitDisplay';
+import {
+  Mic,
+  MapPin,
+  AlertOctagon,
+  Phone,
+  Scale,
+  ArrowLeft,
   CheckCircle,
   Wrench,
   Play,
@@ -44,15 +51,15 @@ import {
   Activity,
   Shield,
   Map,
-  Volume2, 
-  Circle, 
-  AlertCircle, 
-  Keyboard, 
-  Send, 
-  Sparkles, 
+  Volume2,
+  Circle,
+  AlertCircle,
+  Keyboard,
+  Send,
+  Sparkles,
   RefreshCw,
   Info,
-  Heart
+  Heart,
 } from 'lucide-react-native';
 
 const { DriveLegalTTS, DriveLegalSpeechRecognizer } = NativeModules;
@@ -62,53 +69,128 @@ const BASE_LAT = 11.0168;
 const BASE_LNG = 76.9558;
 
 export const CarDashboardScreen = () => {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation();
   const dispatch = useDispatch();
   const { switchMode } = useAppMode();
   const { location, geoInfo } = useLocation();
 
   // Active settings state
-  const userState = useSelector((state: RootState) => state.settings.state) || 'TN';
-  const userLanguage = useSelector((state: RootState) => state.settings.language) || 'en';
+  const userState =
+    useSelector((state: RootState) => state.settings.state) || 'TN';
+  const userLanguage =
+    useSelector((state: RootState) => state.settings.language) || 'en';
 
   // Active warning alerts
-  const activeAlert = useSelector((state: RootState) => state.alerts.activeAlert);
+  const activeAlert = useSelector(
+    (state: RootState) => state.alerts.activeAlert,
+  );
 
   // Speed parameters
-  const gpsSpeed = location && location.speed && location.speed > 0 
-    ? Math.round(location.speed * 3.6) 
-    : 0;
+  const gpsSpeed =
+    location && location.speed && location.speed > 0
+      ? Math.round(location.speed * 3.6)
+      : 0;
 
   // Cockpit map location state
-  const [cockpitLocation, setCockpitLocation] = useState<{ lat: number; lng: number; heading?: number }>({ lat: BASE_LAT, lng: BASE_LNG, heading: 42 });
+  const [cockpitLocation, setCockpitLocation] = useState<{
+    lat: number;
+    lng: number;
+    heading?: number;
+  }>({ lat: BASE_LAT, lng: BASE_LNG, heading: 42 });
 
   // Safety facilities map markers surrounding Coimbatore
   const [cockpitMarkers] = useState<MapMarker[]>([
-    { id: 'police_station_coimbatore', type: 'police', name: '🚓 Gandhipuram CP Junction Police', lat: 11.0180, lng: 76.9560, address: 'Gandhipuram Junction, Coimbatore', phone: '0422-2300250' },
-    { id: 'hospital_coimbatore', type: 'hospital', name: '🏥 Ganga Trauma Care Hospital', lat: 11.0210, lng: 76.9590, address: 'CMC Silent Zone Rd, Coimbatore', phone: '0422-2227000' },
-    { id: 'ev_charging_coimbatore', type: 'ev', name: '🔌 GreenCharge EV Bay', lat: 11.0160, lng: 76.9540, address: 'Cross Cut Road Terminal' },
-    { id: 'toll_coimbatore', type: 'border', name: '🎟️ FASTag NH Toll Gate', lat: 11.0225, lng: 76.9615 },
-    { id: 'school_zone_coimbatore', type: 'warning', name: '🚸 St. Pauls Silent Zone: 20 km/h', lat: 11.0200, lng: 76.9585 }
+    {
+      id: 'police_station_coimbatore',
+      type: 'police',
+      name: '🚓 Gandhipuram CP Junction Police',
+      lat: 11.018,
+      lng: 76.956,
+      address: 'Gandhipuram Junction, Coimbatore',
+      phone: '0422-2300250',
+    },
+    {
+      id: 'hospital_coimbatore',
+      type: 'hospital',
+      name: '🏥 Ganga Trauma Care Hospital',
+      lat: 11.021,
+      lng: 76.959,
+      address: 'CMC Silent Zone Rd, Coimbatore',
+      phone: '0422-2227000',
+    },
+    {
+      id: 'ev_charging_coimbatore',
+      type: 'ev',
+      name: '🔌 GreenCharge EV Bay',
+      lat: 11.016,
+      lng: 76.954,
+      address: 'Cross Cut Road Terminal',
+    },
+    {
+      id: 'toll_coimbatore',
+      type: 'border',
+      name: '🎟️ FASTag NH Toll Gate',
+      lat: 11.0225,
+      lng: 76.9615,
+    },
+    {
+      id: 'school_zone_coimbatore',
+      type: 'warning',
+      name: '🚸 St. Pauls Silent Zone: 20 km/h',
+      lat: 11.02,
+      lng: 76.9585,
+    },
   ]);
 
   const [cockpitZones] = useState<MapZone[]>([
-    { id: 'car_speed_zone', type: 'speed_camera', name: '⚡ Speed Radar Zone', coords: [{ lat: 11.0190, lng: 76.9580 }], radius: 150, severity: 'high' },
-    { id: 'car_no_park_zone', type: 'restricted_zone', name: '🚫 Towing Boundary', coords: [{ lat: 11.0150, lng: 76.9530 }], radius: 100, severity: 'medium' },
-    { id: 'car_hospital_zone', type: 'school_zone', name: '🏥 Silent Hospital Zone', coords: [{ lat: 11.0212, lng: 76.9602 }], radius: 200, severity: 'medium' }
+    {
+      id: 'car_speed_zone',
+      type: 'speed_camera',
+      name: '⚡ Speed Radar Zone',
+      coords: [{ lat: 11.019, lng: 76.958 }],
+      radius: 150,
+      severity: 'high',
+    },
+    {
+      id: 'car_no_park_zone',
+      type: 'restricted_zone',
+      name: '🚫 Towing Boundary',
+      coords: [{ lat: 11.015, lng: 76.953 }],
+      radius: 100,
+      severity: 'medium',
+    },
+    {
+      id: 'car_hospital_zone',
+      type: 'school_zone',
+      name: '🏥 Silent Hospital Zone',
+      coords: [{ lat: 11.0212, lng: 76.9602 }],
+      radius: 200,
+      severity: 'medium',
+    },
   ]);
 
   const [cockpitLines] = useState<MapLine[]>([
-    { id: 'state_border_1', name: '🗺️ TN-KA State Border Line', coords: [
-      { lat: 11.0230, lng: 76.9500 }, { lat: 11.0232, lng: 76.9622 }, { lat: 11.0235, lng: 76.9750 }
-    ], color: '#FF1744', dashed: true },
+    {
+      id: 'state_border_1',
+      name: '🗺️ TN-KA State Border Line',
+      coords: [
+        { lat: 11.023, lng: 76.95 },
+        { lat: 11.0232, lng: 76.9622 },
+        { lat: 11.0235, lng: 76.975 },
+      ],
+      color: '#FF1744',
+      dashed: true,
+    },
   ]);
 
   // Dynamic Telemetry States
-  const [speedLimit, setSpeedLimit] = useState(40);
-  const [activeTabOverlay, setActiveTabOverlay] = useState<'none' | 'talk' | 'fine' | 'parking' | 'sos'>('none');
-  const [routeTrail, setRouteTrail] = useState<{ latitude: number, longitude: number }[]>([
-    { latitude: BASE_LAT, longitude: BASE_LNG }
-  ]);
+  const [speedLimit, setSpeedLimit] = useState(50); // Default to 50 km/h (standard urban)
+  const [activeTabOverlay, setActiveTabOverlay] = useState<
+    'none' | 'talk' | 'fine' | 'parking' | 'sos'
+  >('none');
+  const [routeTrail, setRouteTrail] = useState<
+    { latitude: number; longitude: number }[]
+  >([{ latitude: BASE_LAT, longitude: BASE_LNG }]);
 
   const [telemetry, setTelemetry] = useState({
     bearing: 42,
@@ -116,7 +198,7 @@ export const CarDashboardScreen = () => {
     altitude: 411,
     satellites: 12,
     lat: BASE_LAT,
-    lng: BASE_LNG
+    lng: BASE_LNG,
   });
 
   // Animated scaling and glow values
@@ -125,16 +207,58 @@ export const CarDashboardScreen = () => {
   const glowOpacity = useRef(new Animated.Value(0.15)).current;
 
   // Waveform Animated Ref Array (6 lines)
-  const waveHeights = useRef(Array(6).fill(null).map(() => new Animated.Value(4))).current;
+  const waveHeights = useRef(
+    Array(6)
+      .fill(null)
+      .map(() => new Animated.Value(4)),
+  ).current;
+
+  // Fetch speed limit dynamically based on location and state
+  useEffect(() => {
+    let active = true;
+    const fetchSpeedLimit = async () => {
+      try {
+        const stateCode = geoInfo?.stateCode || userState || 'TN';
+        if (location && location.latitude && location.longitude) {
+          const res = await speedLimitService.getSpeedLimit(
+            location.latitude,
+            location.longitude,
+            stateCode,
+            'car'
+          );
+          if (active) {
+            setSpeedLimit(res.speedLimit);
+          }
+        } else {
+          const res = speedLimitService.getStateDefaultResult(stateCode, undefined, 'car');
+          if (active) {
+            setSpeedLimit(res.speedLimit);
+          }
+        }
+      } catch (err) {
+        console.warn('[CarDashboard] Failed to fetch speed limit:', err);
+      }
+    };
+
+    fetchSpeedLimit();
+
+    return () => {
+      active = false;
+    };
+  }, [location, userState, geoInfo]);
 
   const currentSpeed = gpsSpeed;
-  const isSpeeding = currentSpeed > speedLimit;
+  const isSpeeding = currentSpeed > speedLimit + 5;
 
   // ── VOICE ASSISTANT STATE & CONTROLS ──
-  const [voiceState, setVoiceState] = useState<'READY' | 'LISTENING' | 'UNDERSTANDING' | 'RESPONDING' | 'RETRY'>('READY');
+  const [voiceState, setVoiceState] = useState<
+    'READY' | 'LISTENING' | 'UNDERSTANDING' | 'RESPONDING' | 'RETRY'
+  >('READY');
 
   const [userTranscript, setUserTranscript] = useState('');
-  const [botResponseText, setBotResponseText] = useState('RoadMind AI co-driver Active.\nTap the mic and speak.');
+  const [botResponseText, setBotResponseText] = useState(
+    'RoadMind AI co-driver Active.\nTap the mic and speak.',
+  );
   const [inputText, setInputText] = useState('');
   const [showTextInput, setShowTextInput] = useState(false);
   const [detectedLang, setDetectedLang] = useState('');
@@ -155,13 +279,15 @@ export const CarDashboardScreen = () => {
   const hasSubmittedRef = useRef(false);
 
   // ── FINEIQ DYNAMIC CHECKLIST CALCULATOR STATE ──
-  const [checkedViolations, setCheckedViolations] = useState<{ [key: string]: boolean }>({
+  const [checkedViolations, setCheckedViolations] = useState<{
+    [key: string]: boolean;
+  }>({
     speeding: false,
     helmet: false,
     seatbelt: false,
     license: false,
     insurance: false,
-    drunk: false
+    drunk: false,
   });
 
   // Pulse effect loops for alert warnings
@@ -170,16 +296,26 @@ export const CarDashboardScreen = () => {
     if (isSpeeding || activeAlert) {
       alertLoop = Animated.loop(
         Animated.sequence([
-          Animated.timing(alertPulse, { toValue: 1.05, duration: 600, useNativeDriver: true }),
-          Animated.timing(alertPulse, { toValue: 1.0, duration: 600, useNativeDriver: true }),
-        ])
+          Animated.timing(alertPulse, {
+            toValue: 1.05,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+          Animated.timing(alertPulse, {
+            toValue: 1.0,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+        ]),
       );
       alertLoop.start();
     } else {
       alertPulse.setValue(1);
     }
     return () => {
-      if (alertLoop) alertLoop.stop();
+      if (alertLoop) {
+        alertLoop.stop();
+      }
     };
   }, [isSpeeding, activeAlert]);
 
@@ -192,15 +328,33 @@ export const CarDashboardScreen = () => {
     if (voiceState === 'LISTENING') {
       pulseLoop = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseScale, { toValue: 1.15, duration: 600, useNativeDriver: true, easing: Easing.ease }),
-          Animated.timing(pulseScale, { toValue: 1.0, duration: 600, useNativeDriver: true, easing: Easing.ease }),
-        ])
+          Animated.timing(pulseScale, {
+            toValue: 1.15,
+            duration: 600,
+            useNativeDriver: true,
+            easing: Easing.ease,
+          }),
+          Animated.timing(pulseScale, {
+            toValue: 1.0,
+            duration: 600,
+            useNativeDriver: true,
+            easing: Easing.ease,
+          }),
+        ]),
       );
       glowLoop = Animated.loop(
         Animated.sequence([
-          Animated.timing(glowOpacity, { toValue: 0.7, duration: 600, useNativeDriver: true }),
-          Animated.timing(glowOpacity, { toValue: 0.15, duration: 600, useNativeDriver: true }),
-        ])
+          Animated.timing(glowOpacity, {
+            toValue: 0.7,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowOpacity, {
+            toValue: 0.15,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+        ]),
       );
       pulseLoop.start();
       glowLoop.start();
@@ -208,25 +362,50 @@ export const CarDashboardScreen = () => {
       waveAnimations = waveHeights.map((val) => {
         return Animated.loop(
           Animated.sequence([
-            Animated.timing(val, { toValue: Math.random() * 32 + 10, duration: Math.random() * 250 + 150, useNativeDriver: false }),
-            Animated.timing(val, { toValue: 4, duration: Math.random() * 250 + 150, useNativeDriver: false })
-          ])
+            Animated.timing(val, {
+              toValue: Math.random() * 32 + 10,
+              duration: Math.random() * 250 + 150,
+              useNativeDriver: false,
+            }),
+            Animated.timing(val, {
+              toValue: 4,
+              duration: Math.random() * 250 + 150,
+              useNativeDriver: false,
+            }),
+          ]),
         );
       });
-      waveAnimations.forEach(a => a.start());
-
+      waveAnimations.forEach((a) => a.start());
     } else if (voiceState === 'RESPONDING') {
       pulseLoop = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseScale, { toValue: 1.08, duration: 800, useNativeDriver: true, easing: Easing.ease }),
-          Animated.timing(pulseScale, { toValue: 1.0, duration: 800, useNativeDriver: true, easing: Easing.ease }),
-        ])
+          Animated.timing(pulseScale, {
+            toValue: 1.08,
+            duration: 800,
+            useNativeDriver: true,
+            easing: Easing.ease,
+          }),
+          Animated.timing(pulseScale, {
+            toValue: 1.0,
+            duration: 800,
+            useNativeDriver: true,
+            easing: Easing.ease,
+          }),
+        ]),
       );
       glowLoop = Animated.loop(
         Animated.sequence([
-          Animated.timing(glowOpacity, { toValue: 0.5, duration: 800, useNativeDriver: true }),
-          Animated.timing(glowOpacity, { toValue: 0.1, duration: 800, useNativeDriver: true }),
-        ])
+          Animated.timing(glowOpacity, {
+            toValue: 0.5,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowOpacity, {
+            toValue: 0.1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ]),
       );
       pulseLoop.start();
       glowLoop.start();
@@ -234,39 +413,52 @@ export const CarDashboardScreen = () => {
       waveAnimations = waveHeights.map((val) => {
         return Animated.loop(
           Animated.sequence([
-            Animated.timing(val, { toValue: Math.random() * 20 + 8, duration: Math.random() * 350 + 250, useNativeDriver: false }),
-            Animated.timing(val, { toValue: 4, duration: Math.random() * 350 + 250, useNativeDriver: false })
-          ])
+            Animated.timing(val, {
+              toValue: Math.random() * 20 + 8,
+              duration: Math.random() * 350 + 250,
+              useNativeDriver: false,
+            }),
+            Animated.timing(val, {
+              toValue: 4,
+              duration: Math.random() * 350 + 250,
+              useNativeDriver: false,
+            }),
+          ]),
         );
       });
-      waveAnimations.forEach(a => a.start());
-
+      waveAnimations.forEach((a) => a.start());
     } else {
       pulseScale.setValue(1);
       glowOpacity.setValue(0.15);
-      waveHeights.forEach(val => val.setValue(4));
+      waveHeights.forEach((val) => val.setValue(4));
     }
 
     return () => {
-      if (pulseLoop) pulseLoop.stop();
-      if (glowLoop) glowLoop.stop();
-      waveAnimations.forEach(a => a.stop());
+      if (pulseLoop) {
+        pulseLoop.stop();
+      }
+      if (glowLoop) {
+        glowLoop.stop();
+      }
+      waveAnimations.forEach((a) => a.stop());
     };
   }, [voiceState]);
 
   // Voice thinking steps generator
   useEffect(() => {
-    let interval: any = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
     if (voiceState === 'UNDERSTANDING') {
       setThinkingStep(1);
       interval = setInterval(() => {
-        setThinkingStep(prev => (prev < 3 ? prev + 1 : 3));
+        setThinkingStep((prev) => (prev < 3 ? prev + 1 : 3));
       }, 950);
     } else {
       setThinkingStep(1);
     }
     return () => {
-      if (interval) clearInterval(interval);
+      if (interval) {
+        clearInterval(interval);
+      }
     };
   }, [voiceState]);
 
@@ -276,18 +468,20 @@ export const CarDashboardScreen = () => {
       const lat = location.latitude;
       const lng = location.longitude;
       const heading = location.heading || 0;
-      
-      setTelemetry(prev => ({
+
+      setTelemetry((prev) => ({
         ...prev,
         lat: lat,
         lng: lng,
         bearing: Math.round(heading),
-        altitude: location.altitude ? Math.round(location.altitude) : prev.altitude,
+        altitude: location.altitude
+          ? Math.round(location.altitude)
+          : prev.altitude,
       }));
 
       setCockpitLocation({ lat, lng, heading: Math.round(heading) });
 
-      setRouteTrail(prev => {
+      setRouteTrail((prev) => {
         const last = prev[prev.length - 1];
         const dist = Math.hypot(last.latitude - lat, last.longitude - lng);
         if (dist > 0.0001) {
@@ -303,40 +497,51 @@ export const CarDashboardScreen = () => {
     const checkSpeechServices = async () => {
       try {
         if (DriveLegalSpeechRecognizer) {
-          const available = await DriveLegalSpeechRecognizer.isSpeechServicesAvailable();
+          const available =
+            await DriveLegalSpeechRecognizer.isSpeechServicesAvailable();
           setSpeechAvailable(available);
-          addLog(available ? "Android Speech Services: ACTIVE" : "Android Speech Services: OFFLINE");
+          addLog(
+            available
+              ? 'Android Speech Services: ACTIVE'
+              : 'Android Speech Services: OFFLINE',
+          );
         } else {
           setSpeechAvailable(false);
-          addLog("DriveLegalSpeechRecognizer Module not found.");
+          addLog('DriveLegalSpeechRecognizer Module not found.');
         }
       } catch (e) {
         setSpeechAvailable(false);
-        addLog("Failed to query Speech Services.");
+        addLog('Failed to query Speech Services.');
       }
     };
     checkSpeechServices();
 
     // Native JNI event listeners registration
     const onStart = DeviceEventEmitter.addListener('onSpeechStart', () => {
-      addLog("Speech recognition ready. Microphone is listening.");
+      addLog('Speech recognition ready. Microphone is listening.');
       setVoiceState('LISTENING');
     });
 
     const onBegan = DeviceEventEmitter.addListener('onSpeechBegan', () => {
-      addLog("Speaking started: user voice energy detected.");
+      addLog('Speaking started: user voice energy detected.');
     });
 
     const onEnd = DeviceEventEmitter.addListener('onSpeechEnd', () => {
-      addLog("Speech ended: user stopped talking.");
+      addLog('Speech ended: user stopped talking.');
       // Safety timeout: if onSpeechResults doesn't arrive within 2.5s,
       // submit whatever partial transcript we have
-      if (speechEndTimeoutRef.current) clearTimeout(speechEndTimeoutRef.current);
+      if (speechEndTimeoutRef.current) {
+        clearTimeout(speechEndTimeoutRef.current);
+      }
       speechEndTimeoutRef.current = setTimeout(() => {
-        addLog("Speech End safety timeout fired — checking for pending transcript");
+        addLog(
+          'Speech End safety timeout fired — checking for pending transcript',
+        );
         const pending = latestTranscriptRef.current?.trim();
         if (pending && pending.length > 0 && !hasSubmittedRef.current) {
-          addLog(`Submitting partial transcript via safety timeout: "${pending}"`);
+          addLog(
+            `Submitting partial transcript via safety timeout: "${pending}"`,
+          );
           processSpeechText(pending);
         } else if (!hasSubmittedRef.current) {
           setVoiceState('READY');
@@ -345,18 +550,21 @@ export const CarDashboardScreen = () => {
       }, 2500);
     });
 
-    const onPartial = DeviceEventEmitter.addListener('onSpeechPartialResults', (e) => {
-      const match = e.value && e.value[0];
-      if (match) {
-        hasTranscriptRef.current = true;
-        latestTranscriptRef.current = match;
-        setUserTranscript(match);
-        addLog(`Partial: "${match}"`);
-        if (e.confidence !== undefined) {
-          setConfidenceScore(Math.round(e.confidence * 100));
+    const onPartial = DeviceEventEmitter.addListener(
+      'onSpeechPartialResults',
+      (e) => {
+        const match = e.value && e.value[0];
+        if (match) {
+          hasTranscriptRef.current = true;
+          latestTranscriptRef.current = match;
+          setUserTranscript(match);
+          addLog(`Partial: "${match}"`);
+          if (e.confidence !== undefined) {
+            setConfidenceScore(Math.round(e.confidence * 100));
+          }
         }
-      }
-    });
+      },
+    );
 
     const onResults = DeviceEventEmitter.addListener('onSpeechResults', (e) => {
       // Cancel safety timeout since we got real results
@@ -369,10 +577,12 @@ export const CarDashboardScreen = () => {
         hasTranscriptRef.current = true;
         latestTranscriptRef.current = match;
         addLog(`Final match: "${match}"`);
-        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+        }
         stopRecordingFlow(); // Auto-stop listening immediately on final results!
         autoRetryCount.current = 0;
-        
+
         if (e.confidence !== undefined) {
           setConfidenceScore(Math.round(e.confidence * 100));
         }
@@ -381,9 +591,9 @@ export const CarDashboardScreen = () => {
           processSpeechText(match);
         }
       } else {
-        addLog("Speech results empty.");
+        addLog('Speech results empty.');
         if (!hasTranscriptRef.current && !hasSubmittedRef.current) {
-          handleSpeechFailure("No match found.");
+          handleSpeechFailure('No match found.');
         }
       }
     });
@@ -396,9 +606,16 @@ export const CarDashboardScreen = () => {
       }
       addLog(`Speech Error [Code: ${e.code}]: ${e.message}`);
       // Treat as successful and submit if we got some transcript, or ignore trailing error code 5
-      if (latestTranscriptRef.current.trim().length > 0 || hasSubmittedRef.current || e.code === 5) {
+      if (
+        latestTranscriptRef.current.trim().length > 0 ||
+        hasSubmittedRef.current ||
+        e.code === 5
+      ) {
         autoRetryCount.current = 0;
-        if (latestTranscriptRef.current.trim().length > 0 && !hasSubmittedRef.current) {
+        if (
+          latestTranscriptRef.current.trim().length > 0 &&
+          !hasSubmittedRef.current
+        ) {
           processSpeechText(latestTranscriptRef.current);
         }
         return;
@@ -415,7 +632,9 @@ export const CarDashboardScreen = () => {
       onError.remove();
       stopSpeechPlayback();
       clearSpeechMonitoring();
-      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+      }
       if (speechEndTimeoutRef.current) {
         clearTimeout(speechEndTimeoutRef.current);
         speechEndTimeoutRef.current = null;
@@ -423,13 +642,11 @@ export const CarDashboardScreen = () => {
     };
   }, [userLanguage]);
 
-
-
   const addLog = (msg: string) => {
     const time = new Date().toLocaleTimeString();
     const formatted = `[${time}] ${msg}`;
     console.log(formatted);
-    setSttLogs(prev => [formatted, ...prev].slice(0, 10));
+    setSttLogs((prev) => [formatted, ...prev].slice(0, 10));
   };
 
   const clearSpeechMonitoring = () => {
@@ -451,16 +668,21 @@ export const CarDashboardScreen = () => {
 
   const requestAudioPermission = async (): Promise<boolean> => {
     if (Platform.OS === 'android') {
-      const hasPermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
-      if (hasPermission) return true;
+      const hasPermission = await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+      );
+      if (hasPermission) {
+        return true;
+      }
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
         {
           title: 'Microphone Access',
-          message: 'RoadMind AI needs microphone access to listen to driver voice queries.',
+          message:
+            'RoadMind AI needs microphone access to listen to driver voice queries.',
           buttonPositive: 'Allow',
           buttonNegative: 'Deny',
-        }
+        },
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     }
@@ -488,7 +710,7 @@ export const CarDashboardScreen = () => {
     try {
       const hasPermission = await requestAudioPermission();
       if (!hasPermission) {
-        handleSpeechFailure("Microphone permission denied.");
+        handleSpeechFailure('Microphone permission denied.');
         return;
       }
 
@@ -507,17 +729,20 @@ export const CarDashboardScreen = () => {
         addLog(`Starting native listener in language: ${userLanguage}`);
         await DriveLegalSpeechRecognizer.startListening(userLanguage);
       } else {
-        handleSpeechFailure("Native Speech Recognizer module missing.");
+        handleSpeechFailure('Native Speech Recognizer module missing.');
       }
-
-    } catch (err: any) {
-      handleSpeechFailure(err.message || "Failed to initialize Speech Recognizer.");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Failed to initialize Speech Recognizer.';
+      handleSpeechFailure(message);
     }
   };
 
   const stopRecordingFlow = async () => {
     try {
-      addLog("Stopping listener...");
+      addLog('Stopping listener...');
       if (DriveLegalSpeechRecognizer) {
         await DriveLegalSpeechRecognizer.stopListening();
       }
@@ -527,39 +752,71 @@ export const CarDashboardScreen = () => {
   };
 
   const handleSpeechFailure = (errorMsg: string, errorCode?: number) => {
-    if (hasTranscriptRef.current && latestTranscriptRef.current.trim().length > 0) {
+    if (
+      hasTranscriptRef.current &&
+      latestTranscriptRef.current.trim().length > 0
+    ) {
       return;
     }
     setVoiceState('RETRY');
     setSpeechError(errorMsg);
-    setBotResponseText("Could not hear clearly. Tap to retry.");
+    setBotResponseText('Could not hear clearly. Tap to retry.');
   };
 
   // Keyword fast path lookup
   const getKeywordResponse = (text: string) => {
     const lower = text.toLowerCase();
-    if (lower.includes("speed limit")) {
-      return "📍 Speed Limit Regulations:\nUnder Section 112 of the Motor Vehicles Act, exceeding speed limits attracts a fine of ₹500 for light motor vehicles, and suspension for repeat offenses.";
+    if (lower.includes('speed limit')) {
+      return '📍 Speed Limit Regulations:\nUnder Section 112 of the Motor Vehicles Act, exceeding speed limits attracts a fine of ₹500 for light motor vehicles, and suspension for repeat offenses.';
     }
-    if (lower.includes("helmet fine") || lower.includes("helmet") || lower.includes("ஹெல்மெட்") || lower.includes("हेलमेट")) {
-      const helmetVal = currentJurisdiction.includes('Anaimalai') ? '₹1,000' : '₹500';
-      return `🪖 Helmet Violation Fine:\nUnder Section 194D of the Motor Vehicles Act, riding without a helmet in ${currentJurisdiction.split(',')[0]} attracts a fine of ${helmetVal} and disqualification of your license for 3 months.`;
+    if (
+      lower.includes('helmet fine') ||
+      lower.includes('helmet') ||
+      lower.includes('ஹெல்மெட்') ||
+      lower.includes('हेलमेट')
+    ) {
+      const helmetVal = currentJurisdiction.includes('Anaimalai')
+        ? '₹1,000'
+        : '₹500';
+      return `🪖 Helmet Violation Fine:\nUnder Section 194D of the Motor Vehicles Act, riding without a helmet in ${
+        currentJurisdiction.split(',')[0]
+      } attracts a fine of ${helmetVal} and disqualification of your license for 3 months.`;
     }
-    if (lower.includes("parking") || lower.includes("park") || lower.includes("பார்க்கிங்") || lower.includes("पार्किंग")) {
+    if (
+      lower.includes('parking') ||
+      lower.includes('park') ||
+      lower.includes('பார்க்கிங்') ||
+      lower.includes('पार्किंग')
+    ) {
       return "🚗 Parking Regulations:\nParking in a designated 'No Parking' zone or causing obstruction attracts a fine of ₹500 under Section 122/177 of the Motor Vehicles Act, plus towing charges.";
     }
-    if (lower.includes("police station") || lower.includes("police") || lower.includes("காவல் நிலையம்") || lower.includes("पुलिस")) {
-      return "🚓 Police Assistance:\nThe nearest police station is situated 500 meters ahead at Gandhipuram Junction. Dial 100 for immediate emergency police dispatch.";
+    if (
+      lower.includes('police station') ||
+      lower.includes('police') ||
+      lower.includes('காவல் நிலையம்') ||
+      lower.includes('पुलिस')
+    ) {
+      return '🚓 Police Assistance:\nThe nearest police station is situated 500 meters ahead at Gandhipuram Junction. Dial 100 for immediate emergency police dispatch.';
     }
-    if (lower.includes("emergency") || lower.includes("sos") || lower.includes("accident") || lower.includes("உதவி") || lower.includes("आपातकालीन")) {
-      return "🚨 Emergency SOS Active:\nEmergency response services notified. Dial 108 for ambulance or 112 for national emergency services. Proceed with safety.";
+    if (
+      lower.includes('emergency') ||
+      lower.includes('sos') ||
+      lower.includes('accident') ||
+      lower.includes('உதவி') ||
+      lower.includes('आपातकालीन')
+    ) {
+      return '🚨 Emergency SOS Active:\nEmergency response services notified. Dial 108 for ambulance or 112 for national emergency services. Proceed with safety.';
     }
     return null;
   };
 
   const processSpeechText = async (transcribedText: string) => {
-    if (!transcribedText || transcribedText.trim().length === 0) return;
-    if (hasSubmittedRef.current) return;
+    if (!transcribedText || transcribedText.trim().length === 0) {
+      return;
+    }
+    if (hasSubmittedRef.current) {
+      return;
+    }
     try {
       hasSubmittedRef.current = true;
       hasTranscriptRef.current = true;
@@ -570,15 +827,15 @@ export const CarDashboardScreen = () => {
       // 1. Local keyword routing bypass
       const keywordResponse = getKeywordResponse(transcribedText);
       if (keywordResponse) {
-        addLog("Local Router: Keyword matched! Bypassing Python RAG.");
-        addLog("RoadMind AI: Request Sent...");
-        addLog("RoadMind AI: Response Received successfully (Fast-Path).");
+        addLog('Local Router: Keyword matched! Bypassing Python RAG.');
+        addLog('RoadMind AI: Request Sent...');
+        addLog('RoadMind AI: Response Received successfully (Fast-Path).');
         speakResponse(keywordResponse);
         return;
       }
 
       // 2. Python RAG Bridge Execution
-      addLog("RoadMind AI: Request Sent...");
+      addLog('RoadMind AI: Request Sent...');
       const result = await executeQuery({
         action: 'query',
         text: transcribedText,
@@ -590,12 +847,15 @@ export const CarDashboardScreen = () => {
           state: userState,
           city: geoInfo?.city || undefined,
           district: geoInfo?.district || undefined,
-        }
+        },
       });
 
       if (result.status === 'success') {
-        const textResponse = result.response_text || result.fallback_response_text || 'No matches found.';
-        
+        const textResponse =
+          result.response_text ||
+          result.fallback_response_text ||
+          'No matches found.';
+
         if (result.detected_language) {
           setDetectedLang(result.detected_language);
         }
@@ -603,7 +863,7 @@ export const CarDashboardScreen = () => {
           setConfidenceScore(Math.round(result.confidence * 100));
         }
 
-        addLog("RoadMind AI: Response Received successfully.");
+        addLog('RoadMind AI: Response Received successfully.');
         speakResponse(textResponse);
       } else {
         setVoiceState('RETRY');
@@ -612,20 +872,22 @@ export const CarDashboardScreen = () => {
     } catch (e) {
       console.error('Voice processing failure:', e);
       setVoiceState('RETRY');
-      setBotResponseText("Error processing speech.");
+      setBotResponseText('Error processing speech.');
     }
   };
 
   const processTextQuery = async (queryText: string) => {
-    if (!queryText.trim()) return;
+    if (!queryText.trim()) {
+      return;
+    }
     try {
       await stopSpeechPlayback();
       clearSpeechMonitoring();
-      
+
       setVoiceState('UNDERSTANDING');
       setUserTranscript(queryText);
       setBotResponseText('Thinking...');
-      
+
       const keywordResponse = getKeywordResponse(queryText);
       if (keywordResponse) {
         speakResponse(keywordResponse);
@@ -643,11 +905,14 @@ export const CarDashboardScreen = () => {
           state: userState,
           city: geoInfo?.city || undefined,
           district: geoInfo?.district || undefined,
-        }
+        },
       });
 
       if (result.status === 'success') {
-        const textResponse = result.response_text || result.fallback_response_text || 'No matches found.';
+        const textResponse =
+          result.response_text ||
+          result.fallback_response_text ||
+          'No matches found.';
         speakResponse(textResponse);
       } else {
         setVoiceState('RETRY');
@@ -663,9 +928,8 @@ export const CarDashboardScreen = () => {
   const speakResponse = async (text: string) => {
     try {
       setVoiceState('RESPONDING');
-      const conciseText = text.length > 110 
-        ? text.substring(0, 107) + '...' 
-        : text;
+      const conciseText =
+        text.length > 110 ? text.substring(0, 107) + '...' : text;
 
       setBotResponseText(conciseText);
 
@@ -693,31 +957,35 @@ export const CarDashboardScreen = () => {
 
   // ── DYNAMIC CHALLAN CALCULATOR HELPERS ──
   const toggleViolation = (key: string) => {
-    setCheckedViolations(prev => ({
+    setCheckedViolations((prev) => ({
       ...prev,
-      [key]: !prev[key]
+      [key]: !prev[key],
     }));
   };
 
-  const currentJurisdiction = geoInfo 
-    ? `${geoInfo.city || geoInfo.district || 'Coimbatore'}, ${geoInfo.stateCode || 'TN'}` 
+  const currentJurisdiction = geoInfo
+    ? `${geoInfo.city || geoInfo.district || 'Coimbatore'}, ${
+        geoInfo.stateCode || 'TN'
+      }`
     : 'Coimbatore, TN';
 
   const fineRates = useMemo(() => {
-    const isCoimbatore = currentJurisdiction.includes('Coimbatore') || currentJurisdiction.includes('Anaimalai');
+    const isCoimbatore =
+      currentJurisdiction.includes('Coimbatore') ||
+      currentJurisdiction.includes('Anaimalai');
     return {
       speeding: 500,
       helmet: isCoimbatore ? 1000 : 500,
       seatbelt: 500,
       license: 5000,
       insurance: 2000,
-      drunk: 10000
+      drunk: 10000,
     };
   }, [currentJurisdiction]);
 
   const totalCalculatedFine = useMemo(() => {
     let sum = 0;
-    Object.keys(checkedViolations).forEach(key => {
+    Object.keys(checkedViolations).forEach((key) => {
       if (checkedViolations[key]) {
         sum += fineRates[key as keyof typeof fineRates] || 0;
       }
@@ -733,12 +1001,16 @@ export const CarDashboardScreen = () => {
     } catch (e) {}
   };
 
-  const handleQuickActionPress = (panelName: 'none' | 'talk' | 'fine' | 'parking' | 'sos') => {
+  const handleQuickActionPress = (
+    panelName: 'none' | 'talk' | 'fine' | 'parking' | 'sos',
+  ) => {
     triggerHapticFeedback();
     stopSpeechPlayback();
     clearSpeechMonitoring();
-    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-    
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+    }
+
     if (activeTabOverlay === panelName) {
       setActiveTabOverlay('none');
     } else {
@@ -754,7 +1026,10 @@ export const CarDashboardScreen = () => {
   const handleDial = (number: string) => {
     triggerHapticFeedback();
     Linking.openURL(`tel:${number}`).catch(() => {
-      Alert.alert('Unsupported', 'Voice calls not supported on this vehicle dashboard.');
+      Alert.alert(
+        'Unsupported',
+        'Voice calls not supported on this vehicle dashboard.',
+      );
     });
   };
 
@@ -764,8 +1039,8 @@ export const CarDashboardScreen = () => {
 
       {/* HEADER SECTION */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
           onPress={() => {
             stopSpeechPlayback();
             clearSpeechMonitoring();
@@ -774,8 +1049,8 @@ export const CarDashboardScreen = () => {
               'Switch back to standard Mobile Mode?',
               [
                 { text: 'Cancel', style: 'cancel' },
-                { text: 'Exit Mode', onPress: () => switchMode('mobile') }
-              ]
+                { text: 'Exit Mode', onPress: () => switchMode('mobile') },
+              ],
             );
           }}
         >
@@ -792,7 +1067,11 @@ export const CarDashboardScreen = () => {
       {/* SECTION 1: LIVE ROADMAP CONSOLE (35% HEIGHT) */}
       <View style={styles.mapWrapper}>
         <LocationMap
-          currentLocation={{ lat: cockpitLocation.lat, lng: cockpitLocation.lng, heading: cockpitLocation.heading }}
+          currentLocation={{
+            lat: cockpitLocation.lat,
+            lng: cockpitLocation.lng,
+            heading: cockpitLocation.heading,
+          }}
           mapType="cockpit"
           markers={cockpitMarkers}
           zones={cockpitZones}
@@ -808,10 +1087,16 @@ export const CarDashboardScreen = () => {
             <Info size={12} color={CAR_COLORS.accent} />
             <Text style={styles.insightTitle}>REGION INSIGHT</Text>
           </View>
-          <Text style={styles.insightState}>{currentJurisdiction.split(',')[1]?.trim() === 'KN' ? 'Karnataka' : 'Tamil Nadu'}</Text>
+          <Text style={styles.insightState}>
+            {currentJurisdiction.split(',')[1]?.trim() === 'KN'
+              ? 'Karnataka'
+              : 'Tamil Nadu'}
+          </Text>
           <View style={styles.insightRuleRow}>
             <Text style={styles.insightRuleBullet}>• 🪖 Helmet Mandatory</Text>
-            <Text style={styles.insightRuleBullet}>• 🚗 Seatbelt Mandatory</Text>
+            <Text style={styles.insightRuleBullet}>
+              • 🚗 Seatbelt Mandatory
+            </Text>
           </View>
           <View style={styles.insightDivider} />
           <Text style={styles.insightDetails}>Nearest Police: 500m</Text>
@@ -832,30 +1117,31 @@ export const CarDashboardScreen = () => {
 
       {/* SECTION 2: SPEEDOMETER & TELEMETRY */}
       <View style={styles.dashboardGrid}>
-        <View style={[
-          styles.speedometerCard,
-          { borderColor: isSpeeding ? CAR_COLORS.danger : '#1B263B' }
-        ]}>
+        <View
+          style={[
+            styles.speedometerCard,
+            { borderColor: isSpeeding ? CAR_COLORS.danger : '#1B263B' },
+          ]}
+        >
           <View style={styles.speedCol}>
             <Text style={styles.speedLabel}>SPEED</Text>
-            <Text style={[
-              styles.speedNumber,
-              { color: isSpeeding ? CAR_COLORS.danger : '#FFFFFF' }
-            ]}>
+            <Text
+              style={[
+                styles.speedNumber,
+                { color: isSpeeding ? CAR_COLORS.danger : '#FFFFFF' },
+              ]}
+            >
               {currentSpeed}
             </Text>
             <Text style={styles.speedUnit}>km/h</Text>
           </View>
-          
+
           <View style={styles.limitCol}>
-            <View style={[
-              styles.circularSpeedLimitSign,
-              isSpeeding && { borderColor: CAR_COLORS.danger }
-            ]}>
-              <Text style={[styles.speedLimitNumberText, isSpeeding && { color: CAR_COLORS.danger }]}>
-                {speedLimit}
-              </Text>
-            </View>
+            <SpeedLimitDisplay
+              speedLimit={speedLimit}
+              isSpeeding={isSpeeding}
+              size={44}
+            />
             <Text style={styles.speedLimitLabel}>MAX LIMIT</Text>
           </View>
         </View>
@@ -863,46 +1149,65 @@ export const CarDashboardScreen = () => {
 
       {/* SECTION 3: PROACTIVE ADVISORY PANEL */}
       <View style={styles.advisoryWrapper}>
-        <Animated.View style={[
-          styles.advisoryPanel,
-          { 
-            borderColor: isSpeeding 
-              ? CAR_COLORS.danger 
-              : activeAlert 
-                ? CAR_COLORS.warning 
+        <Animated.View
+          style={[
+            styles.advisoryPanel,
+            {
+              borderColor: isSpeeding
+                ? CAR_COLORS.danger
+                : activeAlert
+                ? CAR_COLORS.warning
                 : '#1B263B',
-            backgroundColor: isSpeeding 
-              ? 'rgba(239, 68, 68, 0.12)' 
-              : activeAlert 
-                ? 'rgba(245, 158, 11, 0.08)' 
+              backgroundColor: isSpeeding
+                ? 'rgba(239, 68, 68, 0.12)'
+                : activeAlert
+                ? 'rgba(245, 158, 11, 0.08)'
                 : '#090A0D',
-            transform: [{ scale: alertPulse }]
-          }
-        ]}>
+              transform: [{ scale: alertPulse }],
+            },
+          ]}
+        >
           {isSpeeding ? (
             <View style={styles.advisoryContentRow}>
               <AlertOctagon color={CAR_COLORS.danger} size={20} />
               <View style={styles.advisoryTextBox}>
-                <Text style={[styles.advisoryTitle, { color: CAR_COLORS.danger }]}>DRIVESHIELD SPEED LIMIT ALERT</Text>
-                <Text style={styles.advisoryDesc} numberOfLines={1}>Exceeding local {speedLimit} km/h bound limit. Slow down immediately!</Text>
+                <Text
+                  style={[styles.advisoryTitle, { color: CAR_COLORS.danger }]}
+                >
+                  DRIVESHIELD SPEED LIMIT ALERT
+                </Text>
+                <Text style={styles.advisoryDesc} numberOfLines={1}>
+                  Exceeding local {speedLimit} km/h bound limit. Slow down
+                  immediately!
+                </Text>
               </View>
             </View>
           ) : activeAlert ? (
             <View style={styles.advisoryContentRow}>
               <AlertOctagon color={CAR_COLORS.warning} size={20} />
               <View style={styles.advisoryTextBox}>
-                <Text style={[styles.advisoryTitle, { color: CAR_COLORS.warning }]}>
+                <Text
+                  style={[styles.advisoryTitle, { color: CAR_COLORS.warning }]}
+                >
                   {activeAlert.zone_name.toUpperCase()} ALERT ACTIVE
                 </Text>
-                <Text style={styles.advisoryDesc} numberOfLines={1}>{activeAlert.message}</Text>
+                <Text style={styles.advisoryDesc} numberOfLines={1}>
+                  {activeAlert.message}
+                </Text>
               </View>
             </View>
           ) : (
             <View style={styles.advisoryContentRow}>
               <CheckCircle color={CAR_COLORS.success} size={20} />
               <View style={styles.advisoryTextBox}>
-                <Text style={[styles.advisoryTitle, { color: CAR_COLORS.success }]}>DRIVESHIELD ACTIVE</Text>
-                <Text style={styles.advisoryDesc} numberOfLines={1}>Jurisdiction: {currentJurisdiction} • Speed bounds normal</Text>
+                <Text
+                  style={[styles.advisoryTitle, { color: CAR_COLORS.success }]}
+                >
+                  DRIVESHIELD ACTIVE
+                </Text>
+                <Text style={styles.advisoryDesc} numberOfLines={1}>
+                  Jurisdiction: {currentJurisdiction} • Speed bounds normal
+                </Text>
               </View>
             </View>
           )}
@@ -911,10 +1216,15 @@ export const CarDashboardScreen = () => {
 
       {/* SECTION 4: UNIFIED QUICK ACTION FOOTER (Tesla Inspired Touch Targets) */}
       <View style={styles.actionsRow}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
-            styles.circularActionButton, 
-            { backgroundColor: activeTabOverlay === 'talk' ? CAR_COLORS.danger : CAR_COLORS.accent }
+            styles.circularActionButton,
+            {
+              backgroundColor:
+                activeTabOverlay === 'talk'
+                  ? CAR_COLORS.danger
+                  : CAR_COLORS.accent,
+            },
           ]}
           onPress={() => handleQuickActionPress('talk')}
         >
@@ -922,10 +1232,15 @@ export const CarDashboardScreen = () => {
           <Text style={[styles.buttonLabel, { color: '#000000' }]}>TALK</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
-            styles.circularActionButton, 
-            { backgroundColor: '#0B0F19', borderColor: activeTabOverlay === 'fine' ? CAR_COLORS.accent : '#1E293B', borderWidth: 2 }
+            styles.circularActionButton,
+            {
+              backgroundColor: '#0B0F19',
+              borderColor:
+                activeTabOverlay === 'fine' ? CAR_COLORS.accent : '#1E293B',
+              borderWidth: 2,
+            },
           ]}
           onPress={() => handleQuickActionPress('fine')}
         >
@@ -933,10 +1248,15 @@ export const CarDashboardScreen = () => {
           <Text style={styles.buttonLabel}>FINEIQ</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
-            styles.circularActionButton, 
-            { backgroundColor: '#0B0F19', borderColor: activeTabOverlay === 'parking' ? CAR_COLORS.accent : '#1E293B', borderWidth: 2 }
+            styles.circularActionButton,
+            {
+              backgroundColor: '#0B0F19',
+              borderColor:
+                activeTabOverlay === 'parking' ? CAR_COLORS.accent : '#1E293B',
+              borderWidth: 2,
+            },
           ]}
           onPress={() => handleQuickActionPress('parking')}
         >
@@ -944,10 +1264,13 @@ export const CarDashboardScreen = () => {
           <Text style={styles.buttonLabel}>RULES</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
-            styles.circularActionButton, 
-            { backgroundColor: activeTabOverlay === 'sos' ? '#8F1D2C' : CAR_COLORS.danger }
+            styles.circularActionButton,
+            {
+              backgroundColor:
+                activeTabOverlay === 'sos' ? '#8F1D2C' : CAR_COLORS.danger,
+            },
           ]}
           onPress={() => handleQuickActionPress('sos')}
         >
@@ -973,7 +1296,7 @@ export const CarDashboardScreen = () => {
                 🌍 Multilingual AI (EN, தமிழ், हिन्दी)
               </Text>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.closeOverlayButton}
               onPress={() => handleQuickActionPress('none')}
             >
@@ -984,40 +1307,77 @@ export const CarDashboardScreen = () => {
           {/* Voice State HUD Display */}
           <View style={styles.voiceHUDContainer}>
             <View style={styles.stateIndicatorRow}>
-              <View style={[
-                styles.stateIndicatorPill,
-                voiceState === 'LISTENING' && { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderColor: CAR_COLORS.danger },
-                voiceState === 'UNDERSTANDING' && { backgroundColor: 'rgba(34, 197, 94, 0.15)', borderColor: CAR_COLORS.success },
-                voiceState === 'RESPONDING' && { backgroundColor: 'rgba(0, 255, 194, 0.15)', borderColor: CAR_COLORS.accent }
-              ]}>
-                <Circle size={8} fill={
-                  voiceState === 'LISTENING' ? CAR_COLORS.danger :
-                  voiceState === 'UNDERSTANDING' ? CAR_COLORS.success :
-                  voiceState === 'RESPONDING' ? CAR_COLORS.accent : '#6B7280'
-                } color="transparent" />
-                <Text style={[
-                  styles.stateIndicatorText,
-                  voiceState === 'LISTENING' && { color: CAR_COLORS.danger },
-                  voiceState === 'UNDERSTANDING' && { color: CAR_COLORS.success },
-                  voiceState === 'RESPONDING' && { color: CAR_COLORS.accent }
-                ]}>
-                  {voiceState === 'READY' ? 'Ready' : 
-                   voiceState === 'LISTENING' ? 'Listening' :
-                   voiceState === 'UNDERSTANDING' ? 'Understanding' : 
-                   voiceState === 'RESPONDING' ? 'Responding' : 'Retry'}
+              <View
+                style={[
+                  styles.stateIndicatorPill,
+                  voiceState === 'LISTENING' && {
+                    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                    borderColor: CAR_COLORS.danger,
+                  },
+                  voiceState === 'UNDERSTANDING' && {
+                    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                    borderColor: CAR_COLORS.success,
+                  },
+                  voiceState === 'RESPONDING' && {
+                    backgroundColor: 'rgba(0, 255, 194, 0.15)',
+                    borderColor: CAR_COLORS.accent,
+                  },
+                ]}
+              >
+                <Circle
+                  size={8}
+                  fill={
+                    voiceState === 'LISTENING'
+                      ? CAR_COLORS.danger
+                      : voiceState === 'UNDERSTANDING'
+                      ? CAR_COLORS.success
+                      : voiceState === 'RESPONDING'
+                      ? CAR_COLORS.accent
+                      : '#6B7280'
+                  }
+                  color="transparent"
+                />
+                <Text
+                  style={[
+                    styles.stateIndicatorText,
+                    voiceState === 'LISTENING' && { color: CAR_COLORS.danger },
+                    voiceState === 'UNDERSTANDING' && {
+                      color: CAR_COLORS.success,
+                    },
+                    voiceState === 'RESPONDING' && { color: CAR_COLORS.accent },
+                  ]}
+                >
+                  {voiceState === 'READY'
+                    ? 'Ready'
+                    : voiceState === 'LISTENING'
+                    ? 'Listening'
+                    : voiceState === 'UNDERSTANDING'
+                    ? 'Understanding'
+                    : voiceState === 'RESPONDING'
+                    ? 'Responding'
+                    : 'Retry'}
                 </Text>
               </View>
 
               {/* Dynamic waveform pulsing bars */}
               <View style={styles.waveformContainer}>
                 {waveHeights.map((val, idx) => (
-                  <Animated.View key={idx} style={[
-                    styles.waveformBar,
-                    { height: val },
-                    voiceState === 'LISTENING' && { backgroundColor: CAR_COLORS.danger },
-                    voiceState === 'RESPONDING' && { backgroundColor: CAR_COLORS.accent },
-                    voiceState === 'UNDERSTANDING' && { backgroundColor: CAR_COLORS.success },
-                  ]} />
+                  <Animated.View
+                    key={idx}
+                    style={[
+                      styles.waveformBar,
+                      { height: val },
+                      voiceState === 'LISTENING' && {
+                        backgroundColor: CAR_COLORS.danger,
+                      },
+                      voiceState === 'RESPONDING' && {
+                        backgroundColor: CAR_COLORS.accent,
+                      },
+                      voiceState === 'UNDERSTANDING' && {
+                        backgroundColor: CAR_COLORS.success,
+                      },
+                    ]}
+                  />
                 ))}
               </View>
             </View>
@@ -1034,39 +1394,80 @@ export const CarDashboardScreen = () => {
             <ScrollView style={styles.voiceScroll} nestedScrollEnabled={true}>
               {voiceState === 'UNDERSTANDING' ? (
                 <View style={styles.thinkingStepsBox}>
-                  <Text style={[styles.thinkingStepText, { color: '#22C55E' }]}>Voice Captured ✓</Text>
+                  <Text style={[styles.thinkingStepText, { color: '#22C55E' }]}>
+                    Voice Captured ✓
+                  </Text>
                   <View style={styles.thinkingStepRow}>
                     {thinkingStep >= 2 ? (
-                      <Text style={[styles.thinkingStepText, { color: '#22C55E' }]}>Understanding Request ✓</Text>
+                      <Text
+                        style={[styles.thinkingStepText, { color: '#22C55E' }]}
+                      >
+                        Understanding Request ✓
+                      </Text>
                     ) : (
                       <>
-                        <ActivityIndicator size="small" color={CAR_COLORS.accent} style={{ marginRight: 6 }} />
-                        <Text style={[styles.thinkingStepText, { color: CAR_COLORS.accent }]}>Understanding Request...</Text>
+                        <ActivityIndicator
+                          size="small"
+                          color={CAR_COLORS.accent}
+                          style={{ marginRight: 6 }}
+                        />
+                        <Text
+                          style={[
+                            styles.thinkingStepText,
+                            { color: CAR_COLORS.accent },
+                          ]}
+                        >
+                          Understanding Request...
+                        </Text>
                       </>
                     )}
                   </View>
                   <View style={styles.thinkingStepRow}>
                     {thinkingStep >= 3 ? (
-                      <Text style={[styles.thinkingStepText, { color: '#22C55E' }]}>Generating Legal Guidance ✓</Text>
+                      <Text
+                        style={[styles.thinkingStepText, { color: '#22C55E' }]}
+                      >
+                        Generating Legal Guidance ✓
+                      </Text>
                     ) : thinkingStep === 2 ? (
                       <>
-                        <ActivityIndicator size="small" color={CAR_COLORS.accent} style={{ marginRight: 6 }} />
-                        <Text style={[styles.thinkingStepText, { color: CAR_COLORS.accent }]}>Generating Legal Guidance...</Text>
+                        <ActivityIndicator
+                          size="small"
+                          color={CAR_COLORS.accent}
+                          style={{ marginRight: 6 }}
+                        />
+                        <Text
+                          style={[
+                            styles.thinkingStepText,
+                            { color: CAR_COLORS.accent },
+                          ]}
+                        >
+                          Generating Legal Guidance...
+                        </Text>
                       </>
                     ) : (
-                      <Text style={[styles.thinkingStepText, { color: 'rgba(255,255,255,0.3)' }]}>Generating Legal Guidance...</Text>
+                      <Text
+                        style={[
+                          styles.thinkingStepText,
+                          { color: 'rgba(255,255,255,0.3)' },
+                        ]}
+                      >
+                        Generating Legal Guidance...
+                      </Text>
                     )}
                   </View>
                 </View>
               ) : voiceState === 'RETRY' ? (
                 <View style={styles.thinkingStepsBox}>
-                  <Text style={[styles.thinkingStepText, { color: '#FF9F43' }]}>⚠️ Did not catch that clearly.</Text>
-                  <Text style={styles.voiceAdvisorText}>Please tap the microphone and speak again.</Text>
+                  <Text style={[styles.thinkingStepText, { color: '#FF9F43' }]}>
+                    ⚠️ Did not catch that clearly.
+                  </Text>
+                  <Text style={styles.voiceAdvisorText}>
+                    Please tap the microphone and speak again.
+                  </Text>
                 </View>
               ) : (
-                <Text style={styles.voiceAdvisorText}>
-                  {botResponseText}
-                </Text>
+                <Text style={styles.voiceAdvisorText}>{botResponseText}</Text>
               )}
             </ScrollView>
           </View>
@@ -1078,7 +1479,7 @@ export const CarDashboardScreen = () => {
               { label: '🏎️ Speed Limit', query: 'speed limit' },
               { label: '🚓 Police Station', query: 'police station' },
               { label: '🅿️ Can I Park Here', query: 'can I park here' },
-              { label: '🚨 Emergency Help', query: 'emergency' }
+              { label: '🚨 Emergency Help', query: 'emergency' },
             ].map((suggest, index) => (
               <TouchableOpacity
                 key={index}
@@ -1091,32 +1492,51 @@ export const CarDashboardScreen = () => {
           </View>
 
           {/* Bottom Controls (No typing, massive voice microphone orb only) */}
-          <View style={[styles.talkControlsFooter, { justifyContent: 'center' }]}>
+          <View
+            style={[styles.talkControlsFooter, { justifyContent: 'center' }]}
+          >
             {/* Giant Microphone Orb */}
             <View style={styles.voiceOrbWrapper}>
-              <Animated.View style={[
-                styles.hudPulseGlow,
-                { 
-                  opacity: glowOpacity,
-                  transform: [{ scale: pulseScale }]
-                },
-                voiceState === 'LISTENING' && { backgroundColor: CAR_COLORS.danger },
-                voiceState === 'RESPONDING' && { backgroundColor: CAR_COLORS.accent },
-                voiceState === 'UNDERSTANDING' && { backgroundColor: CAR_COLORS.success },
-              ]} />
-              <TouchableOpacity 
+              <Animated.View
+                style={[
+                  styles.hudPulseGlow,
+                  {
+                    opacity: glowOpacity,
+                    transform: [{ scale: pulseScale }],
+                  },
+                  voiceState === 'LISTENING' && {
+                    backgroundColor: CAR_COLORS.danger,
+                  },
+                  voiceState === 'RESPONDING' && {
+                    backgroundColor: CAR_COLORS.accent,
+                  },
+                  voiceState === 'UNDERSTANDING' && {
+                    backgroundColor: CAR_COLORS.success,
+                  },
+                ]}
+              />
+              <TouchableOpacity
                 style={[
                   styles.hudTouchOrb,
-                  voiceState === 'LISTENING' && { backgroundColor: CAR_COLORS.danger },
-                  voiceState === 'RESPONDING' && { backgroundColor: CAR_COLORS.accent },
-                  voiceState === 'UNDERSTANDING' && { backgroundColor: '#1E293B' },
+                  voiceState === 'LISTENING' && {
+                    backgroundColor: CAR_COLORS.danger,
+                  },
+                  voiceState === 'RESPONDING' && {
+                    backgroundColor: CAR_COLORS.accent,
+                  },
+                  voiceState === 'UNDERSTANDING' && {
+                    backgroundColor: '#1E293B',
+                  },
                 ]}
                 onPress={handleOrbPress}
               >
                 {voiceState === 'UNDERSTANDING' ? (
                   <ActivityIndicator size="small" color={CAR_COLORS.accent} />
                 ) : (
-                  <Mic size={22} color={voiceState === 'LISTENING' ? '#FFFFFF' : '#000000'} />
+                  <Mic
+                    size={22}
+                    color={voiceState === 'LISTENING' ? '#FFFFFF' : '#000000'}
+                  />
                 )}
               </TouchableOpacity>
             </View>
@@ -1132,34 +1552,65 @@ export const CarDashboardScreen = () => {
               <Scale color={CAR_COLORS.accent} size={18} />
               <Text style={styles.overlayTitle}>FineIQ Challan Calculator</Text>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.closeOverlayButton}
               onPress={() => handleQuickActionPress('none')}
             >
               <Text style={styles.closeOverlayText}>DISMISS</Text>
             </TouchableOpacity>
           </View>
-          
+
           <Text style={styles.overlayIntro}>
-            Select active violations at your current location in <Text style={{ color: '#00E5FF', fontWeight: 'bold' }}>{currentJurisdiction}</Text>:
+            Select active violations at your current location in{' '}
+            <Text style={{ color: '#00E5FF', fontWeight: 'bold' }}>
+              {currentJurisdiction}
+            </Text>
+            :
           </Text>
 
           <View style={styles.calculatorLayout}>
             {/* Checklist */}
             <View style={styles.checklistGrid}>
               {[
-                { key: 'speeding', title: '🏎️ Speed Limit Violation', code: 'Sec 112' },
-                { key: 'helmet', title: '🪖 Driving Without Helmet', code: 'Sec 194D' },
-                { key: 'seatbelt', title: '🚗 Seatbelt Disregarded', code: 'Sec 194B' },
-                { key: 'license', title: '📋 Driving Without License', code: 'Sec 181' },
-                { key: 'insurance', title: '📄 Vehicle Without Insurance', code: 'Sec 196' },
-                { key: 'drunk', title: '🍺 Drunk & Drive Offense', code: 'Sec 185' }
+                {
+                  key: 'speeding',
+                  title: '🏎️ Speed Limit Violation',
+                  code: 'Sec 112',
+                },
+                {
+                  key: 'helmet',
+                  title: '🪖 Driving Without Helmet',
+                  code: 'Sec 194D',
+                },
+                {
+                  key: 'seatbelt',
+                  title: '🚗 Seatbelt Disregarded',
+                  code: 'Sec 194B',
+                },
+                {
+                  key: 'license',
+                  title: '📋 Driving Without License',
+                  code: 'Sec 181',
+                },
+                {
+                  key: 'insurance',
+                  title: '📄 Vehicle Without Insurance',
+                  code: 'Sec 196',
+                },
+                {
+                  key: 'drunk',
+                  title: '🍺 Drunk & Drive Offense',
+                  code: 'Sec 185',
+                },
               ].map((item) => (
                 <TouchableOpacity
                   key={item.key}
                   style={[
                     styles.checklistRow,
-                    checkedViolations[item.key] && { borderColor: CAR_COLORS.accent, backgroundColor: 'rgba(0, 229, 255, 0.04)' }
+                    checkedViolations[item.key] && {
+                      borderColor: CAR_COLORS.accent,
+                      backgroundColor: 'rgba(0, 229, 255, 0.04)',
+                    },
                   ]}
                   onPress={() => toggleViolation(item.key)}
                 >
@@ -1168,12 +1619,21 @@ export const CarDashboardScreen = () => {
                     <Text style={styles.checkCode}>{item.code}</Text>
                   </View>
                   <View style={styles.violationRateCol}>
-                    <Text style={styles.checkPrice}>₹{fineRates[item.key as keyof typeof fineRates]}</Text>
-                    <View style={[
-                      styles.checkCircle,
-                      checkedViolations[item.key] && { backgroundColor: CAR_COLORS.accent, borderColor: CAR_COLORS.accent }
-                    ]}>
-                      {checkedViolations[item.key] && <Text style={styles.checkTick}>✓</Text>}
+                    <Text style={styles.checkPrice}>
+                      ₹{fineRates[item.key as keyof typeof fineRates]}
+                    </Text>
+                    <View
+                      style={[
+                        styles.checkCircle,
+                        checkedViolations[item.key] && {
+                          backgroundColor: CAR_COLORS.accent,
+                          borderColor: CAR_COLORS.accent,
+                        },
+                      ]}
+                    >
+                      {checkedViolations[item.key] && (
+                        <Text style={styles.checkTick}>✓</Text>
+                      )}
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -1183,8 +1643,13 @@ export const CarDashboardScreen = () => {
             {/* Total fine display */}
             <View style={styles.calculatorTotalBox}>
               <Text style={styles.totalFineLabel}>TOTAL ACCUMULATED FINE</Text>
-              <Text style={styles.totalFineValue}>₹{totalCalculatedFine.toLocaleString()}</Text>
-              <Text style={styles.calculatorDisclaimer}>*Fine calculation structured specifically for local rules fallback.*</Text>
+              <Text style={styles.totalFineValue}>
+                ₹{totalCalculatedFine.toLocaleString()}
+              </Text>
+              <Text style={styles.calculatorDisclaimer}>
+                *Fine calculation structured specifically for local rules
+                fallback.*
+              </Text>
             </View>
           </View>
         </View>
@@ -1196,9 +1661,11 @@ export const CarDashboardScreen = () => {
           <View style={styles.overlayHeader}>
             <View style={styles.panelTitleRow}>
               <Compass color={CAR_COLORS.accent} size={18} />
-              <Text style={styles.overlayTitle}>Smart Jurisdiction & Local Rules</Text>
+              <Text style={styles.overlayTitle}>
+                Smart Jurisdiction & Local Rules
+              </Text>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.closeOverlayButton}
               onPress={() => handleQuickActionPress('none')}
             >
@@ -1208,28 +1675,56 @@ export const CarDashboardScreen = () => {
 
           <View style={styles.rulesContainer}>
             <View style={styles.rulesColumn}>
-              <Text style={styles.columnHeaderTitle}>📍 CURRENT GEOGRAPHIC DETAILS</Text>
-              <Text style={styles.ruleLocationText}>
-                Active District: <Text style={{ color: '#00E5FF' }}>{currentJurisdiction}</Text>
+              <Text style={styles.columnHeaderTitle}>
+                📍 CURRENT GEOGRAPHIC DETAILS
               </Text>
               <Text style={styles.ruleLocationText}>
-                State Administration: <Text style={{ color: '#00E5FF' }}>Tamil Nadu Motor Vehicles Department</Text>
+                Active District:{' '}
+                <Text style={{ color: '#00E5FF' }}>{currentJurisdiction}</Text>
               </Text>
-              
-              <Text style={[styles.columnHeaderTitle, { marginTop: 12 }]}>🚨 ENFORCED SILENT SILENCE ZONES</Text>
-              <Text style={styles.parkingRuleBullet}>• CMC Silent Hospital Zone: Strictly no blowing horn, fine ₹1,000.</Text>
-              <Text style={styles.parkingRuleBullet}>• St. Pauls School Zone: Speeding restricted to 20 km/h, fine ₹500.</Text>
+              <Text style={styles.ruleLocationText}>
+                State Administration:{' '}
+                <Text style={{ color: '#00E5FF' }}>
+                  Tamil Nadu Motor Vehicles Department
+                </Text>
+              </Text>
+
+              <Text style={[styles.columnHeaderTitle, { marginTop: 12 }]}>
+                🚨 ENFORCED SILENT SILENCE ZONES
+              </Text>
+              <Text style={styles.parkingRuleBullet}>
+                • CMC Silent Hospital Zone: Strictly no blowing horn, fine
+                ₹1,000.
+              </Text>
+              <Text style={styles.parkingRuleBullet}>
+                • St. Pauls School Zone: Speeding restricted to 20 km/h, fine
+                ₹500.
+              </Text>
             </View>
 
             <View style={styles.rulesColumn}>
-              <Text style={styles.columnHeaderTitle}>📋 JURISDICTION RULES DETAILS</Text>
-              <Text style={styles.parkingRuleBullet}>• Helmet Mandatory for both rider and pillion passenger.</Text>
-              <Text style={styles.parkingRuleBullet}>• Tow-Away Restrictions apply on commercial shopping routes.</Text>
-              <Text style={styles.parkingRuleBullet}>• Digital driving license valid through Digilocker integration.</Text>
-              
-              <Text style={[styles.columnHeaderTitle, { marginTop: 12 }]}>📞 LOCAL HELPLINES & HELPDESK</Text>
-              <Text style={styles.parkingRuleBullet}>• Coimbatore North RTO Office: 0422-2442244</Text>
-              <Text style={styles.parkingRuleBullet}>• State Highways Helpdesk Command: 1033</Text>
+              <Text style={styles.columnHeaderTitle}>
+                📋 JURISDICTION RULES DETAILS
+              </Text>
+              <Text style={styles.parkingRuleBullet}>
+                • Helmet Mandatory for both rider and pillion passenger.
+              </Text>
+              <Text style={styles.parkingRuleBullet}>
+                • Tow-Away Restrictions apply on commercial shopping routes.
+              </Text>
+              <Text style={styles.parkingRuleBullet}>
+                • Digital driving license valid through Digilocker integration.
+              </Text>
+
+              <Text style={[styles.columnHeaderTitle, { marginTop: 12 }]}>
+                📞 LOCAL HELPLINES & HELPDESK
+              </Text>
+              <Text style={styles.parkingRuleBullet}>
+                • Coimbatore North RTO Office: 0422-2442244
+              </Text>
+              <Text style={styles.parkingRuleBullet}>
+                • State Highways Helpdesk Command: 1033
+              </Text>
             </View>
           </View>
         </View>
@@ -1241,9 +1736,11 @@ export const CarDashboardScreen = () => {
           <View style={styles.overlayHeader}>
             <View style={styles.panelTitleRow}>
               <Phone color={CAR_COLORS.danger} size={18} />
-              <Text style={styles.overlayTitle}>RoadSOS Tactical Emergency Unit</Text>
+              <Text style={styles.overlayTitle}>
+                RoadSOS Tactical Emergency Unit
+              </Text>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.closeOverlayButton}
               onPress={() => handleQuickActionPress('none')}
             >
@@ -1254,65 +1751,91 @@ export const CarDashboardScreen = () => {
           <View style={styles.sosLayout}>
             {/* Quick hotlines */}
             <View style={styles.emergencyActionsCol}>
-              <Text style={styles.columnHeaderTitle}>⚡ EMERGENCY DISPATCH TRIGGERS</Text>
-              <TouchableOpacity 
-                style={[styles.sosCallPill, { backgroundColor: '#B91C1C' }]} 
+              <Text style={styles.columnHeaderTitle}>
+                ⚡ EMERGENCY DISPATCH TRIGGERS
+              </Text>
+              <TouchableOpacity
+                style={[styles.sosCallPill, { backgroundColor: '#B91C1C' }]}
                 onPress={() => handleDial('108')}
               >
                 <Heart size={22} color="#FFF" />
-                <Text style={styles.sosCallPillText}>CALL 108 AMBULANCE TRAUMA</Text>
+                <Text style={styles.sosCallPillText}>
+                  CALL 108 AMBULANCE TRAUMA
+                </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.sosCallPill, { backgroundColor: '#1D4ED8' }]} 
+              <TouchableOpacity
+                style={[styles.sosCallPill, { backgroundColor: '#1D4ED8' }]}
                 onPress={() => handleDial('100')}
               >
                 <Shield size={22} color="#FFF" />
-                <Text style={styles.sosCallPillText}>CALL 100 HIGHWAY POLICE FORCE</Text>
+                <Text style={styles.sosCallPillText}>
+                  CALL 100 HIGHWAY POLICE FORCE
+                </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.sosCallPill, { backgroundColor: '#C2410C' }]} 
+              <TouchableOpacity
+                style={[styles.sosCallPill, { backgroundColor: '#C2410C' }]}
                 onPress={() => handleDial('1033')}
               >
                 <NavIcon size={22} color="#FFF" />
-                <Text style={styles.sosCallPillText}>CALL 1033 TOLL ROAD PATROL</Text>
+                <Text style={styles.sosCallPillText}>
+                  CALL 1033 TOLL ROAD PATROL
+                </Text>
               </TouchableOpacity>
             </View>
 
             {/* Nearby facilities */}
             <View style={styles.facilitiesCol}>
-              <Text style={styles.columnHeaderTitle}>🏥 SCAN SPECTRUM: NEAREST HUBS</Text>
-              
+              <Text style={styles.columnHeaderTitle}>
+                🏥 SCAN SPECTRUM: NEAREST HUBS
+              </Text>
+
               <View style={styles.facilityCard}>
                 <View style={styles.facilityHeaderRow}>
-                  <Text style={styles.facilityType}>🏥 NEAREST MEDICAL TRAUMA</Text>
+                  <Text style={styles.facilityType}>
+                    🏥 NEAREST MEDICAL TRAUMA
+                  </Text>
                   <Text style={styles.facilityDistance}>1.2 KM</Text>
                 </View>
-                <Text style={styles.facilityName}>Ganga Trauma Care Hospital</Text>
-                <TouchableOpacity style={styles.facilityDialBtn} onPress={() => handleDial('0422-2227000')}>
+                <Text style={styles.facilityName}>
+                  Ganga Trauma Care Hospital
+                </Text>
+                <TouchableOpacity
+                  style={styles.facilityDialBtn}
+                  onPress={() => handleDial('0422-2227000')}
+                >
                   <Phone size={14} color={CAR_COLORS.accent} />
-                  <Text style={styles.facilityDialText}>DIAL Ganga Unit: 0422-2227000</Text>
+                  <Text style={styles.facilityDialText}>
+                    DIAL Ganga Unit: 0422-2227000
+                  </Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.facilityCard}>
                 <View style={styles.facilityHeaderRow}>
-                  <Text style={styles.facilityType}>🚓 NEAREST POLICE SECURITY</Text>
+                  <Text style={styles.facilityType}>
+                    🚓 NEAREST POLICE SECURITY
+                  </Text>
                   <Text style={styles.facilityDistance}>500 M</Text>
                 </View>
-                <Text style={styles.facilityName}>Gandhipuram Police Station</Text>
-                <TouchableOpacity style={styles.facilityDialBtn} onPress={() => handleDial('0422-2300250')}>
+                <Text style={styles.facilityName}>
+                  Gandhipuram Police Station
+                </Text>
+                <TouchableOpacity
+                  style={styles.facilityDialBtn}
+                  onPress={() => handleDial('0422-2300250')}
+                >
                   <Phone size={14} color={CAR_COLORS.accent} />
-                  <Text style={styles.facilityDialText}>DIAL Gandhipuram: 0422-2300250</Text>
+                  <Text style={styles.facilityDialText}>
+                    DIAL Gandhipuram: 0422-2300250
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
         </View>
       )}
-
-
     </View>
   );
 };

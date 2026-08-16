@@ -1,25 +1,3 @@
-"""
-Zones Module - GPS-based zone detection for traffic alerts
-
-PURPOSE:
-Detects when a user enters a traffic law zone and generates
-appropriate alerts. Zones include:
-- Accident-prone areas (high crash frequency)
-- School zones (reduced speed limits, no honking)
-- State borders (laws and penalties change)
-- Speed change zones (different speed limits apply)
-
-ALGORITHM:
-1. Point-based zones: Uses Haversine distance to check if user is
-   within the zone's radius of a center point.
-2. Polygon-based zones: Uses ray-casting algorithm to check if
-   user's coordinates are inside a GeoJSON polygon.
-
-ALERT DEDUPLICATION:
-The same zone won't trigger more than once per 30 minutes
-(handled in the frontend alertSlice).
-"""
-
 import json
 import math
 from typing import List, Dict, Optional
@@ -27,20 +5,7 @@ from database import get_zones
 
 
 def haversine(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
-    """
-    Calculate the distance between two GPS coordinates in meters.
-    
-    Uses the Haversine formula which accounts for Earth's curvature.
-    Accurate enough for zone detection (errors < 0.5% at these distances).
-    
-    Args:
-        lat1, lng1: First coordinate
-        lat2, lng2: Second coordinate
-    
-    Returns:
-        Distance in meters
-    """
-    R = 6371000  # Earth's radius in meters
+    R = 6371000
     phi1 = math.radians(lat1)
     phi2 = math.radians(lat2)
     delta_phi = math.radians(lat2 - lat1)
@@ -55,22 +20,6 @@ def haversine(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 
 
 def point_in_polygon(lat: float, lng: float, polygon: List[List[float]]) -> bool:
-    """
-    Check if a point is inside a polygon using the ray-casting algorithm.
-    
-    How it works:
-    - Draw a horizontal ray from the point to infinity
-    - Count how many polygon edges the ray crosses
-    - If odd number of crossings, point is inside
-    
-    Args:
-        lat: Point latitude
-        lng: Point longitude
-        polygon: List of [lng, lat] coordinate pairs
-    
-    Returns:
-        True if point is inside the polygon
-    """
     n = len(polygon)
     inside = False
 
@@ -92,66 +41,19 @@ def point_in_polygon(lat: float, lng: float, polygon: List[List[float]]) -> bool
     return inside
 
 
-def calculate_bearing(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
-    """
-    Calculate the bearing from coordinate 1 to coordinate 2 in degrees.
-    0 = North, 90 = East, 180 = South, 270 = West.
-    """
-    lat1_r, lng1_r, lat2_r, lng2_r = map(math.radians, [lat1, lng1, lat2, lng2])
-    d_lng = lng2_r - lng1_r
-    y = math.sin(d_lng) * math.cos(lat2_r)
-    x = math.cos(lat1_r) * math.sin(lat2_r) - math.sin(lat1_r) * math.cos(lat2_r) * math.cos(d_lng)
-    bearing = math.degrees(math.atan2(y, x))
-    return (bearing + 360) % 360
-
-
-def is_zone_ahead(lat: float, lng: float, heading: float, zone_lat: float, zone_lng: float) -> bool:
-    """
-    Checks if a target coordinate lies ahead of the user based on heading.
-    Returns True if target is within a 45 degree cone of heading.
-    """
-    if heading is None:
-        return True
-    bearing = calculate_bearing(lat, lng, zone_lat, zone_lng)
-    diff = abs(bearing - heading)
-    if diff > 180:
-        diff = 360 - diff
-    return diff <= 45
-
-
-def check_zones(lat: float, lng: float, state: str, last_state: str = None, heading: float = None, speed: float = 0) -> List[Dict]:
-    """
-    Check if the user's current location triggers any zone alerts, with predictive check.
-    
-    PROCESS:
-    1. Check if user crossed a state border (laws change)
-    2. Check point-based zones (accident areas, schools) using distance & bearing check
-    3. Check polygon-based zones (larger areas) using ray-casting
-    """
+def check_zones(lat: float, lng: float, state: str, last_state: str = None) -> List[Dict]:
     alerts = []
 
-    # Check for state border crossing
     if last_state and last_state != state:
         alerts.append(create_state_border_alert(state))
 
-    # Get all zones for this state from database
     zones = get_zones(lat, lng, state)
 
     for zone in zones:
-        # Point-based zones: check if within radius & ahead
         if zone.get('center_lat') and zone.get('center_lng'):
             distance = haversine(lat, lng, zone['center_lat'], zone['center_lng'])
-            
-            # Predictive warning: warn 500m ahead if heading towards it
-            warning_threshold = zone.get('radius_meters', 500)
-            
-            if distance <= warning_threshold:
-                # If speed > 15 km/h, check if zone lies ahead of user
-                if speed > 15 and not is_zone_ahead(lat, lng, heading, zone['center_lat'], zone['center_lng']):
-                    continue  # Zone is behind or sideways, skip alert
-
+            if distance <= zone.get('radius_meters', 500):
                 alerts.append(create_zone_alert(zone, distance))
-        # Polygon-based zones: check if inside polygon
         elif zone.get('polygon'):
             try:
                 polygon = json.loads(zone['polygon'])
@@ -164,10 +66,6 @@ def check_zones(lat: float, lng: float, state: str, last_state: str = None, head
 
 
 def create_state_border_alert(new_state: str) -> Dict:
-    """
-    Create an alert for when the user crosses into a new state.
-    Traffic laws and penalties may differ between states.
-    """
     return {
         'status': 'zone_alert',
         'zone_type': 'state_border',
@@ -179,19 +77,11 @@ def create_state_border_alert(new_state: str) -> Dict:
 
 
 def create_zone_alert(zone: Dict, distance: float = None) -> Dict:
-    """
-    Create an alert for a specific zone (accident area, school, etc.).
-    
-    Args:
-        zone: Zone dictionary from database
-        distance: Distance to zone center (for point-based zones)
-    """
     message = zone.get('message_template', '')
 
     if distance is not None:
         message = f"{zone.get('name', 'Zone')}: {message}"
 
-    # Add speed limit info if available
     speed_limit = zone.get('speed_limit')
     if speed_limit:
         message += f" Speed limit: {speed_limit} km/h."

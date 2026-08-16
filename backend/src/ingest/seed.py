@@ -1,43 +1,9 @@
-"""
-Database Seeder - Populates the SQLite database with traffic law data
-
-PURPOSE:
-Loads all traffic laws, penalties, procedures, and zone data
-into the SQLite database. This is the knowledge base that the
-chatbot uses to answer user questions.
-
-DATA SOURCES:
-- Motor Vehicles Act 1988 (national laws)
-- Tamil Nadu state amendments
-- Karnataka state amendments
-- Penalty tables for each state
-- Accident-prone zones, school zones, speed change zones
-
-NOTE: This file contains seed data directly. For production,
-replace with data scraped from official sources (see scrape.py).
-"""
-
 import json
 import os
 import sqlite3
-import sys
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'drivelegal.db')
 
-
-# ============================================================
-# LAWS DATA
-# ============================================================
-# Each law entry represents a traffic violation or rule.
-# Fields:
-#   id: Unique identifier
-#   title: Short name
-#   section: Official legal section reference
-#   description: Plain language explanation
-#   states: List of state codes where this law applies
-#   violation_type: Category for linking to penalties
 
 LAWS_DATA = [
     {
@@ -202,11 +168,6 @@ LAWS_DATA = [
     },
 ]
 
-# ============================================================
-# PENALTIES DATA
-# ============================================================
-# Fine amounts for each violation type in each state.
-
 PENALTIES_DATA = [
     {"id": "pen_speed_tn", "violation_type": "speeding", "section": "mv_act_188", "state": "TN", "first_offense": "₹500", "second_offense": "₹1000", "additional_details": "Additional ₹100 per km/h over limit for speeds exceeding 10 km/h above limit"},
     {"id": "pen_speed_kn", "violation_type": "speeding", "section": "mv_act_188", "state": "KN", "first_offense": "₹400", "second_offense": "₹800", "additional_details": "Speed camera enforcement on major highways"},
@@ -233,11 +194,6 @@ PENALTIES_DATA = [
     {"id": "pen_documents_tn", "violation_type": "no_documents", "section": "tn_document_rule", "state": "TN", "first_offense": "₹500 per missing document", "second_offense": "₹1000 per missing document", "additional_details": "Digital copies via DigiLocker are accepted"},
     {"id": "pen_documents_kn", "violation_type": "no_documents", "section": "kn_document_rule", "state": "KN", "first_offense": "₹500 per missing document", "second_offense": "₹1000 per missing document", "additional_details": "DigiLocker copies accepted"},
 ]
-
-# ============================================================
-# PROCEDURES DATA
-# ============================================================
-# Step-by-step guides for common processes.
 
 PROCEDURES_DATA = [
     {
@@ -325,12 +281,6 @@ PROCEDURES_DATA = [
     },
 ]
 
-# ============================================================
-# ZONES DATA
-# ============================================================
-# GPS-based zones for proactive alerts.
-# Each zone has a center point (lat/lng) and radius, or a polygon boundary.
-
 ZONES_DATA = [
     {"id": "zone_chennai_accident_1", "zone_type": "accident_prone", "name": "Anna Salai Junction, Chennai", "state": "TN", "center_lat": 13.0569, "center_lng": 80.2540, "radius_meters": 500, "speed_limit": 30, "laws_json": json.dumps(["mv_act_190", "mv_act_188"]), "message_template": "High accident area. Speed limit: 30 km/h. Drive carefully.", "severity": "high"},
     {"id": "zone_chennai_accident_2", "zone_type": "accident_prone", "name": "OMR IT Corridor, Chennai", "state": "TN", "center_lat": 12.9032, "center_lng": 80.2319, "radius_meters": 1000, "speed_limit": 40, "laws_json": json.dumps(["mv_act_188", "mv_act_194d"]), "message_template": "IT corridor zone. Watch for pedestrian crossings.", "severity": "medium"},
@@ -344,34 +294,24 @@ ZONES_DATA = [
 
 
 def seed_database():
-    """
-    Insert all seed data into the SQLite database.
-    
-    Uses INSERT OR REPLACE so it's safe to run multiple times
-    (idempotent - won't create duplicates).
-    """
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    # Insert laws
     cursor.executemany(
         "INSERT OR REPLACE INTO laws (id, title, section, description, states, violation_type) VALUES (?, ?, ?, ?, ?, ?)",
         [(l['id'], l['title'], l['section'], l['description'], json.dumps(l['states']), l['violation_type']) for l in LAWS_DATA]
     )
 
-    # Insert penalties
     cursor.executemany(
         "INSERT OR REPLACE INTO penalties (id, violation_type, section, state, first_offense, second_offense, additional_details) VALUES (?, ?, ?, ?, ?, ?, ?)",
         [(p['id'], p['violation_type'], p['section'], p['state'], p['first_offense'], p['second_offense'], p['additional_details']) for p in PENALTIES_DATA]
     )
 
-    # Insert procedures
     cursor.executemany(
         "INSERT OR REPLACE INTO procedures (id, title, steps, documents_required, estimated_time) VALUES (?, ?, ?, ?, ?)",
         [(p['id'], p['title'], p['steps'], p['documents_required'], p['estimated_time']) for p in PROCEDURES_DATA]
     )
 
-    # Insert zones
     cursor.executemany(
         "INSERT OR REPLACE INTO zones (id, zone_type, name, state, polygon, center_lat, center_lng, radius_meters, speed_limit, laws_json, message_template, severity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [(z['id'], z['zone_type'], z['name'], z['state'], None, z.get('center_lat'), z.get('center_lng'), z.get('radius_meters'), z.get('speed_limit'), z.get('laws_json'), z['message_template'], z['severity']) for z in ZONES_DATA]

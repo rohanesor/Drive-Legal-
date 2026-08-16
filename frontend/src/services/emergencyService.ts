@@ -1,22 +1,25 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
-import { Platform } from 'react-native';
+import type {
+  EmergencyLocation,
+  EmergencyLocationType,
+  GeocodedAddress,
+} from '../types';
 
-export interface EmergencyLocation {
-  id: string;
-  type: 'police' | 'hospital' | 'fire' | 'charging_station' | 'rto';
-  name: string;
-  lat: number;
-  lng: number;
-  distance: number; // in km
-  address: string;
-  phone?: string;
-}
+export type { EmergencyLocation, GeocodedAddress } from '../types';
 
-export interface GeocodedAddress {
-  city: string;
-  state: string;
-  country: string;
+type OSMTags = Record<string, string | undefined>;
+
+interface OverpassElement {
+  id: string | number;
+  type: string;
+  lat?: number;
+  lon?: number;
+  center?: {
+    lat: number;
+    lon: number;
+  };
+  tags?: OSMTags;
 }
 
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
@@ -28,7 +31,7 @@ export const calculateHaversineDistance = (
   lat1: number,
   lon1: number,
   lat2: number,
-  lon2: number
+  lon2: number,
 ): number => {
   const R = 6371; // Earth radius in km
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -44,22 +47,38 @@ export const calculateHaversineDistance = (
 };
 
 // Formats the address of Overpass elements dynamically from street, suburb, etc.
-const formatOSMAddress = (tags: any): string => {
+const formatOSMAddress = (tags: OSMTags): string => {
   const parts: string[] = [];
-  if (tags['addr:housenumber']) parts.push(tags['addr:housenumber']);
-  if (tags['addr:street']) parts.push(tags['addr:street']);
-  if (tags['addr:suburb']) parts.push(tags['addr:suburb']);
-  if (tags['addr:city']) parts.push(tags['addr:city']);
-  if (tags['addr:state']) parts.push(tags['addr:state']);
-  if (tags['addr:postcode']) parts.push(tags['addr:postcode']);
-  
+  if (tags['addr:housenumber']) {
+    parts.push(tags['addr:housenumber']);
+  }
+  if (tags['addr:street']) {
+    parts.push(tags['addr:street']);
+  }
+  if (tags['addr:suburb']) {
+    parts.push(tags['addr:suburb']);
+  }
+  if (tags['addr:city']) {
+    parts.push(tags['addr:city']);
+  }
+  if (tags['addr:state']) {
+    parts.push(tags['addr:state']);
+  }
+  if (tags['addr:postcode']) {
+    parts.push(tags['addr:postcode']);
+  }
+
   if (parts.length > 0) {
     return parts.join(', ');
   }
-  
+
   // Fallback to tags if no structured address is specified
-  if (tags.operator) return `Operated by ${tags.operator}`;
-  if (tags.brand) return tags.brand;
+  if (tags.operator) {
+    return `Operated by ${tags.operator}`;
+  }
+  if (tags.brand) {
+    return tags.brand;
+  }
   return 'Address Details not specified';
 };
 
@@ -80,8 +99,11 @@ export const requestGPSCoordinates = async (): Promise<{
 
   const accValue = loc.coords.accuracy || 0;
   let accuracyText: 'high' | 'medium' | 'low' = 'high';
-  if (accValue > 50) accuracyText = 'low';
-  else if (accValue > 15) accuracyText = 'medium';
+  if (accValue > 50) {
+    accuracyText = 'low';
+  } else if (accValue > 15) {
+    accuracyText = 'medium';
+  }
 
   return {
     lat: loc.coords.latitude,
@@ -93,7 +115,7 @@ export const requestGPSCoordinates = async (): Promise<{
 // Reverse geocoding via Nominatim OpenStreetMap
 export const fetchOSMReverseGeocode = async (
   lat: number,
-  lng: number
+  lng: number,
 ): Promise<GeocodedAddress> => {
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=12&addressdetails=1`;
@@ -102,19 +124,29 @@ export const fetchOSMReverseGeocode = async (
         'User-Agent': 'DriveLegalRoadSOS/1.0',
       },
     });
-    const data = await response.json();
-    
+    const data = (await response.json()) as {
+      address?: {
+        city?: string;
+        town?: string;
+        village?: string;
+        suburb?: string;
+        state?: string;
+        country?: string;
+      };
+    };
+
     if (data && data.address) {
       const addr = data.address;
-      const city = addr.city || addr.town || addr.village || addr.suburb || 'Coimbatore';
+      const city =
+        addr.city || addr.town || addr.village || addr.suburb || 'Coimbatore';
       const state = addr.state || 'Tamil Nadu';
       const country = addr.country || 'India';
-      
+
       const geocoded = { city, state, country };
       await AsyncStorage.setItem(CACHE_KEY_ADDRESS, JSON.stringify(geocoded));
       return geocoded;
     }
-    
+
     throw new Error('Address details not returned');
   } catch (e) {
     // Fallback to cache if error
@@ -130,7 +162,7 @@ export const fetchOSMReverseGeocode = async (
 export const discoverNearbyEmergencies = async (
   lat: number,
   lng: number,
-  radiusKm: number
+  radiusKm: number,
 ): Promise<EmergencyLocation[]> => {
   const radiusMeters = radiusKm * 1000;
   const query = `
@@ -177,22 +209,37 @@ export const discoverNearbyEmergencies = async (
     }
 
     const results: EmergencyLocation[] = data.elements
-      .map((el: any) => {
-        const itemLat = el.lat || (el.center ? el.center.lat : null);
-        const itemLng = el.lon || (el.center ? el.center.lon : null);
-        
-        if (!itemLat || !itemLng) return null;
+      .map((el: OverpassElement) => {
+        const itemLat = el.lat ?? el.center?.lat ?? null;
+        const itemLng = el.lon ?? el.center?.lon ?? null;
 
-        const tags = el.tags || {};
-        let type: 'police' | 'hospital' | 'fire' | 'charging_station' | 'rto' = 'police';
-        
-        if (tags.amenity === 'police') type = 'police';
-        else if (tags.amenity === 'hospital' || tags.amenity === 'clinic') type = 'hospital';
-        else if (tags.amenity === 'fire_station') type = 'fire';
-        else if (tags.amenity === 'charging_station') type = 'charging_station';
-        else if (tags.office === 'government' && tags.government === 'transport') type = 'rto';
+        if (!itemLat || !itemLng) {
+          return null;
+        }
 
-        const name = tags.name || tags.operator || tags.brand || `${type.replace('_', ' ').toUpperCase()} Service`;
+        const tags: OSMTags = el.tags || {};
+        let type: EmergencyLocationType = 'police';
+
+        if (tags.amenity === 'police') {
+          type = 'police';
+        } else if (tags.amenity === 'hospital' || tags.amenity === 'clinic') {
+          type = 'hospital';
+        } else if (tags.amenity === 'fire_station') {
+          type = 'fire';
+        } else if (tags.amenity === 'charging_station') {
+          type = 'charging_station';
+        } else if (
+          tags.office === 'government' &&
+          tags.government === 'transport'
+        ) {
+          type = 'rto';
+        }
+
+        const name =
+          tags.name ||
+          tags.operator ||
+          tags.brand ||
+          `${type.replace('_', ' ').toUpperCase()} Service`;
         const distance = calculateHaversineDistance(lat, lng, itemLat, itemLng);
         const address = formatOSMAddress(tags);
         const phone = tags.phone || tags['contact:phone'] || undefined;
@@ -208,7 +255,10 @@ export const discoverNearbyEmergencies = async (
           phone,
         };
       })
-      .filter((item: any): item is EmergencyLocation => item !== null);
+      .filter(
+        (item: EmergencyLocation | null): item is EmergencyLocation =>
+          item !== null,
+      );
 
     // Sort by nearest first
     results.sort((a, b) => a.distance - b.distance);
@@ -222,12 +272,14 @@ export const discoverNearbyEmergencies = async (
     // Load from local Cache
     const cached = await AsyncStorage.getItem(CACHE_KEY_LOCATIONS);
     if (cached) {
-      const parsed: EmergencyLocation[] = JSON.parse(cached);
+      const parsed = JSON.parse(cached) as EmergencyLocation[];
       // Re-calculate distances based on current coordinates if caching is used
-      return parsed.map(item => ({
-        ...item,
-        distance: calculateHaversineDistance(lat, lng, item.lat, item.lng),
-      })).sort((a, b) => a.distance - b.distance);
+      return parsed
+        .map((item) => ({
+          ...item,
+          distance: calculateHaversineDistance(lat, lng, item.lat, item.lng),
+        }))
+        .sort((a, b) => a.distance - b.distance);
     }
     return [];
   }

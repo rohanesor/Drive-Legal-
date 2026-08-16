@@ -1,5 +1,11 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, StatusBar } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  StatusBar,
+} from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
 import { dismissAlert } from '../../store/alertSlice';
@@ -12,13 +18,13 @@ export const CarAlertScreen = () => {
   const dispatch = useDispatch();
 
   // Retrieve alert attributes from routing parameters
-  const { 
-    id, 
-    zone_type = 'custom', 
-    zone_name = 'Unknown Zone', 
-    message = 'Active warning detected.', 
+  const {
+    id,
+    zone_type = 'custom',
+    zone_name = 'Unknown Zone',
+    message = 'Active warning detected.',
     suggested_query = '',
-    severity = 'medium'
+    severity = 'medium',
   } = route.params || {};
 
   // Auto dismiss this critical taking-over screen after 8 seconds
@@ -42,9 +48,12 @@ export const CarAlertScreen = () => {
 
   const getAlertColor = () => {
     switch (severity) {
-      case 'high': return CAR_COLORS.danger;
-      case 'medium': return CAR_COLORS.warning;
-      default: return CAR_COLORS.accent;
+      case 'high':
+        return CAR_COLORS.danger;
+      case 'medium':
+        return CAR_COLORS.warning;
+      default:
+        return CAR_COLORS.accent;
     }
   };
 
@@ -68,14 +77,12 @@ export const CarAlertScreen = () => {
         <Text style={[styles.alertTitle, { color: getAlertColor() }]}>
           {zone_name.toUpperCase()}
         </Text>
-        <Text style={styles.alertMessage}>
-          {message}
-        </Text>
+        <Text style={styles.alertMessage}>{message}</Text>
       </View>
 
       {/* Driver safe bottom action row */}
       <View style={styles.footerRow}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: getAlertColor() }]}
           onPress={handleAskRoadMind}
         >
@@ -83,10 +90,7 @@ export const CarAlertScreen = () => {
           <Text style={styles.buttonText}>ASK ROADMIND</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.dismissButton}
-          onPress={handleClose}
-        >
+        <TouchableOpacity style={styles.dismissButton} onPress={handleClose}>
           <Text style={styles.dismissText}>DISMISS</Text>
         </TouchableOpacity>
       </View>

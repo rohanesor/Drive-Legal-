@@ -1,24 +1,9 @@
 """
-Embedding Generation Script - Creates FAISS index for semantic search
+Embedding generation script.
+Generates embeddings for all laws and builds FAISS index.
 
-PURPOSE:
-Generates vector embeddings for all laws in the database and builds
-the FAISS index. This runs ONCE on a desktop/laptop (not on device).
-
-HOW IT WORKS:
-1. Loads all law descriptions from SQLite
-2. Converts each description to a 384-dimensional vector using
-   sentence-transformers/all-MiniLM-L6-v2
-3. Builds a FAISS index (IndexFlatIP) from all vectors
-4. Saves the index and law ID mapping for bundling with the app
-
-OUTPUT:
-- models/faiss_index/index.faiss (binary index file)
-- models/faiss_index/index.pkl (law ID mapping)
-
-USAGE:
-  pip install sentence-transformers faiss-cpu
-  python ingest/embed.py
+Note: Requires sentence-transformers and faiss-cpu.
+Run this on a desktop/laptop, then bundle the index with the app.
 """
 
 import os
@@ -26,7 +11,7 @@ import json
 import sys
 import numpy as np
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from database import get_connection
 
@@ -68,17 +53,14 @@ def generate_embeddings():
     embeddings = model.encode(descriptions, show_progress_bar=True)
     embeddings = embeddings.astype(np.float32)
 
-    # Normalize vectors for inner product similarity
     for i, emb in enumerate(embeddings):
         norm = np.linalg.norm(emb)
         if norm > 0:
             embeddings[i] = emb / norm
 
-    # Build FAISS index
     index = faiss.IndexFlatIP(EMBEDDING_DIM)
     index.add(embeddings)
 
-    # Save index and metadata
     os.makedirs(FAISS_INDEX_PATH, exist_ok=True)
     faiss.write_index(index, os.path.join(FAISS_INDEX_PATH, 'index.faiss'))
 

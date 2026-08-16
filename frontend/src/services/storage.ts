@@ -1,9 +1,9 @@
 /**
  * Storage Service - Persistent settings using AsyncStorage
- * 
+ *
  * AsyncStorage is React Native's equivalent of localStorage.
  * It persists data across app restarts.
- * 
+ *
  * What we store:
  * - User preferences (language, state, dark mode, etc.)
  * - Whether the legal disclaimer has been shown
@@ -18,6 +18,9 @@ export interface StoredSettings {
   state?: string;
   darkMode?: boolean;
   notificationsEnabled?: boolean;
+  zoneAlertsNotificationEnabled?: boolean;
+  speedWarningsNotificationEnabled?: boolean;
+  remindersNotificationEnabled?: boolean;
   locationAlertsEnabled?: boolean;
   showDisclaimerAlways?: boolean;
 }

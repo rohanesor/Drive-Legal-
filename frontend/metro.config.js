@@ -2,11 +2,7 @@
  * Metro bundler configuration
  * Handles JavaScript bundling for React Native
  */
-const { getDefaultConfig } = require('@expo/metro-config');
-
-const {
-  getSentryExpoConfig
-} = require("@sentry/react-native/metro");
+const { getSentryExpoConfig } = require('@sentry/react-native/metro');
 
 const config = getSentryExpoConfig(__dirname);
 
@@ -24,7 +20,7 @@ config.transformer = {
   }),
 };
 
-config.resolver.assetExts = assetExts.filter(ext => ext !== 'svg');
+config.resolver.assetExts = assetExts.filter((ext) => ext !== 'svg');
 config.resolver.sourceExts = [...sourceExts, 'svg', 'ts', 'tsx'];
 
 module.exports = config;

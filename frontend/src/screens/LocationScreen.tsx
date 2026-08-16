@@ -16,22 +16,78 @@ import { setState } from '../store/settingsSlice';
 import { useLocation } from '../context/LocationContext';
 import { getJurisdictionLabel } from '../services/locationService';
 import { STATES } from '../constants/states';
-import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS, GLASS } from '../constants/theme';
+import {
+  TYPOGRAPHY,
+  BORDER_RADIUS,
+  SHADOWS,
+  GLASS,
+} from '../constants/theme';
+import { useThemeColors } from '../context/ThemeContext';
 import { LocationMap, MapLine, MapZone } from '../components/LocationMap';
-import { Map, LocateFixed, ShieldCheck, Building2, Navigation, AlertTriangle, ArrowLeftRight, Search, XCircle, Check, MapPin, ChevronRight } from 'lucide-react-native';
+import {
+  Map,
+  LocateFixed,
+  ShieldCheck,
+  Building2,
+  Navigation,
+  AlertTriangle,
+  ArrowLeftRight,
+  Search,
+  XCircle,
+  Check,
+  MapPin,
+  ChevronRight,
+} from 'lucide-react-native';
 
 const TN_DISTRICTS = [
-  'Ariyalur', 'Chengalpattu', 'Chennai', 'Coimbatore', 'Cuddalore',
-  'Dharmapuri', 'Dindigul', 'Erode', 'Kallakurichi', 'Kancheepuram',
-  'Karur', 'Krishnagiri', 'Madurai', 'Mayiladuthurai', 'Nagapattinam',
-  'Namakkal', 'Nilgiris', 'Perambalur', 'Pudukkottai', 'Ramanathapuram',
-  'Ranipet', 'Salem', 'Sivagangai', 'Tenkasi', 'Thanjavur',
-  'Theni', 'Thoothukudi', 'Tiruchirappalli', 'Tirunelveli', 'Tirupathur',
-  'Tiruppur', 'Tiruvallur', 'Tiruvannamalai', 'Tiruvarur', 'Vellore',
-  'Viluppuram', 'Virudhunagar',
+  'Ariyalur',
+  'Chengalpattu',
+  'Chennai',
+  'Coimbatore',
+  'Cuddalore',
+  'Dharmapuri',
+  'Dindigul',
+  'Erode',
+  'Kallakurichi',
+  'Kancheepuram',
+  'Karur',
+  'Krishnagiri',
+  'Madurai',
+  'Mayiladuthurai',
+  'Nagapattinam',
+  'Namakkal',
+  'Nilgiris',
+  'Perambalur',
+  'Pudukkottai',
+  'Ramanathapuram',
+  'Ranipet',
+  'Salem',
+  'Sivagangai',
+  'Tenkasi',
+  'Thanjavur',
+  'Theni',
+  'Thoothukudi',
+  'Tiruchirappalli',
+  'Tirunelveli',
+  'Tirupathur',
+  'Tiruppur',
+  'Tiruvallur',
+  'Tiruvannamalai',
+  'Tiruvarur',
+  'Vellore',
+  'Viluppuram',
+  'Virudhunagar',
 ];
 
-export const LocationScreen = ({ navigation }: any) => {
+import type { AppNavigationProp } from '../types';
+
+export const LocationScreen = ({
+  navigation,
+}: {
+  navigation: AppNavigationProp;
+}) => {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const dispatch = useDispatch();
   const {
     location,
@@ -41,7 +97,7 @@ export const LocationScreen = ({ navigation }: any) => {
     refreshLocation,
     setManualLocation,
     isMocked,
-    status
+    status,
   } = useLocation();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -58,12 +114,24 @@ export const LocationScreen = ({ navigation }: any) => {
 
   useEffect(() => {
     // Entrance animation
-    Animated.timing(fadeIn, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+    Animated.timing(fadeIn, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
     // Pulse animation for status indicator
     Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.3, duration: 1200, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1.0, duration: 1200, useNativeDriver: true }),
+        Animated.timing(pulseAnim, {
+          toValue: 1.3,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1.0,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
       ]),
     ).start();
   }, []);
@@ -80,15 +148,20 @@ export const LocationScreen = ({ navigation }: any) => {
   };
 
   const filteredStates = useMemo(() => {
-    if (!searchQuery) return STATES;
+    if (!searchQuery) {
+      return STATES;
+    }
     const q = searchQuery.toLowerCase();
     return STATES.filter(
-      s => s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q)
+      (s) =>
+        s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q),
     );
   }, [searchQuery]);
 
   const stateDetail = useMemo(() => {
-    if (!detectedState) return null;
+    if (!detectedState) {
+      return null;
+    }
     return {
       name: geoInfo?.state || '',
       code: detectedState,
@@ -105,7 +178,7 @@ export const LocationScreen = ({ navigation }: any) => {
           coords: [
             { lat: 12.9716, lng: 77.5946 },
             { lat: 12.3051, lng: 76.6551 },
-            { lat: 11.6643, lng: 76.6950 },
+            { lat: 11.6643, lng: 76.695 },
             { lat: 11.0168, lng: 76.9558 },
           ],
           color: '#FF1744',
@@ -121,7 +194,7 @@ export const LocationScreen = ({ navigation }: any) => {
           coords: [
             { lat: 12.9716, lng: 77.5946 },
             { lat: 12.3051, lng: 76.6551 },
-            { lat: 11.6643, lng: 76.6950 },
+            { lat: 11.6643, lng: 76.695 },
             { lat: 11.0168, lng: 76.9558 },
           ],
           color: '#A855F7',
@@ -133,7 +206,9 @@ export const LocationScreen = ({ navigation }: any) => {
   }, [detectedState]);
 
   const legalZones: MapZone[] = useMemo(() => {
-    if (!location) return [];
+    if (!location) {
+      return [];
+    }
     return [
       {
         id: 'school-zone-nearby',
@@ -152,13 +227,13 @@ export const LocationScreen = ({ navigation }: any) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor={COLORS.navy} barStyle="light-content" />
+      <StatusBar backgroundColor={colors.navy} barStyle="light-content" />
 
       {/* Premium Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.headerIconContainer}>
-            <Map size={20} color={COLORS.primary} />
+            <Map size={20} color={colors.primary} />
           </View>
           <View>
             <Text style={styles.headerTitle}>Jurisdiction</Text>
@@ -167,7 +242,9 @@ export const LocationScreen = ({ navigation }: any) => {
         </View>
         {detectedState && (
           <View style={styles.headerStateBadge}>
-            <Animated.View style={[styles.statusDot, { transform: [{ scale: pulseAnim }] }]} />
+            <Animated.View
+              style={[styles.statusDot, { transform: [{ scale: pulseAnim }] }]}
+            />
             <Text style={styles.headerStateText}>{detectedState}</Text>
           </View>
         )}
@@ -182,7 +259,11 @@ export const LocationScreen = ({ navigation }: any) => {
         {/* Map Section */}
         <View style={styles.mapSection}>
           <LocationMap
-            currentLocation={location ? { lat: location.latitude, lng: location.longitude } : undefined}
+            currentLocation={
+              location
+                ? { lat: location.latitude, lng: location.longitude }
+                : undefined
+            }
             height={220}
             interactive={true}
             mapType="jurisdiction"
@@ -194,35 +275,49 @@ export const LocationScreen = ({ navigation }: any) => {
           <View style={styles.jurisdictionBreadcrumb}>
             <Text style={styles.breadcrumbText}>🇮🇳 India</Text>
             <Text style={styles.breadcrumbSeparator}>›</Text>
-            <Text style={styles.breadcrumbText}>{detectedState || 'Detecting...'}</Text>
+            <Text style={styles.breadcrumbText}>
+              {detectedState || 'Detecting...'}
+            </Text>
             <Text style={styles.breadcrumbSeparator}>›</Text>
-            <Text style={styles.breadcrumbText}>{detectedDistrict || 'Detecting...'}</Text>
+            <Text style={styles.breadcrumbText}>
+              {detectedDistrict || 'Detecting...'}
+            </Text>
             <Text style={styles.breadcrumbSeparator}>›</Text>
-            <Text style={styles.breadcrumbText}>{detectedCity || 'Detecting...'}</Text>
+            <Text style={styles.breadcrumbText}>
+              {detectedCity || 'Detecting...'}
+            </Text>
           </View>
 
           {/* Legal Rules Card */}
           <View style={styles.legalRulesCard}>
-            <Text style={styles.legalRulesTitle}>Rules Active In This Region</Text>
+            <Text style={styles.legalRulesTitle}>
+              Rules Active In This Region
+            </Text>
             <View style={styles.legalRule}>
               <Text style={styles.legalRuleEmoji}>🪖</Text>
               <View style={styles.legalRuleContent}>
                 <Text style={styles.legalRuleName}>Helmet Required</Text>
-                <Text style={styles.legalRuleDesc}>Mandatory for two-wheelers under MV Act Section 194D</Text>
+                <Text style={styles.legalRuleDesc}>
+                  Mandatory for two-wheelers under MV Act Section 194D
+                </Text>
               </View>
             </View>
             <View style={styles.legalRule}>
               <Text style={styles.legalRuleEmoji}>🔕</Text>
               <View style={styles.legalRuleContent}>
                 <Text style={styles.legalRuleName}>Mobile Usage</Text>
-                <Text style={styles.legalRuleDesc}>Prohibited while driving under Section 184(c)</Text>
+                <Text style={styles.legalRuleDesc}>
+                  Prohibited while driving under Section 184(c)
+                </Text>
               </View>
             </View>
             <View style={styles.legalRule}>
               <Text style={styles.legalRuleEmoji}>💺</Text>
               <View style={styles.legalRuleContent}>
                 <Text style={styles.legalRuleName}>Seatbelt</Text>
-                <Text style={styles.legalRuleDesc}>Mandatory for all occupants under Section 194B</Text>
+                <Text style={styles.legalRuleDesc}>
+                  Mandatory for all occupants under Section 194B
+                </Text>
               </View>
             </View>
           </View>
@@ -237,11 +332,11 @@ export const LocationScreen = ({ navigation }: any) => {
             activeOpacity={0.85}
           >
             {loading ? (
-              <ActivityIndicator color={COLORS.white} />
+              <ActivityIndicator color={colors.white} />
             ) : (
               <>
                 <View style={styles.detectButtonIcon}>
-                  <LocateFixed size={20} color={COLORS.white} />
+                  <LocateFixed size={20} color={colors.white} />
                 </View>
                 <Text style={styles.detectButtonText}>Detect My Location</Text>
                 <ChevronRight size={16} color="rgba(255, 255, 255, 0.5)" />
@@ -251,45 +346,89 @@ export const LocationScreen = ({ navigation }: any) => {
 
           {/* Glassmorphic location acquisition status telemetry card */}
           {status && status !== 'Ready' && (
-            <View style={[
-              styles.telemetryCard,
-              (status === 'Permission Denied' || status === 'GPS Disabled' || status === 'Location Timeout') && styles.telemetryCardError,
-              status === 'Reverse Geocode Failed' && styles.telemetryCardWarning
-            ]}>
+            <View
+              style={[
+                styles.telemetryCard,
+                (status === 'Permission Denied' ||
+                  status === 'GPS Disabled' ||
+                  status === 'Location Timeout') &&
+                  styles.telemetryCardError,
+                status === 'Reverse Geocode Failed' &&
+                  styles.telemetryCardWarning,
+              ]}
+            >
               <View style={styles.telemetryHeader}>
-                {loading && (status === 'Requesting Permission' || status === 'Acquiring GPS' || status === 'Determining Jurisdiction') ? (
-                  <ActivityIndicator size="small" color={COLORS.cyan} style={styles.telemetrySpinner} />
+                {loading &&
+                (status === 'Requesting Permission' ||
+                  status === 'Acquiring GPS' ||
+                  status === 'Determining Jurisdiction') ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={colors.cyan}
+                    style={styles.telemetrySpinner}
+                  />
                 ) : (
-                  <Animated.View style={[
-                    styles.statusDot, 
-                    { transform: [{ scale: pulseAnim }] },
-                    (status === 'Permission Denied' || status === 'GPS Disabled' || status === 'Location Timeout') && { backgroundColor: COLORS.error },
-                    status === 'Reverse Geocode Failed' && { backgroundColor: COLORS.warning },
-                    status === 'GPS Acquired' && { backgroundColor: COLORS.success }
-                  ]} />
+                  <Animated.View
+                    style={[
+                      styles.statusDot,
+                      { transform: [{ scale: pulseAnim }] },
+                      (status === 'Permission Denied' ||
+                        status === 'GPS Disabled' ||
+                        status === 'Location Timeout') && {
+                        backgroundColor: colors.error,
+                      },
+                      status === 'Reverse Geocode Failed' && {
+                        backgroundColor: colors.warning,
+                      },
+                      status === 'GPS Acquired' && {
+                        backgroundColor: colors.success,
+                      },
+                    ]}
+                  />
                 )}
-                <Text style={[
-                  styles.telemetryTitle,
-                  (status === 'Permission Denied' || status === 'GPS Disabled' || status === 'Location Timeout') && { color: COLORS.error },
-                  status === 'Reverse Geocode Failed' && { color: COLORS.warning },
-                  status === 'GPS Acquired' && { color: COLORS.success }
-                ]}>
+                <Text
+                  style={[
+                    styles.telemetryTitle,
+                    (status === 'Permission Denied' ||
+                      status === 'GPS Disabled' ||
+                      status === 'Location Timeout') && { color: colors.error },
+                    status === 'Reverse Geocode Failed' && {
+                      color: colors.warning,
+                    },
+                    status === 'GPS Acquired' && { color: colors.success },
+                  ]}
+                >
                   {status}
                 </Text>
               </View>
-              <Text style={[
-                styles.telemetryDesc,
-                (status === 'Permission Denied' || status === 'GPS Disabled' || status === 'Location Timeout') && { color: 'rgba(239, 68, 68, 0.85)' },
-                status === 'Reverse Geocode Failed' && { color: 'rgba(245, 158, 11, 0.95)' }
-              ]}>
-                {status === 'Requesting Permission' && "🔐 Requesting location permissions..."}
-                {status === 'Acquiring GPS' && "📡 Acquiring GPS signal (balanced accuracy)..."}
-                {status === 'GPS Acquired' && "🎯 GPS signal acquired!"}
-                {status === 'Determining Jurisdiction' && "🗺️ Querying OpenStreetMap for legal boundaries..."}
-                {status === 'Permission Denied' && "🔐 Permission Denied. Smart Jurisdiction Engine requires location permissions to query local traffic rules."}
-                {status === 'GPS Disabled' && "🛰️ GPS Disabled. System location sensors are inactive. Please enable Location in settings."}
-                {status === 'Location Timeout' && "⏳ Unable to acquire GPS signal. Using cached fallback."}
-                {status === 'Reverse Geocode Failed' && "⚠️ Geocoding query timed out. Displaying coordinates with default local boundaries."}
+              <Text
+                style={[
+                  styles.telemetryDesc,
+                  (status === 'Permission Denied' ||
+                    status === 'GPS Disabled' ||
+                    status === 'Location Timeout') && {
+                    color: 'rgba(239, 68, 68, 0.85)',
+                  },
+                  status === 'Reverse Geocode Failed' && {
+                    color: 'rgba(245, 158, 11, 0.95)',
+                  },
+                ]}
+              >
+                {status === 'Requesting Permission' &&
+                  '🔐 Requesting location permissions...'}
+                {status === 'Acquiring GPS' &&
+                  '📡 Acquiring GPS signal (balanced accuracy)...'}
+                {status === 'GPS Acquired' && '🎯 GPS signal acquired!'}
+                {status === 'Determining Jurisdiction' &&
+                  '🗺️ Querying OpenStreetMap for legal boundaries...'}
+                {status === 'Permission Denied' &&
+                  '🔐 Permission Denied. Smart Jurisdiction Engine requires location permissions to query local traffic rules.'}
+                {status === 'GPS Disabled' &&
+                  '🛰️ GPS Disabled. System location sensors are inactive. Please enable Location in settings.'}
+                {status === 'Location Timeout' &&
+                  '⏳ Unable to acquire GPS signal. Using cached fallback.'}
+                {status === 'Reverse Geocode Failed' &&
+                  '⚠️ Geocoding query timed out. Displaying coordinates with default local boundaries.'}
               </Text>
             </View>
           )}
@@ -299,7 +438,7 @@ export const LocationScreen = ({ navigation }: any) => {
             <View style={styles.detectedCard}>
               <View style={styles.detectedHeader}>
                 <View style={styles.detectedIconBadge}>
-                  <ShieldCheck size={20} color={COLORS.cyan} />
+                  <ShieldCheck size={20} color={colors.cyan} />
                 </View>
                 <View style={styles.detectedTexts}>
                   <Text style={styles.detectedLabel}>Active Jurisdiction</Text>
@@ -312,22 +451,27 @@ export const LocationScreen = ({ navigation }: any) => {
                   </Text>
                 </View>
                 <View style={styles.jurisdictionBadge}>
-                  <Text style={styles.jurisdictionCode}>{stateDetail.code}</Text>
+                  <Text style={styles.jurisdictionCode}>
+                    {stateDetail.code}
+                  </Text>
                 </View>
               </View>
 
               <View style={styles.detectedMeta}>
                 {stateDetail.districtCount && (
                   <View style={styles.metaItem}>
-                    <Building2 size={14} color={COLORS.textSecondary} />
-                    <Text style={styles.metaText}>{stateDetail.districtCount} districts</Text>
+                    <Building2 size={14} color={colors.textSecondary} />
+                    <Text style={styles.metaText}>
+                      {stateDetail.districtCount} districts
+                    </Text>
                   </View>
                 )}
                 {location && (
                   <View style={styles.metaItem}>
-                    <Navigation size={14} color={COLORS.cyan} />
+                    <Navigation size={14} color={colors.cyan} />
                     <Text style={[styles.metaText, styles.coordText]}>
-                      {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+                      {location.latitude.toFixed(4)},{' '}
+                      {location.longitude.toFixed(4)}
                     </Text>
                   </View>
                 )}
@@ -335,38 +479,48 @@ export const LocationScreen = ({ navigation }: any) => {
             </View>
           )}
 
-          {error && !['Permission Denied', 'GPS Disabled', 'Location Timeout'].includes(status) && (
-            <View style={styles.errorContainer}>
-              <AlertTriangle size={16} color={COLORS.error} />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
+          {error &&
+            !['Permission Denied', 'GPS Disabled', 'Location Timeout'].includes(
+              status,
+            ) && (
+              <View style={styles.errorContainer}>
+                <AlertTriangle size={16} color={colors.error} />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
         </View>
 
         {/* Manual State Selection */}
         <View style={styles.manualSection}>
           <View style={styles.sectionHeaderRow}>
-            <View style={[styles.sectionIcon, { backgroundColor: 'rgba(37, 99, 235, 0.08)' }]}>
-              <ArrowLeftRight size={18} color={COLORS.primary} />
+            <View
+              style={[
+                styles.sectionIcon,
+                { backgroundColor: 'rgba(37, 99, 235, 0.08)' },
+              ]}
+            >
+              <ArrowLeftRight size={18} color={colors.primary} />
             </View>
             <View>
               <Text style={styles.sectionTitle}>Change State</Text>
-              <Text style={styles.sectionSub}>Fines and rules vary by state jurisdiction</Text>
+              <Text style={styles.sectionSub}>
+                Fines and rules vary by state jurisdiction
+              </Text>
             </View>
           </View>
 
           <View style={styles.searchContainer}>
-            <Search size={18} color={COLORS.textSecondary} />
+            <Search size={18} color={colors.textSecondary} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search state..."
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <XCircle size={18} color={COLORS.textSecondary} />
+                <XCircle size={18} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
           </View>
@@ -383,14 +537,20 @@ export const LocationScreen = ({ navigation }: any) => {
                 onPress={() => handleManualSelect(state.code)}
                 activeOpacity={0.8}
               >
-                <View style={[
-                  styles.stateCodeBadge,
-                  isSelected && styles.stateCodeBadgeSelected,
-                ]}>
-                  <Text style={[
-                    styles.stateCode,
-                    isSelected && styles.stateCodeSelected,
-                  ]}>{state.code}</Text>
+                <View
+                  style={[
+                    styles.stateCodeBadge,
+                    isSelected && styles.stateCodeBadgeSelected,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.stateCode,
+                      isSelected && styles.stateCodeSelected,
+                    ]}
+                  >
+                    {state.code}
+                  </Text>
                 </View>
                 <Text
                   style={[
@@ -402,7 +562,7 @@ export const LocationScreen = ({ navigation }: any) => {
                 </Text>
                 {isSelected && (
                   <View style={styles.selectedCheckmark}>
-                    <Check size={14} color={COLORS.white} />
+                    <Check size={14} color={colors.white} />
                   </View>
                 )}
               </TouchableOpacity>
@@ -416,13 +576,13 @@ export const LocationScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   header: {
-    backgroundColor: COLORS.navy,
+    backgroundColor: colors.navy,
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'ios' ? 50 : 16,
     paddingBottom: 20,
@@ -450,12 +610,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...TYPOGRAPHY.h3,
-    color: COLORS.white,
+    color: colors.white,
     fontWeight: 'bold',
   },
   headerSub: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: 2,
   },
   headerStateBadge: {
@@ -471,11 +631,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: COLORS.success,
+    backgroundColor: colors.success,
   },
   headerStateText: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.white,
+    color: colors.white,
     fontWeight: '700',
   },
   scrollContainer: {
@@ -495,16 +655,16 @@ const styles = StyleSheet.create({
     margin: 16,
     marginBottom: 8,
     borderRadius: BORDER_RADIUS.large,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     ...SHADOWS.subtle,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   detectButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: COLORS.primary,
+    backgroundColor: colors.primary,
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderRadius: BORDER_RADIUS.medium,
@@ -520,14 +680,14 @@ const styles = StyleSheet.create({
   },
   detectButtonText: {
     fontSize: 16,
-    color: COLORS.white,
+    color: colors.white,
     fontWeight: '700',
     flex: 1,
   },
   // Glassmorphic jurisdiction card
   detectedCard: {
     marginTop: 14,
-    backgroundColor: COLORS.navy,
+    backgroundColor: colors.navy,
     borderRadius: BORDER_RADIUS.medium,
     padding: 16,
     borderWidth: 1,
@@ -551,7 +711,7 @@ const styles = StyleSheet.create({
   },
   detectedLabel: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 10,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -560,7 +720,7 @@ const styles = StyleSheet.create({
   detectedName: {
     fontSize: 18,
     fontWeight: '700',
-    color: COLORS.white,
+    color: colors.white,
     marginTop: 2,
   },
   jurisdictionBadge: {
@@ -572,7 +732,7 @@ const styles = StyleSheet.create({
   jurisdictionCode: {
     fontSize: 14,
     fontWeight: '800',
-    color: COLORS.cyan,
+    color: colors.cyan,
   },
   detectedMeta: {
     flexDirection: 'row',
@@ -589,12 +749,12 @@ const styles = StyleSheet.create({
   },
   metaText: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 12,
   },
   coordText: {
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    color: COLORS.cyan,
+    color: colors.cyan,
     fontSize: 11,
   },
   errorContainer: {
@@ -604,25 +764,25 @@ const styles = StyleSheet.create({
     marginTop: 12,
     padding: 12,
     borderRadius: BORDER_RADIUS.small,
-    backgroundColor: COLORS.lightError,
+    backgroundColor: colors.lightError,
     borderWidth: 1,
-    borderColor: COLORS.redBorder,
+    borderColor: colors.redBorder,
   },
   errorText: {
     fontSize: 13,
-    color: COLORS.error,
+    color: colors.error,
     flex: 1,
   },
   // Manual Selection
   manualSection: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     marginHorizontal: 16,
     marginBottom: 8,
     borderRadius: BORDER_RADIUS.large,
     padding: 18,
     ...SHADOWS.subtle,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -640,30 +800,30 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...TYPOGRAPHY.bodyLarge,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   sectionSub: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 11,
     marginTop: 1,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
     borderRadius: BORDER_RADIUS.medium,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     marginBottom: 10,
     gap: 10,
   },
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     paddingVertical: 0,
   },
   stateButton: {
@@ -676,44 +836,44 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   stateButtonSelected: {
-    backgroundColor: COLORS.lightPrimary,
+    backgroundColor: colors.lightPrimary,
   },
   stateCodeBadge: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   stateCodeBadgeSelected: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   stateCode: {
     fontSize: 13,
     fontWeight: '800',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   stateCodeSelected: {
-    color: COLORS.white,
+    color: colors.white,
   },
   stateButtonText: {
     fontSize: 16,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     flex: 1,
   },
   stateButtonTextSelected: {
-    color: COLORS.primary,
+    color: colors.primary,
     fontWeight: '700',
   },
   selectedCheckmark: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: COLORS.primary,
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -729,13 +889,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   breadcrumbText: {
-    color: COLORS.white,
+    color: colors.white,
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.5,
   },
   breadcrumbSeparator: {
-    color: COLORS.white,
+    color: colors.white,
     fontSize: 12,
     fontWeight: '600',
     marginHorizontal: 6,
@@ -743,7 +903,7 @@ const styles = StyleSheet.create({
   },
   // Legal Rules Card
   legalRulesCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: BORDER_RADIUS.medium,
     padding: 16,
     marginTop: 10,
@@ -753,7 +913,7 @@ const styles = StyleSheet.create({
   legalRulesTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     marginBottom: 12,
   },
   legalRule: {
@@ -772,11 +932,11 @@ const styles = StyleSheet.create({
   legalRuleName: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   legalRuleDesc: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: 2,
   },
   telemetryCard: {
@@ -807,13 +967,13 @@ const styles = StyleSheet.create({
   telemetryTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.cyan,
+    color: colors.cyan,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   telemetryDesc: {
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     lineHeight: 18,
   },
 });

@@ -1,7 +1,23 @@
-import { convexClient } from "../convex/client";
-import { offlineCache, cacheKeys } from "./offlineCache";
+import { convexClient } from '../convex/client';
+/**
+ * Convex Sync Service
+ *
+ * Manages bidirectional sync between the on-device SQLite database and the
+ * Convex cloud backend. Syncs traffic rules, regions, emergency contacts,
+ * and advisories. Falls back to offline cache when no connection is available.
+ *
+ * Public API:
+ * - subscribe()        - Listen for status changes and sync completion
+ * - syncAll()          - Sync all tables from Convex to offline cache
+ * - syncTable()        - Sync a single table
+ * - checkConnection()  - Test connectivity to Convex backend
+ * - needsSync()        - Returns true if stale data was detected
+ * - getStatus()        - Returns current sync status
+ */
+import { api } from '../../convex/_generated/api';
+import { offlineCache, cacheKeys } from './offlineCache';
 
-type SyncStatus = "idle" | "syncing" | "online" | "offline" | "error";
+type SyncStatus = 'idle' | 'syncing' | 'online' | 'offline' | 'error';
 
 interface SyncListener {
   onStatusChange?: (status: SyncStatus) => void;
@@ -10,7 +26,7 @@ interface SyncListener {
 }
 
 class SyncService {
-  private status: SyncStatus = "idle";
+  private status: SyncStatus = 'idle';
   private listeners: SyncListener[] = [];
   private isOnline = false;
   private syncInProgress = false;
@@ -41,56 +57,57 @@ class SyncService {
     try {
       if (!convexClient) {
         this.isOnline = false;
-        this.notifyStatusChange("offline");
+        this.notifyStatusChange('offline');
         return false;
       }
-      const health = await convexClient.mutation(":health" as any);
+      await convexClient.query(api.regions.list);
       this.isOnline = true;
-      this.notifyStatusChange("online");
+      this.notifyStatusChange('online');
       return true;
     } catch {
       this.isOnline = false;
-      this.notifyStatusChange("offline");
+      this.notifyStatusChange('offline');
       return false;
     }
   }
 
-  async syncAll(userId?: string): Promise<void> {
-    if (this.syncInProgress) return;
+  async syncAll(): Promise<void> {
+    if (this.syncInProgress) {
+      return;
+    }
     this.syncInProgress = true;
 
     try {
-      this.notifyStatusChange("syncing");
+      this.notifyStatusChange('syncing');
 
       const connected = await this.checkConnection();
       if (!connected) {
-        this.notifyStatusChange("offline");
+        this.notifyStatusChange('offline');
         this.syncInProgress = false;
         return;
       }
 
       const tablesSynced: string[] = [];
 
-      if (userId) {
-        const [regions, rules, emergency] = await Promise.all([
-          this.syncRegions(),
-          this.syncRules(),
-          this.syncEmergency(),
-        ]);
+      const [regions, rules, emergency] = await Promise.all([
+        this.syncRegions(),
+        this.syncRules(),
+        this.syncEmergency(),
+      ]);
 
-        tablesSynced.push(...regions, ...rules, ...emergency);
-      }
+      tablesSynced.push(...regions, ...rules, ...emergency);
 
       await offlineCache.setLastSync(Date.now());
-      this.notifyStatusChange("online");
+      this.notifyStatusChange('online');
 
       for (const l of this.listeners) {
         l.onSyncComplete?.(tablesSynced);
       }
-    } catch (e: any) {
-      this.notifyStatusChange("error");
+    } catch (e: unknown) {
+      this.notifyStatusChange('error');
+      const message = e instanceof Error ? e.message : 'Sync failed';
       for (const l of this.listeners) {
-        l.onError?.(e?.message ?? "Sync failed");
+        l.onError?.(message);
       }
     } finally {
       this.syncInProgress = false;
@@ -99,12 +116,14 @@ class SyncService {
 
   private async syncRegions(): Promise<string[]> {
     try {
-      if (!convexClient) return [];
-      const regions = await convexClient.query("regions:list" as any);
+      if (!convexClient) {
+        return [];
+      }
+      const regions = await convexClient.query(api.regions.list);
       if (regions) {
         await offlineCache.set(cacheKeys.regions, regions);
       }
-      return ["regions"];
+      return ['regions'];
     } catch {
       return [];
     }
@@ -113,10 +132,12 @@ class SyncService {
   private async syncRules(): Promise<string[]> {
     try {
       const cachedRegions = await offlineCache.get<any[]>(cacheKeys.regions);
-      if (!cachedRegions) return [];
+      if (!cachedRegions) {
+        return [];
+      }
       for (const region of cachedRegions) {
         try {
-          const rules = await convexClient!.query("rules:getByRegion" as any, {
+          const rules = await convexClient!.query(api.rules.getByRegion, {
             regionId: region._id,
           });
           if (rules) {
@@ -126,7 +147,7 @@ class SyncService {
           continue;
         }
       }
-      return ["violationRules"];
+      return ['violationRules'];
     } catch {
       return [];
     }
@@ -135,12 +156,14 @@ class SyncService {
   private async syncEmergency(): Promise<string[]> {
     try {
       const cachedRegions = await offlineCache.get<any[]>(cacheKeys.regions);
-      if (!cachedRegions) return [];
+      if (!cachedRegions) {
+        return [];
+      }
       for (const region of cachedRegions) {
         try {
           const contacts = await convexClient!.query(
-            "emergency:getByRegion" as any,
-            { regionId: region._id }
+            api.emergency.getByRegion,
+            { regionId: region._id },
           );
           if (contacts) {
             await offlineCache.set(cacheKeys.emergency(region._id), contacts);
@@ -149,7 +172,7 @@ class SyncService {
           continue;
         }
       }
-      return ["emergencyContacts"];
+      return ['emergencyContacts'];
     } catch {
       return [];
     }

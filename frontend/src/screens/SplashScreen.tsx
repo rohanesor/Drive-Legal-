@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,46 +8,74 @@ import {
   Animated,
   StatusBar,
 } from 'react-native';
-import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../constants/theme';
-import { MapPin, Calculator, MessageCircle, WifiOff, ShieldCheck, CheckCircle, ArrowRight } from 'lucide-react-native';
+import { TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../constants/theme';
+import { useThemeColors } from '../context/ThemeContext';
+import {
+  MapPin,
+  Calculator,
+  MessageCircle,
+  WifiOff,
+  ShieldCheck,
+  CheckCircle,
+  ArrowRight,
+} from 'lucide-react-native';
 import { AppIntroAnimation } from '../components/AppIntroAnimation';
 
 const { width } = Dimensions.get('window');
 
-const ONBOARDING_DATA = [
+const ONBOARDING_DATA_STATIC = [
   {
     title: 'Smart Location Search',
-    description: 'Instantly discover state-specific traffic laws, municipal rules, and active speed zones automatically via GPS.',
+    description:
+      'Instantly discover state-specific traffic laws, municipal rules, and active speed zones automatically via GPS.',
     Icon: MapPin,
-    color: COLORS.primary,
+    colorKey: 'primary' as const,
   },
   {
     title: 'Offline Challan Calculator',
-    description: 'Determine exact compounding penalties, offense multipliers, and commercial surcharges without internet access.',
+    description:
+      'Determine exact compounding penalties, offense multipliers, and commercial surcharges without internet access.',
     Icon: Calculator,
-    color: COLORS.warning,
+    colorKey: 'warning' as const,
   },
   {
     title: 'Verified AI Chatbot',
-    description: 'Ask traffic law questions in English, Tamil, or Hindi and get answers backed by real, tamper-proof legal citations.',
+    description:
+      'Ask traffic law questions in English, Tamil, or Hindi and get answers backed by real, tamper-proof legal citations.',
     Icon: MessageCircle,
-    color: COLORS.cyan,
+    colorKey: 'cyan' as const,
   },
   {
     title: 'Offline-First Operations',
-    description: 'All local SQLite database rules, zone geometries, and template engines are stored locally on your device.',
+    description:
+      'All local SQLite database rules, zone geometries, and template engines are stored locally on your device.',
     Icon: WifiOff,
-    color: COLORS.success,
+    colorKey: 'success' as const,
   },
 ];
 
-export const SplashScreen = ({ navigation }: any) => {
+import type { AppNavigationProp } from '../types';
+
+export const SplashScreen = ({
+  navigation,
+}: {
+  navigation: AppNavigationProp;
+}) => {
   const [showIntro, setShowIntro] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
   const roadAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const onboardingData = useMemo(() => {
+    return ONBOARDING_DATA_STATIC.map((item) => ({
+      ...item,
+      color: colors[item.colorKey],
+    }));
+  }, [colors]);
 
   // Show the intro animation first
   if (showIntro) {
@@ -57,20 +85,36 @@ export const SplashScreen = ({ navigation }: any) => {
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(roadAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
-        Animated.timing(roadAnim, { toValue: 0, duration: 1500, useNativeDriver: true }),
+        Animated.timing(roadAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(roadAnim, {
+          toValue: 0,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
       ]),
     ).start();
     Animated.loop(
       Animated.sequence([
-        Animated.timing(glowAnim, { toValue: 0.6, duration: 2000, useNativeDriver: true }),
-        Animated.timing(glowAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
+        Animated.timing(glowAnim, {
+          toValue: 0.6,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
       ]),
     ).start();
   }, []);
 
   const handleNext = () => {
-    if (currentSlide < ONBOARDING_DATA.length - 1) {
+    if (currentSlide < onboardingData.length - 1) {
       Animated.timing(fadeAnim, {
         toValue: 0,
         duration: 200,
@@ -79,8 +123,16 @@ export const SplashScreen = ({ navigation }: any) => {
         setCurrentSlide(currentSlide + 1);
         slideAnim.setValue(50);
         Animated.parallel([
-          Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }),
-          Animated.spring(slideAnim, { toValue: 0, friction: 6, useNativeDriver: true }),
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 250,
+            useNativeDriver: true,
+          }),
+          Animated.spring(slideAnim, {
+            toValue: 0,
+            friction: 6,
+            useNativeDriver: true,
+          }),
         ]).start();
       });
     } else {
@@ -104,16 +156,16 @@ export const SplashScreen = ({ navigation }: any) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor={COLORS.navy} barStyle="light-content" />
+      <StatusBar backgroundColor={colors.navy} barStyle="light-content" />
 
       <View style={styles.header}>
         <View style={styles.logoRow}>
           <View style={styles.miniLogo}>
-            <ShieldCheck size={16} color={COLORS.cyan} />
+            <ShieldCheck size={16} color={colors.cyan} />
           </View>
           <Text style={styles.logoText}>DriveLegal</Text>
         </View>
-        {currentSlide < ONBOARDING_DATA.length - 1 && (
+        {currentSlide < onboardingData.length - 1 && (
           <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
             <Text style={styles.skipText}>Skip</Text>
           </TouchableOpacity>
@@ -121,20 +173,41 @@ export const SplashScreen = ({ navigation }: any) => {
       </View>
 
       <View style={styles.visualContainer}>
-        <Animated.View style={[styles.glowEmblemContainer, { opacity: glowOpacity }]}>
+        <Animated.View
+          style={[styles.glowEmblemContainer, { opacity: glowOpacity }]}
+        >
           <View style={styles.glowPulseOuter} />
           <View style={styles.glowPulseInner} />
         </Animated.View>
         <View style={styles.shieldLogo}>
-          {React.createElement(ONBOARDING_DATA[currentSlide].Icon, {
+          {React.createElement(onboardingData[currentSlide].Icon, {
             size: 64,
-            color: ONBOARDING_DATA[currentSlide].color,
+            color: onboardingData[currentSlide].color,
           })}
         </View>
         <View style={styles.roadLinesContainer}>
-          <Animated.View style={[styles.roadLineLeft, { transform: [{ translateX: roadTranslateX }] }]} />
-          <View style={[styles.roadLineCenter, { backgroundColor: ONBOARDING_DATA[currentSlide].color }]} />
-          <Animated.View style={[styles.roadLineRight, { transform: [{ translateX: Animated.multiply(roadTranslateX, -1) }] }]} />
+          <Animated.View
+            style={[
+              styles.roadLineLeft,
+              { transform: [{ translateX: roadTranslateX }] },
+            ]}
+          />
+          <View
+            style={[
+              styles.roadLineCenter,
+              { backgroundColor: onboardingData[currentSlide].color },
+            ]}
+          />
+          <Animated.View
+            style={[
+              styles.roadLineRight,
+              {
+                transform: [
+                  { translateX: Animated.multiply(roadTranslateX, -1) },
+                ],
+              },
+            ]}
+          />
         </View>
       </View>
 
@@ -144,36 +217,48 @@ export const SplashScreen = ({ navigation }: any) => {
           { opacity: fadeAnim, transform: [{ translateX: slideAnim }] },
         ]}
       >
-        <Text style={styles.slideTitle}>{ONBOARDING_DATA[currentSlide].title}</Text>
-        <Text style={styles.slideDescription}>{ONBOARDING_DATA[currentSlide].description}</Text>
+        <Text style={styles.slideTitle}>
+          {onboardingData[currentSlide].title}
+        </Text>
+        <Text style={styles.slideDescription}>
+          {onboardingData[currentSlide].description}
+        </Text>
       </Animated.View>
 
       <View style={styles.footer}>
         <View style={styles.dotContainer}>
-          {ONBOARDING_DATA.map((_, idx) => (
+          {onboardingData.map((_: any, idx: number) => (
             <View
               key={idx}
               style={[
                 styles.dot,
                 currentSlide === idx
-                  ? [styles.dotActive, { backgroundColor: ONBOARDING_DATA[idx].color }]
+                  ? [
+                      styles.dotActive,
+                      { backgroundColor: onboardingData[idx].color },
+                    ]
                   : styles.dotInactive,
               ]}
             />
           ))}
         </View>
         <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: ONBOARDING_DATA[currentSlide].color }]}
+          style={[
+            styles.actionButton,
+            { backgroundColor: onboardingData[currentSlide].color },
+          ]}
           onPress={handleNext}
           activeOpacity={0.8}
         >
           <Text style={styles.actionButtonText}>
-            {currentSlide === ONBOARDING_DATA.length - 1 ? 'Get Started' : 'Next'}
+            {currentSlide === onboardingData.length - 1
+              ? 'Get Started'
+              : 'Next'}
           </Text>
-          {currentSlide === ONBOARDING_DATA.length - 1 ? (
-            <CheckCircle size={18} color={COLORS.white} />
+          {currentSlide === onboardingData.length - 1 ? (
+            <CheckCircle size={18} color={colors.white} />
           ) : (
-            <ArrowRight size={18} color={COLORS.white} />
+            <ArrowRight size={18} color={colors.white} />
           )}
         </TouchableOpacity>
       </View>
@@ -181,10 +266,10 @@ export const SplashScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.navy,
+    backgroundColor: colors.navy,
   },
   header: {
     flexDirection: 'row',
@@ -208,7 +293,7 @@ const styles = StyleSheet.create({
   },
   logoText: {
     ...TYPOGRAPHY.h3,
-    color: COLORS.white,
+    color: colors.white,
     fontWeight: 'bold',
   },
   skipButton: {
@@ -219,7 +304,7 @@ const styles = StyleSheet.create({
   },
   skipText: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   visualContainer: {
     flex: 1.2,
@@ -256,7 +341,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: COLORS.navy,
+    backgroundColor: colors.navy,
     justifyContent: 'center',
     alignItems: 'center',
     ...SHADOWS.medium,
@@ -275,7 +360,7 @@ const styles = StyleSheet.create({
   roadLineLeft: {
     width: 3,
     height: '100%',
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     transform: [{ skewX: '-20deg' }],
   },
   roadLineCenter: {
@@ -286,7 +371,7 @@ const styles = StyleSheet.create({
   roadLineRight: {
     width: 3,
     height: '100%',
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     transform: [{ skewX: '20deg' }],
   },
   contentContainer: {
@@ -296,14 +381,14 @@ const styles = StyleSheet.create({
   },
   slideTitle: {
     ...TYPOGRAPHY.h2,
-    color: COLORS.white,
+    color: colors.white,
     textAlign: 'center',
     marginBottom: 16,
     fontWeight: '700',
   },
   slideDescription: {
     ...TYPOGRAPHY.bodyLarge,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
   },
@@ -314,8 +399,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     borderTopWidth: 1,
-    borderColor: COLORS.navy,
-    backgroundColor: COLORS.navy,
+    borderColor: colors.navy,
+    backgroundColor: colors.navy,
   },
   dotContainer: {
     flexDirection: 'row',
@@ -330,7 +415,7 @@ const styles = StyleSheet.create({
   },
   dotInactive: {
     width: 8,
-    backgroundColor: COLORS.textSecondary,
+    backgroundColor: colors.textSecondary,
   },
   actionButton: {
     flexDirection: 'row',
@@ -343,7 +428,7 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     ...TYPOGRAPHY.bodyLarge,
-    color: COLORS.white,
+    color: colors.white,
     fontWeight: 'bold',
   },
 });

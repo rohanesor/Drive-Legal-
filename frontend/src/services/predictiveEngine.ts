@@ -1,11 +1,27 @@
+/**
+ * Predictive Engine
+ *
+ * Singleton that predicts upcoming traffic zones based on GPS heading and
+ * current position. Triggers Redux alerts when the user is approaching a
+ * zone (accident-prone areas, school zones, state borders, etc.).
+ *
+ * Dependencies:
+ * - Redux store (for dispatching alerts)
+ * - pythonBridge.checkZones (for zone geometry lookup)
+ */
 import { store } from '../store';
 import { addAlert } from '../store/alertSlice';
 import { checkZones } from './pythonBridge';
-import { Alert } from 'react-native';
+import { Alert, AppState } from 'react-native';
+import { notificationService } from './notificationService';
 
 class PredictiveEngine {
   private static instance: PredictiveEngine;
-  private lastPosition: { latitude: number; longitude: number; timestamp: number } | null = null;
+  private lastPosition: {
+    latitude: number;
+    longitude: number;
+    timestamp: number;
+  } | null = null;
   private heading: number | null = null;
 
   private constructor() {}
@@ -20,7 +36,12 @@ class PredictiveEngine {
   /**
    * Orchestrates the location check and applies adaptive heading calculation.
    */
-  public async handleLocationUpdate(latitude: number, longitude: number, nativeSpeed?: number, nativeHeading?: number) {
+  public async handleLocationUpdate(
+    latitude: number,
+    longitude: number,
+    nativeSpeed?: number,
+    nativeHeading?: number,
+  ) {
     const now = Date.now();
     const state = store.getState();
     const currentStateCode = state.settings.state;
@@ -32,13 +53,13 @@ class PredictiveEngine {
 
     if (this.lastPosition) {
       const timeDelta = (now - this.lastPosition.timestamp) / 1000; // seconds
-      
+
       if (!heading) {
         heading = this.calculateBearing(
           this.lastPosition.latitude,
           this.lastPosition.longitude,
           latitude,
-          longitude
+          longitude,
         );
       }
 
@@ -48,7 +69,7 @@ class PredictiveEngine {
           this.lastPosition.latitude,
           this.lastPosition.longitude,
           latitude,
-          longitude
+          longitude,
         );
         speed = dist / timeDelta; // m/s
       }
@@ -86,36 +107,47 @@ class PredictiveEngine {
         // Dispatch alert to store
         store.dispatch(addAlert(zoneAlert));
 
+        // If app is in background, trigger a local push notification
+        if (AppState.currentState === 'background' || AppState.currentState === 'inactive') {
+          notificationService.scheduleLocalNotification({
+            channelId: 'zone_alerts',
+            title: `Zone Alert: ${zoneAlert.zone_name}`,
+            message: zoneAlert.message,
+            data: { screen: 'CarAlert', alertId: zoneAlert.id }
+          });
+        }
+
         // In Car Mode: speak immediately using Built-in Native TTS, bypassing popups for zero distraction
         if (isCarMode) {
           const { NativeModules } = require('react-native');
           const { DriveLegalTTS } = NativeModules;
           if (DriveLegalTTS) {
             DriveLegalTTS.stop().then(() => {
-              DriveLegalTTS.speak(`Warning: ${result.message}`, state.settings.language || 'en');
+              DriveLegalTTS.speak(
+                `Warning: ${result.message}`,
+                state.settings.language || 'en',
+              );
             });
           }
         } else {
           // In Mobile Mode: show native dialog
-          Alert.alert(
-            'DriveLegal Alert',
-            result.message,
-            [
-              { text: 'Dismiss', style: 'cancel' },
-              {
-                text: 'Learn More',
-                onPress: () => {
-                  const { addMessage } = require('../store/chatSlice');
-                  store.dispatch(addMessage({
+          Alert.alert('DriveLegal Alert', result.message, [
+            { text: 'Dismiss', style: 'cancel' },
+            {
+              text: 'Learn More',
+              onPress: () => {
+                const { addMessage } = require('../store/chatSlice');
+                store.dispatch(
+                  addMessage({
                     id: Date.now().toString(),
                     text: result.suggested_query || '',
                     sender: 'user',
                     timestamp: Date.now(),
-                  }));
-                },
+                  }),
+                );
               },
-            ]
-          );
+            },
+          ]);
         }
       }
     } catch (e) {
@@ -126,7 +158,12 @@ class PredictiveEngine {
   /**
    * Helper: Calculates heading between two GPS coordinates in degrees (0 = North, etc.)
    */
-  private calculateBearing(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  private calculateBearing(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number {
     const lat1Rad = (lat1 * Math.PI) / 180;
     const lat2Rad = (lat2 * Math.PI) / 180;
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -143,7 +180,12 @@ class PredictiveEngine {
   /**
    * Helper: Calculates simple Haversine distance in meters
    */
-  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  private calculateDistance(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number {
     const R = 6371000; // Radius of the earth in m
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLon = ((lon2 - lon1) * Math.PI) / 180;

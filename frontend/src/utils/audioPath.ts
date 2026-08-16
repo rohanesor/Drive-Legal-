@@ -1,6 +1,6 @@
 /**
  * Audio Path Utility
- * 
+ *
  * Converts file URIs between Android and platform-specific formats.
  * Android file paths sometimes have 'file://' prefix that needs to be
  * stripped before passing to the Python backend.

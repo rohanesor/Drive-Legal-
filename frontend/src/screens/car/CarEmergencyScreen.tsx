@@ -1,25 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StatusBar, 
-  Linking, 
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  StatusBar,
+  Linking,
   ActivityIndicator,
   Platform,
   Alert,
-  ScrollView
+  ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { CAR_COLORS, CAR_TYPOGRAPHY, CAR_SPACING } from '../../constants/theme';
-import { ArrowLeft, Phone, Navigation, Shield, Heart, Flame, AlertTriangle, Compass } from 'lucide-react-native';
+import { CAR_COLORS, CAR_SPACING } from '../../constants/theme';
+import {
+  ArrowLeft,
+  Phone,
+  Navigation,
+  Shield,
+  Heart,
+  Flame,
+  AlertTriangle,
+  Compass,
+} from 'lucide-react-native';
 import { useLocation } from '../../context/LocationContext';
-import { 
-  discoverNearbyEmergencies, 
-  fetchOSMReverseGeocode, 
-  EmergencyLocation, 
-  GeocodedAddress 
+import {
+  discoverNearbyEmergencies,
+  fetchOSMReverseGeocode,
+  EmergencyLocation,
+  GeocodedAddress,
 } from '../../services/emergencyService';
 
 export const CarEmergencyScreen = () => {
@@ -29,9 +38,14 @@ export const CarEmergencyScreen = () => {
   // States
   const [loading, setLoading] = useState(true);
   const [address, setAddress] = useState<GeocodedAddress | null>(null);
-  const [nearestPolice, setNearestPolice] = useState<EmergencyLocation | null>(null);
-  const [nearestHospital, setNearestHospital] = useState<EmergencyLocation | null>(null);
-  const [nearestFire, setNearestFire] = useState<EmergencyLocation | null>(null);
+  const [nearestPolice, setNearestPolice] = useState<EmergencyLocation | null>(
+    null,
+  );
+  const [nearestHospital, setNearestHospital] =
+    useState<EmergencyLocation | null>(null);
+  const [nearestFire, setNearestFire] = useState<EmergencyLocation | null>(
+    null,
+  );
   const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
@@ -46,7 +60,7 @@ export const CarEmergencyScreen = () => {
           setAddress({
             city: geoInfo.city || geoInfo.district || 'Coimbatore',
             state: geoInfo.state || 'Tamil Nadu',
-            country: 'India'
+            country: 'India',
           });
         } else {
           const geocoded = await fetchOSMReverseGeocode(lat, lng);
@@ -58,9 +72,9 @@ export const CarEmergencyScreen = () => {
         setIsOffline(discovered.length === 0);
 
         // Sort out specific nearest targets
-        const police = discovered.find(e => e.type === 'police') || null;
-        const hospital = discovered.find(e => e.type === 'hospital') || null;
-        const fire = discovered.find(e => e.type === 'fire') || null;
+        const police = discovered.find((e) => e.type === 'police') || null;
+        const hospital = discovered.find((e) => e.type === 'hospital') || null;
+        const fire = discovered.find((e) => e.type === 'fire') || null;
 
         setNearestPolice(police);
         setNearestHospital(hospital);
@@ -78,22 +92,27 @@ export const CarEmergencyScreen = () => {
 
   const handleDial = (number: string) => {
     Linking.openURL(`tel:${number}`).catch(() => {
-      Alert.alert('Unsupported', 'Voice calls not supported on this vehicle infotainment dashboard.');
+      Alert.alert(
+        'Unsupported',
+        'Voice calls not supported on this vehicle infotainment dashboard.',
+      );
     });
   };
 
   const handleNavigate = (em: EmergencyLocation) => {
     const latLng = `${em.lat},${em.lng}`;
     const label = encodeURIComponent(em.name);
-    
+
     const url = Platform.select({
       ios: `maps://0,0?q=${label}@${latLng}`,
-      android: `geo:0,0?q=${latLng}(${label})`
+      android: `geo:0,0?q=${latLng}(${label})`,
     });
 
     if (url) {
       Linking.openURL(url).catch(() => {
-        Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${em.lat},${em.lng}`);
+        Linking.openURL(
+          `https://www.google.com/maps/search/?api=1&query=${em.lat},${em.lng}`,
+        );
       });
     }
   };
@@ -104,18 +123,20 @@ export const CarEmergencyScreen = () => {
 
       {/* HEADER SECTION */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
           <ArrowLeft color={CAR_COLORS.danger} size={24} />
           <Text style={styles.headerText}>BACK</Text>
         </TouchableOpacity>
-        
+
         <View style={styles.telemetryBox}>
           <Compass size={14} color={CAR_COLORS.accent} />
           <Text style={styles.telemetryText}>
-            {address ? `${address.city.toUpperCase()} • JURISDICTION STATE ${address.state.toUpperCase()}` : 'COIMBATORE • JURISDICTION STATE TN'}
+            {address
+              ? `${address.city.toUpperCase()} • JURISDICTION STATE ${address.state.toUpperCase()}`
+              : 'COIMBATORE • JURISDICTION STATE TN'}
           </Text>
         </View>
 
@@ -133,52 +154,81 @@ export const CarEmergencyScreen = () => {
       )}
 
       {/* MAIN CAR HUD DISCOVERY BODY */}
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {loading ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="large" color={CAR_COLORS.danger} />
-            <Text style={styles.loadingText}>SCANNING 10KM EMERGENCY SPECTRUM...</Text>
+            <Text style={styles.loadingText}>
+              SCANNING 10KM EMERGENCY SPECTRUM...
+            </Text>
           </View>
         ) : (
           <View style={styles.cardsContainer}>
-            
             {/* 🚔 POLICE CARD */}
             <View style={[styles.sosCard, { borderColor: '#3B82F633' }]}>
               <View style={styles.cardHeader}>
-                <View style={[styles.iconBox, { backgroundColor: 'rgba(59, 130, 246, 0.08)' }]}>
+                <View
+                  style={[
+                    styles.iconBox,
+                    { backgroundColor: 'rgba(59, 130, 246, 0.08)' },
+                  ]}
+                >
                   <Shield size={24} color="#3B82F6" />
                 </View>
                 <View style={styles.infoBox}>
-                  <Text style={styles.cardCategory}>🚔 NEAREST POLICE FORCE</Text>
+                  <Text style={styles.cardCategory}>
+                    🚔 NEAREST POLICE FORCE
+                  </Text>
                   <Text style={styles.cardName} numberOfLines={1}>
-                    {nearestPolice ? nearestPolice.name : 'State Traffic Police Direct'}
+                    {nearestPolice
+                      ? nearestPolice.name
+                      : 'State Traffic Police Direct'}
                   </Text>
                   <Text style={styles.cardAddress} numberOfLines={1}>
-                    {nearestPolice ? nearestPolice.address : 'Compounded highway safety force'}
+                    {nearestPolice
+                      ? nearestPolice.address
+                      : 'Compounded highway safety force'}
                   </Text>
                 </View>
                 {nearestPolice && (
                   <View style={styles.distanceBadge}>
-                    <Text style={styles.distanceText}>{nearestPolice.distance} KM</Text>
+                    <Text style={styles.distanceText}>
+                      {nearestPolice.distance} KM
+                    </Text>
                   </View>
                 )}
               </View>
 
               <View style={styles.actionsRow}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.sosButton, styles.callBtn]}
                   onPress={() => handleDial(nearestPolice?.phone || '100')}
                 >
                   <Phone size={22} color="#00E5FF" />
-                  <Text style={[styles.btnText, { color: '#00E5FF' }]}>DIAL CALL</Text>
+                  <Text style={[styles.btnText, { color: '#00E5FF' }]}>
+                    DIAL CALL
+                  </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
-                  style={[styles.sosButton, styles.navBtn, { backgroundColor: '#3B82F6' }]}
-                  onPress={() => nearestPolice ? handleNavigate(nearestPolice) : handleDial('100')}
+                <TouchableOpacity
+                  style={[
+                    styles.sosButton,
+                    styles.navBtn,
+                    { backgroundColor: '#3B82F6' },
+                  ]}
+                  onPress={() =>
+                    nearestPolice
+                      ? handleNavigate(nearestPolice)
+                      : handleDial('100')
+                  }
                 >
                   <Navigation size={22} color="#FFFFFF" />
-                  <Text style={[styles.btnText, { color: '#FFFFFF' }]}>NAVIGATE</Text>
+                  <Text style={[styles.btnText, { color: '#FFFFFF' }]}>
+                    NAVIGATE
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -186,40 +236,70 @@ export const CarEmergencyScreen = () => {
             {/* 🏥 HOSPITAL CARD */}
             <View style={[styles.sosCard, { borderColor: '#10B98133' }]}>
               <View style={styles.cardHeader}>
-                <View style={[styles.iconBox, { backgroundColor: 'rgba(16, 185, 129, 0.08)' }]}>
+                <View
+                  style={[
+                    styles.iconBox,
+                    { backgroundColor: 'rgba(16, 185, 129, 0.08)' },
+                  ]}
+                >
                   <Heart size={24} color="#10B981" />
                 </View>
                 <View style={styles.infoBox}>
-                  <Text style={styles.cardCategory}>🏥 NEAREST MEDICAL TRAUMA</Text>
+                  <Text style={styles.cardCategory}>
+                    🏥 NEAREST MEDICAL TRAUMA
+                  </Text>
                   <Text style={styles.cardName} numberOfLines={1}>
-                    {nearestHospital ? nearestHospital.name : 'Municipal General Hospital'}
+                    {nearestHospital
+                      ? nearestHospital.name
+                      : 'Municipal General Hospital'}
                   </Text>
                   <Text style={styles.cardAddress} numberOfLines={1}>
-                    {nearestHospital ? nearestHospital.address : '24/7 medical response center'}
+                    {nearestHospital
+                      ? nearestHospital.address
+                      : '24/7 medical response center'}
                   </Text>
                 </View>
                 {nearestHospital && (
-                  <View style={[styles.distanceBadge, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
-                    <Text style={[styles.distanceText, { color: '#10B981' }]}>{nearestHospital.distance} KM</Text>
+                  <View
+                    style={[
+                      styles.distanceBadge,
+                      { backgroundColor: 'rgba(16, 185, 129, 0.15)' },
+                    ]}
+                  >
+                    <Text style={[styles.distanceText, { color: '#10B981' }]}>
+                      {nearestHospital.distance} KM
+                    </Text>
                   </View>
                 )}
               </View>
 
               <View style={styles.actionsRow}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.sosButton, styles.callBtn]}
                   onPress={() => handleDial(nearestHospital?.phone || '108')}
                 >
                   <Phone size={22} color="#00E5FF" />
-                  <Text style={[styles.btnText, { color: '#00E5FF' }]}>DIAL CALL</Text>
+                  <Text style={[styles.btnText, { color: '#00E5FF' }]}>
+                    DIAL CALL
+                  </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
-                  style={[styles.sosButton, styles.navBtn, { backgroundColor: '#10B981' }]}
-                  onPress={() => nearestHospital ? handleNavigate(nearestHospital) : handleDial('108')}
+                <TouchableOpacity
+                  style={[
+                    styles.sosButton,
+                    styles.navBtn,
+                    { backgroundColor: '#10B981' },
+                  ]}
+                  onPress={() =>
+                    nearestHospital
+                      ? handleNavigate(nearestHospital)
+                      : handleDial('108')
+                  }
                 >
                   <Navigation size={22} color="#FFFFFF" />
-                  <Text style={[styles.btnText, { color: '#FFFFFF' }]}>NAVIGATE</Text>
+                  <Text style={[styles.btnText, { color: '#FFFFFF' }]}>
+                    NAVIGATE
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -227,40 +307,68 @@ export const CarEmergencyScreen = () => {
             {/* 🚒 FIRE BRIGADE CARD */}
             <View style={[styles.sosCard, { borderColor: '#EF444433' }]}>
               <View style={styles.cardHeader}>
-                <View style={[styles.iconBox, { backgroundColor: 'rgba(239, 68, 68, 0.08)' }]}>
+                <View
+                  style={[
+                    styles.iconBox,
+                    { backgroundColor: 'rgba(239, 68, 68, 0.08)' },
+                  ]}
+                >
                   <Flame size={24} color="#EF4444" />
                 </View>
                 <View style={styles.infoBox}>
-                  <Text style={styles.cardCategory}>🚒 NEAREST FIRE STATION</Text>
+                  <Text style={styles.cardCategory}>
+                    🚒 NEAREST FIRE STATION
+                  </Text>
                   <Text style={styles.cardName} numberOfLines={1}>
                     {nearestFire ? nearestFire.name : 'Municipal Fire Brigade'}
                   </Text>
                   <Text style={styles.cardAddress} numberOfLines={1}>
-                    {nearestFire ? nearestFire.address : 'Rescue and emergency patrol'}
+                    {nearestFire
+                      ? nearestFire.address
+                      : 'Rescue and emergency patrol'}
                   </Text>
                 </View>
                 {nearestFire && (
-                  <View style={[styles.distanceBadge, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
-                    <Text style={[styles.distanceText, { color: '#EF4444' }]}>{nearestFire.distance} KM</Text>
+                  <View
+                    style={[
+                      styles.distanceBadge,
+                      { backgroundColor: 'rgba(239, 68, 68, 0.15)' },
+                    ]}
+                  >
+                    <Text style={[styles.distanceText, { color: '#EF4444' }]}>
+                      {nearestFire.distance} KM
+                    </Text>
                   </View>
                 )}
               </View>
 
               <View style={styles.actionsRow}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.sosButton, styles.callBtn]}
                   onPress={() => handleDial(nearestFire?.phone || '101')}
                 >
                   <Phone size={22} color="#00E5FF" />
-                  <Text style={[styles.btnText, { color: '#00E5FF' }]}>DIAL CALL</Text>
+                  <Text style={[styles.btnText, { color: '#00E5FF' }]}>
+                    DIAL CALL
+                  </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
-                  style={[styles.sosButton, styles.navBtn, { backgroundColor: '#EF4444' }]}
-                  onPress={() => nearestFire ? handleNavigate(nearestFire) : handleDial('101')}
+                <TouchableOpacity
+                  style={[
+                    styles.sosButton,
+                    styles.navBtn,
+                    { backgroundColor: '#EF4444' },
+                  ]}
+                  onPress={() =>
+                    nearestFire
+                      ? handleNavigate(nearestFire)
+                      : handleDial('101')
+                  }
                 >
                   <Navigation size={22} color="#FFFFFF" />
-                  <Text style={[styles.btnText, { color: '#FFFFFF' }]}>NAVIGATE</Text>
+                  <Text style={[styles.btnText, { color: '#FFFFFF' }]}>
+                    NAVIGATE
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -270,7 +378,7 @@ export const CarEmergencyScreen = () => {
 
       {/* BOTTOM ACTION BAR */}
       <View style={styles.footer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.circularSosButton, { backgroundColor: '#FF1744' }]}
           onPress={() => handleDial('112')}
         >
@@ -278,7 +386,7 @@ export const CarEmergencyScreen = () => {
           <Text style={styles.circularSosLabel}>112 UNIFIED SOS</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.circularSosButton, { backgroundColor: '#F59E0B' }]}
           onPress={() => handleDial('1033')}
         >

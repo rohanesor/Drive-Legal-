@@ -1,43 +1,12 @@
 import React, { useRef, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, Platform, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { COLORS, BORDER_RADIUS, SHADOWS } from '../constants/theme';
-import { Map, Compass, Navigation } from 'lucide-react-native';
+import { BORDER_RADIUS, SHADOWS } from '../constants/theme';
+import { useThemeColors } from '../context/ThemeContext';
+import { Map } from 'lucide-react-native';
+import type { MapLine, MapLocation, MapMarker, MapZone } from '../types';
 
-export interface MapLocation {
-  lat: number;
-  lng: number;
-  heading?: number;
-  speed?: number;
-}
-
-export interface MapMarker {
-  id: string;
-  type: 'police' | 'hospital' | 'fire' | 'rto' | 'ev' | 'warning' | 'border';
-  name: string;
-  lat: number;
-  lng: number;
-  distance?: number;
-  address?: string;
-  phone?: string;
-}
-
-export interface MapZone {
-  id: string;
-  type: 'school_zone' | 'accident_zone' | 'speed_camera' | 'tow_zone' | 'toll_plaza' | 'restricted_zone' | 'permitted_parking';
-  name: string;
-  coords: { lat: number; lng: number }[];
-  radius?: number; // for circle drawing if coords is single
-  severity: 'low' | 'medium' | 'high';
-}
-
-export interface MapLine {
-  id: string;
-  name: string;
-  coords: { lat: number; lng: number }[];
-  color: string;
-  dashed?: boolean;
-}
+export type { MapLine, MapLocation, MapMarker, MapZone } from '../types';
 
 interface LocationMapProps {
   currentLocation?: MapLocation;
@@ -468,26 +437,34 @@ export const LocationMap: React.FC<LocationMapProps> = ({
   height = 300,
   interactive = true,
   onMarkerSelect,
-  forceWebView = false,
+  forceWebView: _forceWebView = false,
 }) => {
   const webViewRef = useRef<WebView>(null);
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const sendMessageToMap = useCallback((message: object) => {
+  const sendMessageToMap = useCallback((message: Record<string, unknown>) => {
     webViewRef.current?.postMessage(JSON.stringify(message));
   }, []);
 
   // Set initial map state injection and bypass race conditions
   const mapHtml = useMemo(() => {
-    if (!currentLocation) return MAP_HTML;
-    
+    if (!currentLocation) {
+      return MAP_HTML;
+    }
+
     // Inject custom preset markers, lines, boundaries based on map types
     const markersStr = JSON.stringify(markers);
     const zonesStr = JSON.stringify(zones);
     const linesStr = JSON.stringify(lines);
 
     const injection = `
-      map.setView([${currentLocation.lat}, ${currentLocation.lng}], ${mapType === 'cockpit' ? 16 : 14});
-      updateLocation(${currentLocation.lat}, ${currentLocation.lng}, ${currentLocation.heading || 'null'}, ${currentLocation.speed || 'null'});
+      map.setView([${currentLocation.lat}, ${currentLocation.lng}], ${
+      mapType === 'cockpit' ? 16 : 14
+    });
+      updateLocation(${currentLocation.lat}, ${currentLocation.lng}, ${
+      currentLocation.heading || 'null'
+    }, ${currentLocation.speed || 'null'});
       try {
         updateMarkers(${markersStr});
         updateZones(${zonesStr});
@@ -527,11 +504,11 @@ export const LocationMap: React.FC<LocationMapProps> = ({
     sendMessageToMap({ type: 'lines', lines });
   }, [lines, sendMessageToMap]);
 
-  const handleMessage = (event: any) => {
+  const handleMessage = (event: { nativeEvent: { data: string } }) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === 'marker_press' && onMarkerSelect) {
-        const found = markers.find(m => m.id === data.id);
+        const found = markers.find((m) => m.id === data.id);
         if (found) {
           onMarkerSelect(found);
         }
@@ -542,9 +519,11 @@ export const LocationMap: React.FC<LocationMapProps> = ({
   if (!currentLocation) {
     return (
       <View style={[styles.placeholder, { height }]}>
-        <Map size={48} color={COLORS.textSecondary} />
+        <Map size={48} color={colors.textSecondary} />
         <Text style={styles.placeholderTitle}>No Location Data</Text>
-        <Text style={styles.placeholderSub}>Enable GPS to see your position</Text>
+        <Text style={styles.placeholderSub}>
+          Enable GPS to see your position
+        </Text>
       </View>
     );
   }
@@ -567,7 +546,7 @@ export const LocationMap: React.FC<LocationMapProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     borderRadius: BORDER_RADIUS.medium,
     overflow: 'hidden',
@@ -579,19 +558,19 @@ const styles = StyleSheet.create({
   placeholder: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: BORDER_RADIUS.medium,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     gap: 8,
   },
   placeholderTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   placeholderSub: {
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
 });

@@ -1,16 +1,16 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface AppModeState {
-  mode: 'mobile' | 'car';             // Active application mode
-  detectionMethod: 'auto' | 'manual';   // Mode switching mechanism
-  isDriving: boolean;                  // Accelerometer/GPS-based driving state
-  isCarDocked: boolean;                // USB/Bluetooth connection to car state
-  lastModeSwitch: number;              // Timestamp of the last switch
+  mode: 'mobile' | 'car'; // Active application mode
+  detectionMethod: 'auto' | 'manual'; // Mode switching mechanism
+  isDriving: boolean; // Accelerometer/GPS-based driving state
+  isCarDocked: boolean; // USB/Bluetooth connection to car state
+  lastModeSwitch: number; // Timestamp of the last switch
   carModePreferences: {
-    autoVoice: boolean;                // Automatically start voice assistant in Car Mode
-    reducedAnimations: boolean;        // Disable animations for performance in Car Mode
-    largeText: boolean;                // Enforce large accessible fonts
-    hapticFeedback: boolean;           // Tactile feedback on screen interactions
+    autoVoice: boolean; // Automatically start voice assistant in Car Mode
+    reducedAnimations: boolean; // Disable animations for performance in Car Mode
+    largeText: boolean; // Enforce large accessible fonts
+    hapticFeedback: boolean; // Tactile feedback on screen interactions
   };
 }
 
@@ -32,7 +32,13 @@ const appModeSlice = createSlice({
   name: 'appMode',
   initialState,
   reducers: {
-    setMode: (state, action: PayloadAction<{ mode: 'mobile' | 'car'; method: 'auto' | 'manual' }>) => {
+    setMode: (
+      state,
+      action: PayloadAction<{
+        mode: 'mobile' | 'car';
+        method: 'auto' | 'manual';
+      }>,
+    ) => {
       state.mode = action.payload.mode;
       state.detectionMethod = action.payload.method;
       state.lastModeSwitch = Date.now();
@@ -47,15 +53,20 @@ const appModeSlice = createSlice({
       state.carModePreferences.autoVoice = !state.carModePreferences.autoVoice;
     },
     toggleReducedAnimations: (state) => {
-      state.carModePreferences.reducedAnimations = !state.carModePreferences.reducedAnimations;
+      state.carModePreferences.reducedAnimations =
+        !state.carModePreferences.reducedAnimations;
     },
     toggleLargeText: (state) => {
       state.carModePreferences.largeText = !state.carModePreferences.largeText;
     },
     toggleHapticFeedback: (state) => {
-      state.carModePreferences.hapticFeedback = !state.carModePreferences.hapticFeedback;
+      state.carModePreferences.hapticFeedback =
+        !state.carModePreferences.hapticFeedback;
     },
-    loadAppModePreferences: (state, action: PayloadAction<Partial<AppModeState>>) => {
+    loadAppModePreferences: (
+      state,
+      action: PayloadAction<Partial<AppModeState>>,
+    ) => {
       return {
         ...state,
         ...action.payload,

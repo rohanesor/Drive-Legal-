@@ -1,24 +1,37 @@
 /**
  * AlertBanner - Zone alert notification shown at top of chat screen
- * 
+ *
  * PURPOSE:
  * When the background GPS monitoring detects the user has entered
  * a traffic law zone (accident-prone area, school zone, etc.),
  * this banner appears at the top of the chat screen.
- * 
+ *
  * USER ACTIONS:
  * - "Learn More": Opens chat with a pre-filled question about this zone
  * - "X" button: Dismisses the alert
- * 
+ *
  * SEVERITY COLORS:
  * - Low: Yellow (informational)
  * - Medium: Orange (caution)
  * - High: Red (urgent)
  */
-import React, { useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import { Info, AlertTriangle, AlertCircle, X, ArrowRight } from 'lucide-react-native';
-import { COLORS, BORDER_RADIUS, SHADOWS } from '../constants/theme';
+import React, { useEffect, useRef, useMemo } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+} from 'react-native';
+import {
+  Info,
+  AlertTriangle,
+  AlertCircle,
+  X,
+  ArrowRight,
+} from 'lucide-react-native';
+import { BORDER_RADIUS, SHADOWS } from '../constants/theme';
+import { useThemeColors } from '../context/ThemeContext';
 
 interface AlertBannerProps {
   message: string;
@@ -27,18 +40,22 @@ interface AlertBannerProps {
   onDismiss: () => void;
 }
 
-// Color schemes for each severity level
-const severityColors = {
-  low: { bg: COLORS.lightWarning, border: COLORS.borderWarning, text: COLORS.textWarning },
-  medium: { bg: COLORS.orangeLight, border: COLORS.orangeBorder, text: COLORS.orangeDark },
-  high: { bg: COLORS.redLight, border: COLORS.redBorder, text: COLORS.redDark },
-};
-
-const SeverityIcon = ({ severity, color, size }: { severity: string; color: string; size: number }) => {
+const SeverityIcon = ({
+  severity,
+  color,
+  size,
+}: {
+  severity: string;
+  color: string;
+  size: number;
+}) => {
   switch (severity) {
-    case 'high': return <AlertCircle size={size} color={color} />;
-    case 'medium': return <AlertTriangle size={size} color={color} />;
-    default: return <Info size={size} color={color} />;
+    case 'high':
+      return <AlertCircle size={size} color={color} />;
+    case 'medium':
+      return <AlertTriangle size={size} color={color} />;
+    default:
+      return <Info size={size} color={color} />;
   }
 };
 
@@ -48,46 +65,77 @@ export const AlertBanner = ({
   onLearnMore,
   onDismiss,
 }: AlertBannerProps) => {
+  const themeColors = useThemeColors();
+
+  const severityColors = useMemo(() => ({
+    low: {
+      bg: themeColors.lightWarning,
+      border: themeColors.borderWarning,
+      text: themeColors.textWarning,
+    },
+    medium: {
+      bg: themeColors.orangeLight,
+      border: themeColors.orangeBorder,
+      text: themeColors.orangeDark,
+    },
+    high: {
+      bg: themeColors.redLight,
+      border: themeColors.redBorder,
+      text: themeColors.redDark,
+    },
+  }), [themeColors]);
+
   const colors = severityColors[severity];
   const slideAnim = useRef(new Animated.Value(-80)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.spring(slideAnim, { 
-        toValue: 0, 
-        friction: 5, 
-        tension: 80, 
-        useNativeDriver: true 
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        friction: 5,
+        tension: 80,
+        useNativeDriver: true,
       }),
-      Animated.timing(opacityAnim, { toValue: 1, duration: 350, useNativeDriver: true }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 350,
+        useNativeDriver: true,
+      }),
     ]).start();
-  }, []);
+  }, [opacityAnim, slideAnim]);
 
   return (
-    <Animated.View style={[
-      styles.container, 
-      { 
-        backgroundColor: colors.bg, 
-        borderColor: colors.border,
-        opacity: opacityAnim,
-        transform: [{ translateY: slideAnim }]
-      }
-    ]}>
+    <Animated.View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.bg,
+          borderColor: colors.border,
+          opacity: opacityAnim,
+          transform: [{ translateY: slideAnim }],
+        },
+      ]}
+    >
       {/* Warning icon and Alert message text row */}
       <View style={styles.contentRow}>
         <SeverityIcon severity={severity} color={colors.text} size={18} />
         <Text style={[styles.message, { color: colors.text }]}>{message}</Text>
       </View>
-      
+
       {/* Separator and Action buttons row */}
       <View style={styles.actionRow}>
-        <TouchableOpacity 
-          onPress={onLearnMore} 
-          style={[styles.learnMoreButton, { backgroundColor: 'rgba(0,0,0,0.05)' }]}
+        <TouchableOpacity
+          onPress={onLearnMore}
+          style={[
+            styles.learnMoreButton,
+            { backgroundColor: 'rgba(0,0,0,0.05)' },
+          ]}
           activeOpacity={0.7}
         >
-          <Text style={[styles.learnMoreText, { color: colors.text }]}>Learn More</Text>
+          <Text style={[styles.learnMoreText, { color: colors.text }]}>
+            Learn More
+          </Text>
           <ArrowRight size={12} color={colors.text} style={{ marginLeft: 2 }} />
         </TouchableOpacity>
         <TouchableOpacity onPress={onDismiss} style={styles.dismissButton}>

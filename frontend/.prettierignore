@@ -1,0 +1,5 @@
+android/
+node_modules/
+.convex/
+convex/_generated/
+build/

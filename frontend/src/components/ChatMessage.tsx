@@ -1,13 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import { Sparkles, Info, Gavel } from 'lucide-react-native';
+import { Sparkles, Gavel } from 'lucide-react-native';
 import { CitationChip } from './CitationChip';
 import { ConfidenceIndicator } from './ConfidenceIndicator';
-import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS, GLASS } from '../constants/theme';
+import { useMemo } from 'react';
+import { SHADOWS } from '../constants/theme';
+import { useThemeColors } from '../context/ThemeContext';
 
 interface ChatMessageProps {
   text: string;
-  sender: 'user' | 'bot';
+  sender: 'user' | 'bot' | 'ai'; // support 'ai' as well
   source_sections?: string[];
   confidence?: number;
 }
@@ -18,19 +20,34 @@ export const ChatMessage = ({
   source_sections,
   confidence,
 }: ChatMessageProps) => {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(10)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
     ]).start();
-  }, []);
+  }, [fadeAnim, slideAnim]);
 
   if (sender === 'user') {
     return (
-      <Animated.View style={[styles.userRow, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+      <Animated.View
+        style={[
+          styles.userRow,
+          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+        ]}
+      >
         <View style={[styles.container, styles.userMessage]}>
           <Text style={styles.userText}>{text}</Text>
         </View>
@@ -39,10 +56,15 @@ export const ChatMessage = ({
   }
 
   return (
-    <Animated.View style={[styles.botRow, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+    <Animated.View
+      style={[
+        styles.botRow,
+        { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+      ]}
+    >
       <View style={styles.avatarContainer}>
         <View style={styles.avatar}>
-          <Sparkles size={14} color={COLORS.white} />
+          <Sparkles size={14} color={colors.white} />
         </View>
       </View>
 
@@ -52,7 +74,7 @@ export const ChatMessage = ({
         {source_sections && source_sections.length > 0 && (
           <View style={styles.citationsContainer}>
             <View style={styles.legalBadge}>
-              <Gavel size={12} color={COLORS.cyan} />
+              <Gavel size={12} color={colors.cyan} />
               <Text style={styles.legalBadgeTxt}>LEGAL SOURCES</Text>
             </View>
             <View style={styles.chipRow}>
@@ -73,7 +95,7 @@ export const ChatMessage = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   userRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -95,10 +117,10 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.cyan,
+    backgroundColor: colors.cyan,
     alignItems: 'center',
     justifyContent: 'center',
-    ...SHADOWS.glow(COLORS.cyan),
+    ...SHADOWS.glow(colors.cyan),
   },
   container: {
     padding: 16,
@@ -106,7 +128,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   userMessage: {
-    backgroundColor: COLORS.navy,
+    backgroundColor: colors.navy,
     borderTopLeftRadius: 20,
     borderBottomLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -114,23 +136,23 @@ const styles = StyleSheet.create({
     ...SHADOWS.medium,
   },
   botMessage: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 6,
     borderBottomLeftRadius: 20,
     borderTopRightRadius: 20,
     borderBottomRightRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.22)',
+    borderColor: colors.border,
     ...SHADOWS.subtle,
   },
   userText: {
-    color: COLORS.white,
+    color: colors.white,
     fontSize: 15,
     lineHeight: 22,
     fontWeight: '500',
   },
   botText: {
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontSize: 15,
     lineHeight: 24,
   },
@@ -138,7 +160,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
+    borderTopColor: colors.border,
   },
   legalBadge: {
     flexDirection: 'row',
@@ -149,7 +171,7 @@ const styles = StyleSheet.create({
   legalBadgeTxt: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     letterSpacing: 1,
   },
   chipRow: {

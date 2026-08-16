@@ -8,7 +8,6 @@ import {
   Dimensions,
   StatusBar,
 } from 'react-native';
-import { COLORS } from '../constants/theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -52,6 +51,8 @@ export const AppIntroAnimation = ({ onFinish }: AppIntroAnimationProps) => {
   // Glow pulse animation
   const glowPulse = useRef(new Animated.Value(0)).current;
 
+  // This animation is intentionally mount-only and uses stable Animated refs.
+
   useEffect(() => {
     // Start the cinematic sequence
     Animated.sequence([
@@ -80,30 +81,61 @@ export const AppIntroAnimation = ({ onFinish }: AppIntroAnimationProps) => {
       // Phase 2: Rings pulse out (600ms → 1100ms)
       Animated.parallel([
         Animated.sequence([
-          Animated.timing(ring1Scale, { toValue: 1, duration: 350, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+          Animated.timing(ring1Scale, {
+            toValue: 1,
+            duration: 350,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
         ]),
         Animated.sequence([
           Animated.delay(100),
-          Animated.timing(ring2Scale, { toValue: 1, duration: 350, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+          Animated.timing(ring2Scale, {
+            toValue: 1,
+            duration: 350,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
         ]),
         Animated.sequence([
           Animated.delay(200),
-          Animated.timing(ring3Scale, { toValue: 1, duration: 350, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+          Animated.timing(ring3Scale, {
+            toValue: 1,
+            duration: 350,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
         ]),
-        Animated.timing(ring1Opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.timing(ring1Opacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
         Animated.sequence([
           Animated.delay(100),
-          Animated.timing(ring2Opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+          Animated.timing(ring2Opacity, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }),
         ]),
         Animated.sequence([
           Animated.delay(200),
-          Animated.timing(ring3Opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+          Animated.timing(ring3Opacity, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }),
         ]),
       ]),
 
       // Phase 3: Scan line across logo (1100ms → 1400ms)
       Animated.parallel([
-        Animated.timing(scanOpacity, { toValue: 1, duration: 150, useNativeDriver: true }),
+        Animated.timing(scanOpacity, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
         Animated.timing(scanY, {
           toValue: 1,
           duration: 600,
@@ -129,8 +161,18 @@ export const AppIntroAnimation = ({ onFinish }: AppIntroAnimationProps) => {
         Animated.sequence([
           Animated.delay(150),
           Animated.parallel([
-            Animated.timing(taglineOpacity, { toValue: 1, duration: 400, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-            Animated.timing(taglineTranslateY, { toValue: 0, duration: 400, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+            Animated.timing(taglineOpacity, {
+              toValue: 1,
+              duration: 400,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+            Animated.timing(taglineTranslateY, {
+              toValue: 0,
+              duration: 400,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
           ]),
         ]),
       ]),
@@ -148,11 +190,21 @@ export const AppIntroAnimation = ({ onFinish }: AppIntroAnimationProps) => {
         }),
         Animated.sequence([
           Animated.delay(80),
-          Animated.timing(roadCenter, { toValue: 1, duration: 300, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+          Animated.timing(roadCenter, {
+            toValue: 1,
+            duration: 300,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
         ]),
         Animated.sequence([
           Animated.delay(160),
-          Animated.timing(roadRight, { toValue: 1, duration: 300, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+          Animated.timing(roadRight, {
+            toValue: 1,
+            duration: 300,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
         ]),
       ]),
 
@@ -181,9 +233,19 @@ export const AppIntroAnimation = ({ onFinish }: AppIntroAnimationProps) => {
     // Continuous glow pulse (runs in parallel with sequence above)
     Animated.loop(
       Animated.sequence([
-        Animated.timing(glowPulse, { toValue: 1, duration: 1200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(glowPulse, { toValue: 0, duration: 1200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      ])
+        Animated.timing(glowPulse, {
+          toValue: 1,
+          duration: 1200,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowPulse, {
+          toValue: 0,
+          duration: 1200,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
     ).start();
   }, []);
 
@@ -234,7 +296,10 @@ export const AppIntroAnimation = ({ onFinish }: AppIntroAnimationProps) => {
       {/* Background grid lines (subtle) */}
       <View style={styles.gridOverlay} pointerEvents="none">
         {Array.from({ length: 8 }).map((_, i) => (
-          <View key={i} style={[styles.gridLine, { top: `${i * 14.3}%` as any }]} />
+          <View
+            key={i}
+            style={[styles.gridLine, { top: `${i * 14.3}%` as any }]}
+          />
         ))}
       </View>
 
@@ -293,7 +358,10 @@ export const AppIntroAnimation = ({ onFinish }: AppIntroAnimationProps) => {
             styles.logoContainer,
             {
               opacity: logoOpacity,
-              transform: [{ scale: logoScale }, { rotate: logoRotateInterpolated }],
+              transform: [
+                { scale: logoScale },
+                { rotate: logoRotateInterpolated },
+              ],
             },
           ]}
         >
@@ -359,7 +427,11 @@ export const AppIntroAnimation = ({ onFinish }: AppIntroAnimationProps) => {
           ]}
         />
         <Animated.View
-          style={[styles.roadLine, styles.roadLineCenter, { opacity: roadCenterOpacity }]}
+          style={[
+            styles.roadLine,
+            styles.roadLineCenter,
+            { opacity: roadCenterOpacity },
+          ]}
         />
         <Animated.View
           style={[

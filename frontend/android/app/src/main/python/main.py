@@ -1,383 +1,101 @@
-"""
-Main Module - DriveLegal Python service entry point
-
-THIS IS THE CORE FILE that the React Native app communicates with.
-It receives JSON payloads from the RN bridge and routes them
-through the appropriate processing pipeline.
-
-PIPELINE FLOW:
-1. Receive query from RN (text or audio)
-2. If audio: transcribe to text using Whisper
-3. Search for relevant laws using FAISS semantic search
-4. Fetch penalty details from SQLite
-5. Generate response using TinyLlama (or template fallback)
-6. Validate citations to prevent hallucinations
-7. Return response JSON to RN
-
-ERROR HANDLING:
-Every step has a fallback. If any component fails,
-the pipeline degrades gracefully instead of crashing.
-"""
-
 import json
 import re
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-from database import initialize_database, get_laws, get_penalties, save_chat_history, get_all_penalties_by_state, get_localized_penalties
+from database import initialize_database, get_laws, get_penalties, save_chat_history, get_all_penalties_by_state
 from search import search
 from zones import check_zones
-from stt import transcribe_audio, start_model_download_thread
+from stt import transcribe_audio
 from tts import speak_text
 from llm import generate_response, unload_model
+from sync_service import sync_on_app_launch
+from search_enhancer import get_enriched_response
 
 
 def initialize() -> str:
-    """
-    Initialize the Python service on app startup.
-    Creates database tables and preloads models.
-    Called by React Native via the PythonBridge.
-    """
     try:
         initialize_database()
-        try:
-            start_model_download_thread()
-        except Exception as e:
-            print(f"Failed to start Whisper model background download: {e}")
-        return json.dumps({'status': 'success', 'message': 'DriveLegal initialized'})
+        sync_result = sync_on_app_launch()
+        return json.dumps({'status': 'success', 'message': 'DriveLegal initialized', 'sync': sync_result})
     except Exception as e:
         return json.dumps({'status': 'error', 'code': 'INIT_ERROR', 'message': str(e)})
 
 
 def handle_query(json_payload: str) -> str:
-    """
-    Main query handler - processes user questions and returns responses.
-    
-    This is the PRIMARY ENTRY POINT called by React Native.
-    
-    Args:
-        json_payload: JSON string with action, text/audio_uri, location, language
-    
-    Returns:
-        JSON string with status, response_text, source_sections, confidence
-    """
     try:
         payload = json.loads(json_payload)
         action = payload.get('action')
         if action == 'get_penalties':
-            location = payload.get('location', {})
-            state = payload.get('state') or location.get('state') or 'TN'
-            city = location.get('city')
-            district = location.get('district')
-            penalties = get_localized_penalties(state, city, district)
+            state = payload.get('state', 'TN')
+            penalties = get_all_penalties_by_state(state)
             return json.dumps({'status': 'success', 'penalties': penalties})
+
+        if action == 'health':
+            try:
+                import sqlite3
+                import os
+                db_dir = os.path.dirname(os.path.abspath(__file__))
+                db_path = os.path.join(db_dir, 'data', 'drivelegal.db')
+                conn = sqlite3.connect(db_path)
+                c = conn.cursor()
+                c.execute("SELECT count(*) FROM laws")
+                laws = c.fetchone()[0]
+                c.execute("SELECT count(*) FROM penalties")
+                penalties = c.fetchone()[0]
+                c.execute("SELECT count(*) FROM zones")
+                zones = c.fetchone()[0]
+                conn.close()
+                return json.dumps({
+                    'status': 'success',
+                    'health': {
+                        'status': 'healthy',
+                        'database': 'connected',
+                        'laws_count': laws,
+                        'penalties_count': penalties,
+                        'zones_count': zones
+                    }
+                })
+            except Exception as db_err:
+                return json.dumps({
+                    'status': 'success',
+                    'health': {
+                        'status': 'unhealthy',
+                        'database': 'disconnected',
+                        'error': str(db_err)
+                    }
+                })
+
+        if action == 'get_speed_limit':
+            return handle_speed_limit_query(json_payload)
 
         result = execute_pipeline(payload)
         return json.dumps({'status': 'success', **result})
-    except ModelLoadError as e:
-        payload = json.loads(json_payload) if isinstance(json_payload, str) else {}
-        return json.dumps({
-            'status': 'error',
-            'code': 'MODEL_LOAD_FAILED',
-            'message': str(e),
-            'fallback_available': True,
-            'fallback_response_text': get_fallback_response(payload)
-        })
-    except SearchError as e:
-        payload = json.loads(json_payload) if isinstance(json_payload, str) else {}
-        return json.dumps({
-            'status': 'error',
-            'code': 'SEARCH_FAILED',
-            'message': str(e),
-            'fallback_available': True,
-            'fallback_response_text': keyword_fallback_response(payload)
-        })
     except Exception as e:
-        return json.dumps({
-            'status': 'error',
-            'code': 'UNKNOWN_ERROR',
-            'message': str(e),
-            'fallback_available': False
-        })
+        return json.dumps({'status': 'error', 'code': 'UNKNOWN_ERROR', 'message': str(e)})
 
 
-# Custom exception classes for pipeline error handling
-class ModelLoadError(Exception):
-    """Raised when a model (Whisper, LLM, etc.) fails to load."""
-    pass
+def is_vague_query(text: str) -> bool:
+    text = text.strip().lower()
+    vague_keywords = ['fine', 'penalty', 'rule', 'law', 'parking', 'helmet', 'speed', 'license', 'drunk driving', 'can i park']
+    words = text.split()
+    if len(words) <= 3:
+        if any(kw in text for kw in vague_keywords):
+            return True
+    return False
 
 
-class SearchError(Exception):
-    """Raised when no relevant laws are found for a query."""
-    pass
+def get_clarification_prompt(text: str, state: str, has_gps: bool) -> str:
+    text = text.strip().lower()
+    if 'park' in text:
+        if not has_gps:
+            return "I can check parking rules for you, but I don't have your precise GPS location. Could you share your location or tell me which area/city you're in?"
+        return f"I see you're asking about parking. Are you trying to park at your current location in {state}, or do you want to know about general 'No Parking' fines?"
+    if 'helmet' in text:
+        return f"I'd be happy to explain helmet laws in {state}. Are you asking about the fine for the rider, or the rules for a pillion passenger?"
+    if 'fine' in text or 'penalty' in text:
+        return "Fines vary based on the specific traffic violation. Which offense are you inquiring about?"
 
-
-def execute_pipeline(payload: Dict) -> Dict:
-    """
-    Execute the full query processing pipeline.
-    
-    STEPS:
-    1. Extract text (from input or transcribe audio)
-    2. Dynamically detect input language & select response routing
-    3. Search for relevant laws (FAISS + keyword fallback)
-    4. Fetch penalty details
-    5. Generate response matching the user's spoken language
-    6. Validate citations
-    7. Generate TTS audio
-    8. Save to chat history
-    
-    Args:
-        payload: Parsed JSON with query parameters
-    
-    Returns:
-        Dictionary with response_text, source_sections, confidence, detected_language, transcription
-    """
-    text = payload.get('text', '')
-    audio_uri = payload.get('audio_uri')
-    location = payload.get('location', {})
-    default_language = payload.get('language', 'en')
-    state = location.get('state', 'TN')
-    city = location.get('city')
-    district = location.get('district')
-    history = payload.get('history', [])
-    concise_mode = payload.get('concise_mode', False)
-
-    # STEP 1: Convert audio to text if needed
-    if audio_uri:
-        text = transcribe_audio(audio_uri, default_language)
-        if not text:
-            return {
-                'response_text': "I couldn't hear that clearly. Try again or type your question.",
-                'source_sections': [],
-                'confidence': 0.0,
-                'detected_language': default_language,
-                'transcription': '',
-            }
-
-    # Intercept generic queries about fines or rules for user's location
-    text_lower = text.lower().strip()
-    location_keywords = ['my location', 'around me', 'here', 'this place', 'local fines', 'local rules', 'fines and details', 'around here']
-    tamil_location_keywords = ['என் இடம்', 'இங்கே', 'இங்க', 'என் ஏரியா', 'இருப்பிடம்', 'இங்குள்ள அபராதம்', 'என் ஊர்']
-    hindi_location_keywords = ['मेरी जगह', 'यहाँ', 'इधर', 'मेरा लोकेशन', 'यहाँ का जुर्माना', 'लोकल', 'आसपास']
-    
-    is_location_query = any(k in text_lower for k in location_keywords) or \
-                        any(k in text_lower for k in tamil_location_keywords) or \
-                        any(k in text_lower for k in hindi_location_keywords)
-                        
-    fine_keywords = ['fine', 'penalty', 'amount', 'rule', 'charge', 'challan', 'violation', 'detail']
-    tamil_fine_keywords = ['அபராதம்', 'சட்டம்', 'விதி', 'தண்டனை', 'செல்லுபடியாகும்', 'விவரம்']
-    hindi_fine_keywords = ['जुर्माना', 'नियम', 'चालान', 'कितना', 'डिटेल', 'विस्तार']
-    
-    is_fine_query = any(k in text_lower for k in fine_keywords) or \
-                    any(k in text_lower for k in tamil_fine_keywords) or \
-                    any(k in text_lower for k in hindi_fine_keywords)
-                    
-    is_explicit_location_fines = ("fine" in text_lower or "penalty" in text_lower or "rules" in text_lower or "அபராதம்" in text_lower or "जुर्माना" in text_lower) and \
-                                  ("location" in text_lower or "here" in text_lower or "இங்கே" in text_lower or "यहाँ" in text_lower)
-                                  
-    if (is_location_query and is_fine_query) or is_explicit_location_fines or (text_lower in ['fines', 'fines list', 'local fines', 'அபராதங்கள்', 'जुर्माना सूची']):
-        detected_lang = detect_language_from_text(text)
-        lang = detected_lang if detected_lang != 'en' else default_language
-        summary = generate_location_fines_summary(state, city, district, lang)
-        if summary:
-            return {
-                'response_text': summary,
-                'source_sections': [],
-                'confidence': 0.99,
-                'detected_language': lang,
-                'transcription': text,
-            }
-
-    # STEP 2: Dynamically detect language from text
-    detected_lang = detect_language_from_text(text)
-    
-    # Calculate language detection confidence ratio
-    clean_text = text.replace(' ', '')
-    total_len = len(clean_text)
-    lang_confidence = 0.95
-    if total_len > 0 and detected_lang != 'en':
-        if detected_lang == 'ta':
-            char_count = sum(1 for c in clean_text if '\u0B80' <= c <= '\u0BFF')
-        elif detected_lang == 'hi':
-            char_count = sum(1 for c in clean_text if '\u0900' <= c <= '\u097F')
-        elif detected_lang == 'te':
-            char_count = sum(1 for c in clean_text if '\u0C00' <= c <= '\u0C7F')
-        elif detected_lang == 'kn':
-            char_count = sum(1 for c in clean_text if '\u0C80' <= c <= '\u0CFF')
-        elif detected_lang == 'ml':
-            char_count = sum(1 for c in clean_text if '\u0D00' <= c <= '\u0D7F')
-        else:
-            char_count = 0
-        lang_confidence = max(0.85, min(0.99, float(char_count) / total_len))
-    else:
-        # Standard english or fallback
-        lang_confidence = 0.98 if not audio_uri else 0.91
-
-    # Override language settings so LLM responds in identical spoken language
-    language = detected_lang
-
-    # STEP 3: Search for relevant laws
-    laws = search(text, top_k=3, state=state)
-    if not laws:
-        # Instead of raising error, provide smart follow-up for vague queries
-        followup = generate_smart_followup(text, state, language, city, district)
-        if followup:
-            return {
-                'response_text': followup,
-                'source_sections': [],
-                'confidence': round(lang_confidence, 2),
-                'detected_language': detected_lang,
-                'transcription': text,
-            }
-            
-        # Conversational fallback check for out-of-domain / emergency / test queries
-        try:
-            fallback_text = generate_response(
-                text, [], state, language, 
-                city=city, district=district, 
-                concise_mode=concise_mode
-            )
-            if fallback_text and "RTO" not in fallback_text and "consult" not in fallback_text:
-                return {
-                    'response_text': fallback_text,
-                    'source_sections': [],
-                    'confidence': round(lang_confidence, 2),
-                    'detected_language': detected_lang,
-                    'transcription': text,
-                }
-        except Exception:
-            pass
-            
-        raise SearchError(f'No laws found for query: {text}')
-
-    # STEP 4: Fetch penalty details for the found violations
-    penalties = []
-    for law in laws:
-        violation_type = law.get('violation_type', '')
-        if violation_type:
-            penalties.extend(get_penalties(violation_type, state, city, district))
-
-    # Calculate search confidence score
-    search_confidence = laws[0].get('similarity', 0.85) if laws else 0.85
-    combined_confidence = round((search_confidence * 0.4) + (lang_confidence * 0.6), 2)
-
-    # STEP 5: Generate response (LLM with template fallback) in identical spoken language
-    response_text = generate_response(
-        text, laws, state, language, 
-        history=history, penalties=penalties, 
-        city=city, district=district, 
-        concise_mode=concise_mode
-    )
-    if not response_text:
-        response_text = build_template_response(laws, penalties, state, city, district)
-
-    # STEP 6: Validate citations to prevent hallucinations
-    source_sections = validate_citations(response_text, laws)
-
-    # STEP 7: Generate TTS audio (handled by Android native in MVP)
-    response_audio_uri = speak_text(response_text, language)
-
-    # STEP 8: Save to chat history for analytics
-    save_chat_history(text, response_text, state)
-
-    return {
-        'response_text': response_text,
-        'response_audio_uri': response_audio_uri,
-        'source_sections': source_sections,
-        'confidence': combined_confidence,
-        'detected_language': detected_lang,
-        'transcription': text,
-    }
-
-
-def build_template_response(laws: List[Dict], penalties: List[Dict], state: str, city: str = None, district: str = None) -> str:
-    """
-    Build a response using a template (fallback when LLM is unavailable).
-    
-    This is the SAFEST response mode - no AI hallucination possible.
-    Uses only verified data from the SQLite database.
-    
-    Format:
-    "According to [law section]: [law description].
-     Penalty in [location]: First offense - [amount], Second offense - [amount]."
-    """
-    if not laws:
-        return "I don't have information on that topic yet. Try asking about traffic violations, fines, or license procedures."
-
-    law = laws[0]
-    penalty_text = ''
-    if penalties:
-        p = penalties[0]
-        first = p.get('first_offense', 'N/A')
-        second = p.get('second_offense', 'N/A')
-        
-        loc_label = f"{city}, {district}" if city and district else district if district else state
-        penalty_text = f"\n\nPenalty in {loc_label}: First offense - {first}"
-        if second:
-            penalty_text += f", Second offense - {second}"
-            
-        details = p.get('additional_details', '')
-        if details:
-            if details.startswith('{'):
-                try:
-                    d_json = json.loads(details)
-                    veh = d_json.get('vehicle_type', 'All vehicles')
-                    enf = d_json.get('enforcement_type', '')
-                    penalty_text += f" (Vehicle: {veh}"
-                    if enf:
-                        penalty_text += f", Enforcement: {enf}"
-                    penalty_text += ")"
-                except:
-                    penalty_text += f" ({details})"
-            else:
-                penalty_text += f" ({details})"
-
-    return f"According to {law.get('section', 'the Motor Vehicles Act')}: {law.get('description', '')}.{penalty_text}"
-
-
-def validate_citations(response_text: str, laws: List[Dict]) -> List[str]:
-    """
-    Validate that citations in the LLM response match actual retrieved laws.
-    
-    ANTI-HALLUCINATION MEASURE:
-    LLMs can invent fake law sections. This function checks that
-    every cited section in the response actually exists in the
-    retrieved laws. Fake citations are stripped out.
-    
-    Args:
-        response_text: LLM-generated response text
-        laws: Retrieved law dictionaries
-    
-    Returns:
-        List of validated citation strings
-    """
-    # Extract citation patterns (e.g., "§188", "Section 194B", "Rule 45")
-    citations = re.findall(r'(?:§|Section|section|Rule)\s*[\dA-Za-z]+', response_text)
-    
-    # Get valid section names from retrieved laws
-    valid_sections = set()
-    for law in laws:
-        section = law.get('section', '')
-        if section:
-            valid_sections.add(section)
-
-    # Only keep citations that match actual retrieved laws
-    validated = []
-    for citation in citations:
-        for section in valid_sections:
-            if citation.lower() in section.lower():
-                validated.append(section)
-                break
-
-    # If no citations matched but we have laws, show the law sections anyway
-    if not validated and valid_sections:
-        validated = list(valid_sections)[:3]
-
-    return validated
-
-
-def get_fallback_response(payload: Dict) -> str:
-    """Generic fallback when model loading fails."""
-    return "Based on keyword matching: Please try rephrasing your question."
+    return "Could you provide a little more context? For example, are you asking about a specific fine or a general road rule?"
 
 
 STATE_NAMES = {
@@ -416,100 +134,6 @@ def get_location_label(state: str, city: str = None, district: str = None, langu
             return f"{district}, {state_fullname}"
         return state_fullname
 
-
-def keyword_fallback_response(payload: Dict) -> str:
-    """Fallback when no laws are found — with smart follow-up questions."""
-    text = payload.get('text', 'your question')
-    language = payload.get('language', 'en')
-    location = payload.get('location', {})
-    state = location.get('state', 'TN')
-    city = location.get('city')
-    district = location.get('district')
-    followup = generate_smart_followup(text, state, language, city, district)
-    if followup:
-        return followup
-    if language == 'ta':
-        return f"'{text}' பற்றி குறிப்பிட்ட தகவல் இல்லை. போக்குவரத்து விதிமீறல்கள், அபராதம் அல்லது உரிம நடைமுறைகள் பற்றி கேளுங்கள்."
-    elif language == 'hi':
-        return f"'{text}' के बारे में विशेष जानकारी नहीं है। ट्रैफिक उल्लंघन, जुर्माना, या लाइसेंस प्रक्रियाओ के बारे में पूछें।"
-    return f"I don't have specific information on '{text}'. Try asking about traffic violations, fines, or license procedures."
-
-
-# ── Smart follow-up question system ──
-
-VAGUE_QUERY_PATTERNS = {
-    'helmet': {
-        'en': '🪖 **Helmet Violation (Section 194D, MV Act)**\n\nNot wearing a helmet while riding a two-wheeler is a punishable offense.\n\n• **First offense:** {first_fine} fine + 3-month license suspension\n• **Repeat offense:** {second_fine} fine + longer suspension\n\nTo give you the exact fine for your situation, could you tell me:\n1. Is this your **first offense** or a repeat offense?\n2. Were you the **rider or pillion passenger**?',
-        'ta': '🪖 **ஹெல்மெட் விதிமீறல் (பிரிவு 194D, MV சட்டம்)**\n\nஇருசக்கர வாகனம் ஓட்டும்போது ஹெல்மெட் அணியாமல் இருப்பது தண்டனைக்குரிய குற்றம்.\n\n• **முதல் குற்றம்:** {first_fine} அபராதம் + 3 மாத உரிம இடைநிறுத்தம்\n• **மீண்டும் குற்றம்:** {second_fine} அபராதம்\n\nஉங்கள் நிலைமைக்கு சரியான அபராதத்தை சொல்ல:\n1. இது உங்கள் **முதல் குற்றமா** அல்லது மீண்டும்?\n2. நீங்கள் **ஓட்டுநரா அல்லது பின் இருக்கை பயணியா**?',
-        'hi': '🪖 **हेलमेट उल्लंघन (धारा 194D, MV अधिनियम)**\n\nदोपहिया वाहन चलाते समय हेलमेट न पहनना दंडनीय अपराध है।\n\n• **पहला अपराध:** {first_fine} जुर्माना + 3 महीने का लाइसेंस निलंबन\n• **दोबारा अपराध:** {second_fine} जुर्माना\n\nआपकी स्थिति के लिए सही जुर्माना बताने के लिए:\n1. क्या यह आपका **पहला अपराध** है या दोबारा?\n2. क्या आप **चालक थे या पीछे बैठे यात्री**?',
-    },
-    'signal': {
-        'en': '🚦 **Traffic Signal Violation (Section 194C, MV Act)**\n\nJumping a red light is a serious offense.\n\n• **Fine:** {first_fine} to {second_fine} (varies by state)\n• May also attract license suspension for repeat offenders.\n\nCould you clarify:\n1. Was this caught by a **traffic camera or by a police officer**?\n2. Is this your **first time** or have you been fined before?',
-        'ta': '🚦 **சிக்னல் ஜம்ப் (பிரிவு 194C, MV சட்டம்)**\n\nசிவப்பு விளக்கை மீறுவது கடுமையான குற்றம்.\n\n• **அபராதம்:** {first_fine} முதல் {second_fine}\n\nதெளிவுபடுத்துங்கள்:\n1. **கேமரா மூலம் பிடிபட்டதா அல்லது காவல்துறை**?\n2. இது **முதல் முறையா**?',
-        'hi': '🚦 **सिग्नल उल्लंघन (धारा 194C, MV अधिनियम)**\n\nलाल बत्ती तोड़ना गंभीर अपराध है।\n\n• **जुर्माना:** {first_fine} से {second_fine}\n\nकृपया बताएं:\n1. क्या यह **कैमरे से पकड़ा गया या पुलिस ने**?\n2. क्या यह **पहली बार** है?',
-    },
-    'license': {
-        'en': '📋 **License Information**\n\nI can help you with license-related queries! Could you specify what you need:\n1. **Applying for a new license** (learner\'s or permanent)?\n2. **License renewal** — is your license expired or about to expire?\n3. **Driving without a license** — what\'s the penalty?\n4. **International driving permit**?',
-        'ta': '📋 **உரிம தகவல்**\n\nஉரிம தொடர்பான கேள்விகளுக்கு உதவ முடியும்! என்ன தேவை:\n1. **புதிய உரிமம் விண்ணப்பிக்க** (கற்றல் அல்லது நிரந்தர)?\n2. **உரிம புதுப்பிப்பு**?\n3. **உரிமம் இல்லாமல் ஓட்டுதல்** — அபராதம் என்ன?\n4. **சர்வதேச ஓட்டுநர் உரிமம்**?',
-        'hi': '📋 **लाइसेंस जानकारी**\n\nलाइसेंस संबंधी प्रश्नों में मदद कर सकता हूं! बताइए:\n1. **नया लाइसेंस** (लर्नर या स्थायी)?\n2. **लाइसेंस नवीनीकरण**?\n3. **बिना लाइसेंस ड्राइविंग** — जुर्माना?\n4. **अंतर्राष्ट्रीय ड्राइविंग परमिट**?',
-    },
-    'fine': {
-        'en': '💰 **Traffic Fine Information**\n\nI can look up fine amounts for you! Which violation are you asking about:\n1. **Speeding** 🏎️\n2. **Drunk driving** 🍺\n3. **No helmet / no seatbelt** 🪖\n4. **Signal jumping** 🚦\n5. **Wrong-side driving** ↔️\n6. **Other** — just describe the violation!',
-        'ta': '💰 **போக்குவரத்து அபராதம்**\n\nஎந்த விதிமீறல் பற்றி கேட்கிறீர்கள்:\n1. **வேகமாக ஓட்டுதல்** 🏎️\n2. **குடிபோதையில் ஓட்டுதல்** 🍺\n3. **ஹெல்மெட் / சீட் பெல்ட் இல்லை** 🪖\n4. **சிக்னல் ஜம்ப்** 🚦\n5. **தவறான பக்கம்** ↔️',
-        'hi': '💰 **ट्रैफिक जुर्माना**\n\nकिस उल्लंघन के बारे में पूछ रहे हैं:\n1. **ओवरस्पीडिंग** 🏎️\n2. **शराब पीकर ड्राइविंग** 🍺\n3. **हेलमेट / सीट बेल्ट नहीं** 🪖\n4. **सिग्नल तोड़ना** 🚦\n5. **गलत साइड** ↔️',
-    },
-    'challan': {
-        'en': '📝 **Challan / E-Challan Information**\n\nI can help with challan-related queries! Please tell me:\n1. **Check pending challans** — Do you have your vehicle number?\n2. **Pay a challan online** — Which state?\n3. **Dispute a challan** — What was the violation?\n4. **Challan fine amounts** — Which violation?',
-        'ta': '📝 **சல்லான் / இ-சல்லான்**\n\nசல்லான் தொடர்பாக உதவ முடியும்! சொல்லுங்கள்:\n1. **நிலுவையில் உள்ள சல்லான்** — வாகன எண் உள்ளதா?\n2. **ஆன்லைனில் செலுத்த**?\n3. **சல்லான் எதிர்ப்பு**?\n4. **அபராத தொகை**?',
-        'hi': '📝 **चालान / ई-चालान**\n\nचालान संबंधी मदद:\n1. **लंबित चालान जांचें** — गाड़ी नंबर है?\n2. **ऑनलाइन भुगतान**?\n3. **चालान विवाद**?\n4. **जुर्माना राशि**?',
-    },
-    'speed': {
-        'en': '🏎️ **Speeding Violation (Section 194, MV Act)**\n\nSpeeding fines depend on the type of vehicle and how much you exceeded the limit.\n\n• **Light motor vehicle:** {first_fine}\n• **Medium/heavy vehicle:** {second_fine}\n\nTo give exact details:\n1. Were you driving a **car, bike, or commercial vehicle**?\n2. Do you know the **speed limit** on that road?',
-        'ta': '🏎️ **வேக விதிமீறல் (பிரிவு 194)**\n\nவேக அபராதம் வாகன வகையைப் பொறுத்தது.\n\n• **லேசான வாகனம்:** {first_fine}\n• **கனரக வாகனம்:** {second_fine}\n\nசரியான விவரங்களுக்கு:\n1. **கார், பைக் அல்லது வணிக வாகனம்**?\n2. அந்த சாலையின் **வேக வரம்பு** தெரியுமா?',
-        'hi': '🏎️ **ओवरस्पीडिंग (धारा 194)**\n\nजुर्माना वाहन के प्रकार पर निर्भर करता है।\n\n• **हल्का वाहन:** {first_fine}\n• **भारी वाहन:** {second_fine}\n\nसटीक जानकारी के लिए:\n1. **कार, बाइक या कमर्शियल वाहन**?\n2. उस सड़क की **स्पीड लिमिट** पता है?',
-    },
-    'drink': {
-        'en': '🍺 **Drunk Driving (Section 185, MV Act)**\n\nDrunk driving is one of the most severely punished traffic offenses in India.\n\n• **First offense:** {first_fine} fine and/or up to 6 months imprisonment\n• **Repeat offense (within 3 years):** {second_fine} fine and/or up to 2 years imprisonment\n• Blood alcohol limit: **30mg per 100ml of blood**\n\nIs this for:\n1. **Understanding the law** before driving?\n2. **Already caught** — what are your options?',
-        'ta': '🍺 **குடிபோதையில் ஓட்டுதல் (பிரிவு 185)**\n\n• **முதல் குற்றம்:** {first_fine} + 6 மாத சிறை\n• **மீண்டும் (3 வருடத்தில்):** {second_fine} + 2 வருட சிறை\n\nஇது எதற்கு:\n1. **சட்டத்தை புரிந்துகொள்ள**?\n2. **ஏற்கனவே பிடிபட்டதா**?',
-        'hi': '🍺 **शराब पीकर ड्राइविंग (धारा 185)**\n\n• **पहला अपराध:** {first_fine} + 6 महीने जेल\n• **दोबारा (3 साल में):** {second_fine} + 2 साल जेल\n\nयह किसलिए:\n1. **कानून समझने के लिए**?\n2. **पहले से पकड़े गए** — क्या विकल्प हैं?',
-    },
-}
-
-# Keywords that trigger each pattern
-PATTERN_TRIGGERS = {
-    'helmet': ['helmet', 'helmat', 'ஹெல்மெட்', 'हेलमेट', 'topi'],
-    'signal': ['signal', 'red light', 'traffic light', 'சிக்னல்', 'सिग्नल', 'redlight'],
-    'license': ['license', 'licence', 'dl', 'driving license', 'உரிமம்', 'லாசைன்ஸ்', 'permit'],
-    'fine': ['fine', 'penalty', 'amount', 'அபராதம்', 'जुर्माना', 'kitna'],
-    'challan': ['challan', 'echallan', 'e-challan', 'சல்லான்', 'चालान'],
-    'speed': ['speed', 'overspeeding', 'speeding', 'வேகம்', 'स्पीड', 'fast'],
-    'drink': ['drunk', 'drinking', 'alcohol', 'dui', 'குடி', 'शराब', 'daaru'],
-}
-
-
-def detect_language_from_text(text: str) -> str:
-    """Unicode range language detection for multi-lingual Indian co-driver."""
-    tamil_chars = sum(1 for c in text if '\u0B80' <= c <= '\u0BFF')
-    hindi_chars = sum(1 for c in text if '\u0900' <= c <= '\u097F')
-    telugu_chars = sum(1 for c in text if '\u0C00' <= c <= '\u0C7F')
-    kannada_chars = sum(1 for c in text if '\u0C80' <= c <= '\u0CFF')
-    malayalam_chars = sum(1 for c in text if '\u0D00' <= c <= '\u0D7F')
-    
-    counts = {
-        'ta': tamil_chars,
-        'hi': hindi_chars,
-        'te': telugu_chars,
-        'kn': kannada_chars,
-        'ml': malayalam_chars
-    }
-    
-    max_lang = max(counts, key=counts.get)
-    if counts[max_lang] > 1: # Require at least 2 characters to trigger Indian regional language routing
-        return max_lang
-        
-    return 'en'
-
-
 def get_single_fine(violation_type: str, state: str, city: str = None, district: str = None) -> str:
     """Helper to query localized fines from SQLite."""
     try:
@@ -520,7 +144,6 @@ def get_single_fine(violation_type: str, state: str, city: str = None, district:
     except Exception:
         pass
     return 'N/A'
-
 
 def generate_location_fines_summary(state: str, city: str = None, district: str = None, language: str = 'en') -> str:
     """Generate a clean, professional, localized summary of the major traffic fines for a location."""
@@ -594,18 +217,111 @@ def generate_location_fines_summary(state: str, city: str = None, district: str 
     return summary
 
 
-def generate_smart_followup(text: str, state: str, language: str, city: str = None, district: str = None) -> str:
-    """
-    Generate a smart follow-up response for vague queries.
-    Returns None if the query doesn't match any known patterns.
-    """
+from typing import Optional
+
+def handle_navigation_query(text: str, context: Dict, language: str) -> Optional[str]:
+    if not context or not context.get('isNavigating'):
+        return None
+        
     text_lower = text.lower().strip()
     
-    # Auto-detect language if not clear from setting
-    detected_lang = detect_language_from_text(text)
-    lang = detected_lang if detected_lang != 'en' else language
+    # English keywords
+    nav_keywords = ['destination', 'how far', 'eta', 'remaining', 'left to go', 'route', 'safety score', 'dangerous', 'hazard', 'next step', 'instruction', 'turn']
     
+    # Tamil keywords
+    tamil_nav_keywords = ['இலக்கு', 'எவ்வளவு தூரம்', 'மீதமுள்ள', 'வழி', 'பாதுகாப்பு', 'அபாயம்', 'அடுத்த படி', 'வழிமுறை', 'திருப்பு']
+    
+    # Hindi keywords
+    hindi_nav_keywords = ['मंजिल', 'कितनी दूर', 'शेष', 'रास्ता', 'सुरक्षा', 'खतरा', 'अगला कदम', 'निर्देश', 'मोड़']
+
+    is_nav_query = any(k in text_lower for k in nav_keywords) or \
+                   any(k in text_lower for k in tamil_nav_keywords) or \
+                   any(k in text_lower for k in hindi_nav_keywords)
+
+    if not is_nav_query:
+        return None
+
+    dest_name = context.get('destinationName', 'your destination')
+    dist_rem = context.get('distanceRemaining', 0)
+    dur_rem = context.get('durationRemaining', 0)
+    next_step = context.get('currentStepInstruction', 'proceed safely')
+    safety_score = context.get('routeSafetyScore', 100)
+    route_name = context.get('activeRouteName', 'Recommended Route')
+
+    # Calculations
+    dist_km = dist_rem / 1000.0
+    time_min = round(dur_rem / 60.0)
+
+    if language == 'ta':
+        if any(k in text_lower for k in ['far', 'தூரம்', 'remaining', 'மீதமுள்ள', 'eta', 'நேரம்']):
+            return f"உங்கள் இலக்கை அடைய இன்னும் {dist_km:.1f} கி.மீ தூரம் உள்ளது. இதற்கு தோராயமாக {time_min} நிமிடங்கள் ஆகும்."
+        if any(k in text_lower for k in ['destination', 'இலக்கு', 'மஞ்சில்']):
+            return f"நீங்கள் இப்போது {dest_name} நோக்கிச் சென்று கொண்டிருக்கிறீர்கள்."
+        if any(k in text_lower for k in ['route', 'வழி', 'safety', 'பாதுகாப்பு', 'hazard', 'அபாயம்']):
+            return f"நீங்கள் தற்போது '{route_name}' வழியில் செல்கிறீர்கள். இதனுடைய பாதுகாப்பு மதிப்பீடு {safety_score}% ஆகும். வழியில் எந்தவொரு பெரிய ஆபத்தும் கண்டறியப்படவில்லை."
+        if any(k in text_lower for k in ['step', 'படி', 'instruction', 'வழிமுறை', 'next', 'turn', 'திருப்பு']):
+            return f"உங்களின் அடுத்த வழிமுறை: '{next_step}'."
+        return f"நீங்கள் இப்போது '{route_name}' வழியாக {dest_name} நோக்கிச் செல்கிறீர்கள். மீதமுள்ள தூரம்: {dist_km:.1f} கி.மீ ({time_min} நிமிடங்கள்). பாதுகாப்பு மதிப்பீடு: {safety_score}%."
+
+    elif language == 'hi':
+        if any(k in text_lower for k in ['far', 'दूर', 'remaining', 'शेष', 'eta']):
+            return f"आपकी मंजिल पहुँचने में {dist_km:.1f} किमी शेष है। इसमें लगभग {time_min} मिनट लगेंगे।"
+        if any(k in text_lower for k in ['destination', 'मंजिल']):
+            return f"आप अभी {dest_name} की ओर जा रहे हैं।"
+        if any(k in text_lower for k in ['route', 'रास्ता', 'safety', 'सुरक्षा', 'hazard', 'खतरा']):
+            return f"आप वर्तमान में '{route_name}' मार्ग पर हैं। इस मार्ग का सुरक्षा स्कोर {safety_score}% है और कोई बड़ा खतरा नहीं है।"
+        if any(k in text_lower for k in ['step', 'कदम', 'instruction', 'निर्देश', 'next', 'turn', 'मोड़']):
+            return f"आपका अगला निर्देश है: '{next_step}'।"
+        return f"आप अभी '{route_name}' से होते हुए {dest_name} जा रहे हैं। शेष दूरी: {dist_km:.1f} किमी ({time_min} मिनट)। सुरक्षा स्कोर: {safety_score}%।"
+
+    else:
+        if any(k in text_lower for k in ['far', 'distance', 'remaining', 'left', 'eta', 'time']):
+            return f"You have {dist_km:.1f} km remaining to reach your destination. It will take approximately {time_min} minutes."
+        if any(k in text_lower for k in ['destination', 'target']):
+            return f"You are currently navigating to {dest_name}."
+        if any(k in text_lower for k in ['route', 'safety', 'score', 'hazard', 'danger']):
+            return f"You are driving on '{route_name}' with a safety rating of {safety_score}%. No major hazards detected on this route."
+        if any(k in text_lower for k in ['step', 'instruction', 'next', 'turn']):
+            return f"Your next turn instruction is: '{next_step}'."
+        return f"Navigating to {dest_name} via '{route_name}'. Remaining: {dist_km:.1f} km ({time_min} mins). Route Safety: {safety_score}%."
+
+
+def execute_pipeline(payload: Dict) -> Dict:
+    text = payload.get('text', '')
+    audio_uri = payload.get('audio_uri')
+    location = payload.get('location', {})
+    language = payload.get('language', 'en')
+    state = location.get('state', 'TN')
+    lat = location.get('lat', 0)
+    lng = location.get('lng', 0)
+    city = location.get('city')
+    district = location.get('district')
+    history = payload.get('history', [])
+
+    has_gps = lat != 0
+
+    if audio_uri:
+        text = transcribe_audio(audio_uri, language)
+        if not text:
+            return {'response_text': 'I couldn\'t hear you clearly. Could you repeat that or type it?', 'confidence': 0}
+
+    # Contextual Navigation queries check
+    navigation_context = payload.get('navigationContext', {})
+    nav_response = handle_navigation_query(text, navigation_context, language)
+    if nav_response:
+        from tts import speak_text
+        response_audio_uri = speak_text(nav_response, language)
+        return {
+            'response_text': nav_response,
+            'response_audio_uri': response_audio_uri,
+            'source_sections': [],
+            'confidence': 0.99,
+            'detected_language': language,
+            'transcription': text,
+        }
+
     # Intercept generic queries about fines or rules for user's location
+    text_lower = text.lower().strip()
     location_keywords = ['my location', 'around me', 'here', 'this place', 'local fines', 'local rules', 'fines and details', 'around here']
     tamil_location_keywords = ['என் இடம்', 'இங்கே', 'இங்க', 'என் ஏரியா', 'இருப்பிடம்', 'இங்குள்ள அபராதம்', 'என் ஊர்']
     hindi_location_keywords = ['मेरी जगह', 'यहाँ', 'इधर', 'मेरा लोकेशन', 'यहाँ का जुर्माना', 'लोकल', 'आसपास']
@@ -626,83 +342,189 @@ def generate_smart_followup(text: str, state: str, language: str, city: str = No
                                   ("location" in text_lower or "here" in text_lower or "இங்கே" in text_lower or "यहाँ" in text_lower)
                                   
     if (is_location_query and is_fine_query) or is_explicit_location_fines or (text_lower in ['fines', 'fines list', 'local fines', 'அபராதங்கள்', 'जुर्माना सूची']):
-        summary = generate_location_fines_summary(state, city, district, lang)
+        summary = generate_location_fines_summary(state, city, district, language)
         if summary:
-            return summary
-    
-    # Auto-detect language if not clear from setting
-    detected_lang = detect_language_from_text(text)
-    lang = detected_lang if detected_lang != 'en' else language
-    
-    for pattern_key, triggers in PATTERN_TRIGGERS.items():
-        for trigger in triggers:
-            if trigger in text_lower:
-                templates = VAGUE_QUERY_PATTERNS.get(pattern_key, {})
-                response_template = templates.get(lang, templates.get('en', ''))
-                if response_template:
-                    # Dynamically fetch localized penalty details
-                    first_fine = "₹1,000"
-                    second_fine = "₹2,000"
-                    
-                    violation_mapping = {
-                        'helmet': 'no_helmet',
-                        'signal': 'red_light',
-                        'speed': 'speeding',
-                        'drink': 'drunk_driving',
-                        'license': 'no_license'
-                    }
-                    
-                    if pattern_key in violation_mapping:
-                        try:
-                            from database import get_penalties
-                            p_list = get_penalties(violation_mapping[pattern_key], state, city, district)
-                            if p_list:
-                                p = p_list[0]
-                                first_fine = p.get('first_offense', first_fine)
-                                second_fine = p.get('second_offense', second_fine)
-                        except Exception:
-                            pass
-                    
-                    # Format response text safely with localized values
-                    try:
-                        formatted_response = response_template.format(first_fine=first_fine, second_fine=second_fine)
-                    except Exception:
-                        formatted_response = response_template
-                    
-                    # Prefix with localized location notice
-                    location_name = get_location_label(state, city, district, lang)
-                    if lang == 'ta':
-                        prefix = f"📍 **உங்கள் தற்போதைய இருப்பிடமான {location_name} அடிப்படையில்:**\n\n"
-                    elif lang == 'hi':
-                        prefix = f"📍 **आपके वर्तमान स्थान {location_name} के आधार पर:**\n\n"
-                    else:
-                        prefix = f"📍 **Based on your current location in {location_name}:**\n\n"
-                        
-                    return prefix + formatted_response
-    
-    return None
+            return {
+                'response_text': summary,
+                'source_sections': [],
+                'confidence': 0.99,
+                'detected_language': language,
+                'transcription': text,
+            }
+
+    # 1. Conversational Clarification Check
+    if not history and is_vague_query(text):
+        return {
+            'response_text': get_clarification_prompt(text, state, has_gps),
+            'suggested_prompts': get_contextual_suggestions(text, state),
+            'is_follow_up': True
+        }
+
+    # 2. Contextual Search
+    laws = search(text, top_k=3, state=state)
+
+    if not laws:
+        return {
+            'response_text': f"I don't have specific data on that in my offline database for {state}. I recommend checking the official MVD website or asking about more common violations.",
+            'suggested_prompts': ["Common fines in " + state, "Speed limits", "Helmet rules"]
+        }
+
+    # 3. LLM Response Generation
+    response_text = generate_response(text, laws, state, language, history=history)
+
+    if not response_text:
+        response_text = build_template_response(laws, [], state)
+
+    source_sections = validate_citations(response_text, laws)
+    response_audio_uri = speak_text(response_text, language)
+
+    # 4. Proactive Enrichment
+    enriched = get_enriched_response(text, laws, state, language)
+
+    # Check for zones if "parking" or "can I" is mentioned
+    extra_context = ""
+    if 'park' in text.lower() and has_gps:
+        zones = check_zones(location.get('lat', 0), location.get('lng', 0), state)
+        if zones:
+            z = zones[0]
+            if z.get('zone_type') == 'no_parking':
+                extra_context = f"\n\n⚠️ NOTE: You are currently in a {z.get('zone_name')}. Parking here is strictly prohibited."
+
+    final_response = response_text + extra_context
+    save_chat_history(text, final_response, state)
+
+    return {
+        'response_text': final_response,
+        'response_audio_uri': response_audio_uri,
+        'source_sections': source_sections,
+        'confidence': round(laws[0].get('similarity', 0), 2),
+        'suggested_prompts': get_follow_up_suggestions(text, laws, state),
+        'real_time_alerts': enriched.get('real_time_context', {}).get('alerts', []),
+    }
+
+
+def get_contextual_suggestions(text: str, state: str) -> List[str]:
+    text = text.lower()
+    if 'park' in text: return ["No parking fine", "Parking at current location", "Footpath parking rules"]
+    if 'helmet' in text: return [f"Fine in {state}", "Pillion rules", "Sikh helmet exemption"]
+    return ["What is the fine?", "Show me the sections"]
+
+
+def get_follow_up_suggestions(text: str, laws: List[Dict], state: str) -> List[str]:
+    text = text.lower()
+    if 'helmet' in text: return ["Pillion rider fine", "Repeat offense penalty"]
+    if 'license' in text: return ["Digital DL validity", "Expired license penalty"]
+    return [f"Other rules in {state}", "My legal rights"]
+
+
+def build_template_response(laws: List[Dict], penalties: List[Dict], state: str) -> str:
+    law = laws[0]
+    return f"Based on Section {law.get('section', 'of the Act')}: {law.get('description', '')}. In {state}, the typical fine for this is ₹500 - ₹1000."
+
+
+def validate_citations(response_text: str, laws: List[Dict]) -> List[str]:
+    citations = re.findall(r'(?:§|Section|section|Rule)\s*\d+[A-Z]*', response_text)
+    valid = set(l.get('section', '') for l in laws)
+    found = []
+    for cit in citations:
+        c = re.sub(r'[^0-9A-Z]', '', cit.upper())
+        for v in valid:
+            if c in re.sub(r'[^0-9A-Z]', '', v.upper()):
+                if v not in found: found.append(v)
+    return found if found else list(valid)[:2]
 
 
 def handle_zone_check(json_payload: str) -> str:
-    """
-    Check if current GPS location triggers any zone alerts.
-    
-    Called by React Native whenever the GPS location changes
-    (every 5 seconds in Car Mode, or 30 seconds in Mobile Mode).
-    """
     try:
         payload = json.loads(json_payload)
         location = payload.get('location', {})
-        lat = location.get('lat', 0)
-        lng = location.get('lng', 0)
-        state = location.get('state', 'TN')
-        heading = location.get('heading')
-        speed = location.get('speed', 0)
+        alerts = check_zones(location.get('lat', 0), location.get('lng', 0), location.get('state', 'TN'))
+        return json.dumps(alerts[0] if alerts else {'status': 'no_alert'})
+    except Exception as e:
+        return json.dumps({'status': 'error', 'message': str(e)})
 
-        alerts = check_zones(lat, lng, state, heading=heading, speed=speed)
 
-        if alerts:
-            return json.dumps(alerts[0])  # Return first triggered alert
-        return json.dumps({'status': 'no_alert'})
+# --- Speed Limit Constants & Handler ---
+
+DEFAULT_SPEED_LIMITS = {
+    'TN': {'urban': 50, 'rural': 80, 'highway': 100, 'expressway': 120},
+    'KN': {'urban': 50, 'rural': 80, 'highway': 100, 'expressway': 120},
+    'AP': {'urban': 50, 'rural': 80, 'highway': 100, 'expressway': 120},
+    'KL': {'urban': 50, 'rural': 70, 'highway': 85, 'expressway': 110},
+    'MH': {'urban': 50, 'rural': 80, 'highway': 100, 'expressway': 120},
+    'DL': {'urban': 50, 'rural': 70, 'highway': 90, 'expressway': 100},
+    'GJ': {'urban': 60, 'rural': 80, 'highway': 100, 'expressway': 120},
+    'RJ': {'urban': 50, 'rural': 80, 'highway': 100, 'expressway': 120},
+    'UP': {'urban': 50, 'rural': 80, 'highway': 100, 'expressway': 120},
+    'WB': {'urban': 50, 'rural': 80, 'highway': 100, 'expressway': 120},
+    'TS': {'urban': 50, 'rural': 80, 'highway': 100, 'expressway': 120},
+    'BR': {'urban': 50, 'rural': 80, 'highway': 100, 'expressway': 120},
+    'HR': {'urban': 50, 'rural': 80, 'highway': 100, 'expressway': 120},
+    'PB': {'urban': 50, 'rural': 80, 'highway': 100, 'expressway': 120},
+    'OR': {'urban': 50, 'rural': 80, 'highway': 100, 'expressway': 120},
+    'MP': {'urban': 50, 'rural': 80, 'highway': 100, 'expressway': 120},
+    'DEFAULT': {'urban': 50, 'rural': 80, 'highway': 100, 'expressway': 100}
+}
+
+VEHICLE_LIMIT_ADJUSTMENTS = {
+    'car': {'urban': 0, 'rural': 0, 'highway': 0, 'expressway': 0},
+    'motorcycle': {'urban': -10, 'rural': -10, 'highway': -20, 'expressway': -40},
+    'heavy': {'urban': -10, 'rural': -20, 'highway': -20, 'expressway': -40}
+}
+
+
+def handle_speed_limit_query(json_payload: str) -> str:
+    """
+    Get speed limit for a given lat/lng from database speed zones or state defaults.
+    """
+    try:
+        payload = json.loads(json_payload)
+        lat = payload.get('lat', 0.0)
+        lng = payload.get('lng', 0.0)
+        state = payload.get('state', 'TN').upper()
+        vehicle_type = payload.get('vehicle_type', 'car')
+
+        # 1. Query database for speed zones at the location
+        from database import get_zones
+        matched_zones = get_zones(lat, lng, state)
+        for zone in matched_zones:
+            if zone.get('speed_limit'):
+                if zone.get('center_lat') and zone.get('center_lng'):
+                    from zones import haversine
+                    dist = haversine(lat, lng, zone['center_lat'], zone['center_lng'])
+                    if dist <= zone.get('radius_meters', 500):
+                        return json.dumps({
+                            'status': 'success',
+                            'speed_limit': zone['speed_limit'],
+                            'source': 'osm'
+                        })
+                elif zone.get('polygon'):
+                    try:
+                        from zones import point_in_polygon
+                        poly = json.loads(zone['polygon'])
+                        if point_in_polygon(lat, lng, poly):
+                            return json.dumps({
+                                'status': 'success',
+                                'speed_limit': zone['speed_limit'],
+                                'source': 'osm'
+                            })
+                    except:
+                        continue
+
+        # 2. Fall back to state defaults
+        defaults = DEFAULT_SPEED_LIMITS.get(state, DEFAULT_SPEED_LIMITS['DEFAULT'])
+        category = 'urban'
+        base_limit = defaults[category]
+        
+        adjustments = VEHICLE_LIMIT_ADJUSTMENTS.get(vehicle_type, VEHICLE_LIMIT_ADJUSTMENTS['car'])
+        diff = adjustments[category]
+        
+        speed_limit = max(20, base_limit + diff)
+
+        return json.dumps({
+            'status': 'success',
+            'speed_limit': speed_limit,
+            'source': 'default'
+        })
     except Exception as e:
         return json.dumps({'status': 'error', 'message': str(e)})

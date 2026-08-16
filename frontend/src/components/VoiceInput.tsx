@@ -1,13 +1,13 @@
 /**
  * VoiceInput - Microphone button for voice recording
- * 
+ *
  * HOW IT WORKS:
  * 1. User presses and holds the mic button
  * 2. Recording starts immediately (button turns red)
  * 3. User releases the button to stop recording
  * 4. Audio file path is sent to parent component
  * 5. Parent sends audio to Python backend for Whisper transcription
- * 
+ *
  * PERMISSIONS:
  * Requests microphone permission on first use.
  * Shows alert if permission is denied.
@@ -23,7 +23,8 @@ import {
 import { Mic } from 'lucide-react-native';
 import AudioRecorderPlayer from 'react-native-audio-recorder-player';
 import { getAudioPath } from '../utils/audioPath';
-import { COLORS } from '../constants/theme';
+import { useMemo } from 'react';
+import { useThemeColors } from '../context/ThemeContext';
 
 // Single instance of the audio recorder (shared across the app)
 const audioRecorderPlayer = new AudioRecorderPlayer();
@@ -34,6 +35,8 @@ interface VoiceInputProps {
 
 export const VoiceInput = ({ onVoiceInput }: VoiceInputProps) => {
   const [isRecording, setIsRecording] = useState(false);
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   /**
    * Request microphone permission from the user
@@ -44,10 +47,11 @@ export const VoiceInput = ({ onVoiceInput }: VoiceInputProps) => {
         PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
         {
           title: 'Microphone Permission',
-          message: 'DriveLegal needs access to your microphone for voice input.',
+          message:
+            'DriveLegal needs access to your microphone for voice input.',
           buttonPositive: 'OK',
           buttonNegative: 'Cancel',
-        }
+        },
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     }
@@ -62,12 +66,15 @@ export const VoiceInput = ({ onVoiceInput }: VoiceInputProps) => {
     try {
       const hasPermission = await requestPermission();
       if (!hasPermission) {
-        Alert.alert('Permission Denied', 'Microphone access is required for voice input.');
+        Alert.alert(
+          'Permission Denied',
+          'Microphone access is required for voice input.',
+        );
         return;
       }
 
       // Start recording to a temporary file
-      const uri = await audioRecorderPlayer.startRecorder();
+      await audioRecorderPlayer.startRecorder();
       setIsRecording(true); // Turn button red to show recording state
     } catch (error) {
       console.error('Start recording error:', error);
@@ -96,28 +103,28 @@ export const VoiceInput = ({ onVoiceInput }: VoiceInputProps) => {
   return (
     <TouchableOpacity
       style={[styles.button, isRecording && styles.buttonRecording]}
-      onPressIn={startRecording}  // Start on press down
-      onPressOut={stopRecording}   // Stop on press up
+      onPressIn={startRecording} // Start on press down
+      onPressOut={stopRecording} // Stop on press up
       delayLongPress={100}
     >
       <Mic
         size={22}
-        color={isRecording ? COLORS.white : COLORS.textSecondary}
+        color={isRecording ? colors.white : colors.textSecondary}
       />
     </TouchableOpacity>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   button: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.border,
+    backgroundColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
   buttonRecording: {
-    backgroundColor: COLORS.error,
+    backgroundColor: colors.error,
   },
 });

@@ -1,71 +1,55 @@
-import { Platform } from 'react-native';
-import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
+import { STATES } from '../constants/states';
+import type { CachedLocation, GeoInfo, GPSCoords } from '../types';
 
-// --- Types ---
-export interface GPSCoords {
-  latitude: number;
-  longitude: number;
-  accuracy: number | null;
-  altitude: number | null;
-  timestamp: number;
-  speed?: number | null;
-  heading?: number | null;
-}
-
-export interface GeoInfo {
-  city: string;
-  district: string;
-  state: string;
-  stateCode: string;
-  country: string;
-  postalCode: string;
-  confidence: 'high' | 'medium' | 'low';
-  source: 'expo' | 'nominatim' | 'cache' | 'fallback';
-}
-
-export interface CachedLocation {
-  coords: GPSCoords;
-  geo: GeoInfo;
-  timestamp: number;
-}
+export type { CachedLocation, GeoInfo, GPSCoords } from '../types';
 
 // --- Constants ---
 const CACHE_KEY = '@drivelegal_last_location';
 const STATE_MAP: Record<string, string> = {
   'Tamil Nadu': 'TN',
-  'Karnataka': 'KN',
+  Karnataka: 'KN',
   'Andhra Pradesh': 'AP',
-  'Kerala': 'KL',
-  'Maharashtra': 'MH',
-  'Delhi': 'DL',
-  'Gujarat': 'GJ',
-  'Rajasthan': 'RJ',
+  Kerala: 'KL',
+  Maharashtra: 'MH',
+  Delhi: 'DL',
+  Gujarat: 'GJ',
+  Rajasthan: 'RJ',
   'Uttar Pradesh': 'UP',
   'West Bengal': 'WB',
-  'Telangana': 'TS',
-  'Bihar': 'BR',
-  'Haryana': 'HR',
-  'Punjab': 'PB',
-  'Odisha': 'OR',
+  Telangana: 'TS',
+  Bihar: 'BR',
+  Haryana: 'HR',
+  Punjab: 'PB',
+  Odisha: 'OR',
   'Madhya Pradesh': 'MP',
 };
 
 // --- Internal Helpers ---
 const mapStateToCode = (stateName: string): string => {
   const normalized = stateName.trim();
-  if (STATE_MAP[normalized]) return STATE_MAP[normalized];
+  if (STATE_MAP[normalized]) {
+    return STATE_MAP[normalized];
+  }
   for (const [name, code] of Object.entries(STATE_MAP)) {
-    if (normalized.toLowerCase().includes(name.toLowerCase())) return code;
+    if (normalized.toLowerCase().includes(name.toLowerCase())) {
+      return code;
+    }
   }
   return 'UNKNOWN';
 };
 
-const reverseGeocodeNominatim = async (lat: number, lng: number): Promise<GeoInfo> => {
+const reverseGeocodeNominatim = async (
+  lat: number,
+  lng: number,
+): Promise<GeoInfo> => {
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1&accept-language=en`;
-    console.log(`[Location Audit] Initiating reverse geocode fetch URL: ${url}`);
-    
+    console.log(
+      `[Location Audit] Initiating reverse geocode fetch URL: ${url}`,
+    );
+
     const response = await fetch(url, {
       headers: { 'User-Agent': 'DriveLegal/1.2' },
     });
@@ -75,9 +59,10 @@ const reverseGeocodeNominatim = async (lat: number, lng: number): Promise<GeoInf
     const stateCode = mapStateToCode(stateName);
 
     const district = addr.state_district || addr.county || '';
-    const city = (addr.state_district && addr.county)
-      ? addr.county
-      : (addr.city || addr.town || addr.village || addr.suburb || '');
+    const city =
+      addr.state_district && addr.county
+        ? addr.county
+        : addr.city || addr.town || addr.village || addr.suburb || '';
 
     const result: GeoInfo = {
       city: city,
@@ -86,10 +71,10 @@ const reverseGeocodeNominatim = async (lat: number, lng: number): Promise<GeoInf
       stateCode: stateCode,
       country: addr.country || 'India',
       postalCode: addr.postcode || '',
-      confidence: (city || district) ? 'high' : 'medium',
+      confidence: city || district ? 'high' : 'medium',
       source: 'nominatim',
     };
-    
+
     console.log('[Location Audit] reverse geocode result:', result);
     return result;
   } catch (error) {
@@ -107,13 +92,18 @@ export const requestLocationPermissions = async (): Promise<boolean> => {
     console.log('[Location Audit] permission status:', status);
     return status === 'granted';
   } catch (e) {
-    console.warn('[Location Audit] requestForegroundPermissionsAsync failed', e);
+    console.warn(
+      '[Location Audit] requestForegroundPermissionsAsync failed',
+      e,
+    );
     return false;
   }
 };
 
 export const hasServicesEnabled = async (): Promise<boolean> => {
-  console.log('[Location Audit] Verifying active hardware GPS sensors natively');
+  console.log(
+    '[Location Audit] Verifying active hardware GPS sensors natively',
+  );
   try {
     const enabled = await Location.hasServicesEnabledAsync();
     console.log('[Location Audit] GPS enabled status:', enabled);
@@ -124,16 +114,22 @@ export const hasServicesEnabled = async (): Promise<boolean> => {
   }
 };
 
-export const getCurrentPosition = async (timeoutMs = 10000): Promise<GPSCoords> => {
-  console.log('[Location Audit] Initiating location coordinate fetch via expo-location');
-  
+export const getCurrentPosition = async (
+  timeoutMs = 10000,
+): Promise<GPSCoords> => {
+  console.log(
+    '[Location Audit] Initiating location coordinate fetch via expo-location',
+  );
+
   return new Promise<GPSCoords>(async (resolve, reject) => {
     let completed = false;
-    
+
     const timer = setTimeout(() => {
       if (!completed) {
         completed = true;
-        console.warn(`[Location Audit] GPS timed out after ${timeoutMs / 1000}s`);
+        console.warn(
+          `[Location Audit] GPS timed out after ${timeoutMs / 1000}s`,
+        );
         reject(new Error('Location Timeout'));
       }
     }, timeoutMs);
@@ -143,11 +139,14 @@ export const getCurrentPosition = async (timeoutMs = 10000): Promise<GPSCoords> 
       const position = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
-      
+
       if (!completed) {
         completed = true;
         clearTimeout(timer);
-        console.log('[Location Audit] coordinate fetch result:', position.coords);
+        console.log(
+          '[Location Audit] coordinate fetch result:',
+          position.coords,
+        );
         resolve({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
@@ -158,7 +157,7 @@ export const getCurrentPosition = async (timeoutMs = 10000): Promise<GPSCoords> 
           heading: position.coords.heading,
         });
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (!completed) {
         completed = true;
         clearTimeout(timer);
@@ -169,7 +168,10 @@ export const getCurrentPosition = async (timeoutMs = 10000): Promise<GPSCoords> 
   });
 };
 
-export const reverseGeocode = async (lat: number, lng: number): Promise<GeoInfo> => {
+export const reverseGeocode = async (
+  lat: number,
+  lng: number,
+): Promise<GeoInfo> => {
   return await reverseGeocodeNominatim(lat, lng);
 };
 
@@ -177,7 +179,9 @@ export const saveLastLocation = async (coords: GPSCoords, geo: GeoInfo) => {
   try {
     const data: CachedLocation = { coords, geo, timestamp: Date.now() };
     await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(data));
-    console.log('[Location Audit] Cached current coordinates and geocode details');
+    console.log(
+      '[Location Audit] Cached current coordinates and geocode details',
+    );
   } catch (e) {
     console.warn('[Location Audit] Failed to save location cache', e);
   }
@@ -186,7 +190,7 @@ export const saveLastLocation = async (coords: GPSCoords, geo: GeoInfo) => {
 export const getLastLocation = async (): Promise<CachedLocation | null> => {
   try {
     const data = await AsyncStorage.getItem(CACHE_KEY);
-    return data ? JSON.parse(data) : null;
+    return data ? (JSON.parse(data) as CachedLocation) : null;
   } catch (e) {
     console.warn('[Location Audit] Failed to read location cache', e);
     return null;
@@ -194,17 +198,29 @@ export const getLastLocation = async (): Promise<CachedLocation | null> => {
 };
 
 export const getJurisdictionLabel = (info: GeoInfo): string => {
-  const parts = [];
-  if (info.city) parts.push(info.city);
-  if (info.district && info.district !== info.city) parts.push(info.district);
-  if (info.stateCode && info.stateCode !== 'UNKNOWN') parts.push(info.stateCode);
+  const parts: string[] = [];
+  if (info.city) {
+    parts.push(info.city);
+  }
+  if (info.district && info.district !== info.city) {
+    parts.push(info.district);
+  }
+  if (info.stateCode && info.stateCode !== 'UNKNOWN') {
+    parts.push(info.stateCode);
+  }
 
-  if (parts.length > 0) return parts.join(', ');
+  if (parts.length > 0) {
+    return parts.join(', ');
+  }
   return 'India (General)';
 };
 
+const STATE_NAME_BY_CODE = Object.fromEntries(
+  STATES.map(({ code, name }) => [code, name]),
+) as Record<string, string>;
+
 // Legacy compatibility
-export const getStateName = (code: string) => code;
+export const getStateName = (code: string) => STATE_NAME_BY_CODE[code] || code;
 export const getCurrentLocation = async (defaultState?: string) => {
   try {
     const coords = await getCurrentPosition();
@@ -215,7 +231,7 @@ export const getCurrentLocation = async (defaultState?: string) => {
       state: geo.stateCode || defaultState || 'TN',
       city: geo.city,
       district: geo.district,
-      accuracy: coords.accuracy || 0
+      accuracy: coords.accuracy || 0,
     };
   } catch (e) {
     return null;

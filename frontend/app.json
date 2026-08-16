@@ -1,9 +1,7 @@
 {
   "name": "DriveLegal",
   "displayName": "DriveLegal",
-  "plugins": [
-    "expo-font"
-  ],
+  "plugins": ["expo-font"],
   "expo": {
     "plugins": [
       [

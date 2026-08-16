@@ -1,21 +1,21 @@
-import { v } from "convex/values";
-import { mutation, query, action } from "./_generated/server";
-import { api } from "./_generated/api";
+import { v } from 'convex/values';
+import { mutation, query, action } from './_generated/server';
+import { api } from './_generated/api';
 
 export const getAdvisories = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.id('users') },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("aiAdvisories")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .order("desc")
+      .query('aiAdvisories')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .order('desc')
       .take(50);
   },
 });
 
 export const saveAdvisory = mutation({
   args: {
-    userId: v.id("users"),
+    userId: v.id('users'),
     query: v.string(),
     response: v.string(),
     language: v.string(),
@@ -24,7 +24,7 @@ export const saveAdvisory = mutation({
     locationContext: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("aiAdvisories", args);
+    return await ctx.db.insert('aiAdvisories', args);
   },
 });
 
@@ -33,15 +33,15 @@ export const askClaude = action({
     query: v.string(),
     language: v.string(),
     locationContext: v.optional(v.string()),
-    userId: v.optional(v.id("users")),
+    userId: v.optional(v.id('users')),
     history: v.optional(
-      v.array(v.object({ role: v.string(), content: v.string() }))
+      v.array(v.object({ role: v.string(), content: v.string() })),
     ),
   },
   handler: async (ctx, args) => {
     const apiKey = process.env.CLAUDE_API_KEY;
     if (!apiKey) {
-      throw new Error("CLAUDE_API_KEY not configured");
+      throw new Error('CLAUDE_API_KEY not configured');
     }
 
     const locationInfo = args.locationContext || 'Unknown location';
@@ -86,30 +86,27 @@ When a user asks a vague or short question (e.g., "helmet fine", "license", "sig
     if (args.history) {
       for (const turn of args.history) {
         chatMessages.push({
-          role: turn.role === "user" ? "user" : "assistant",
+          role: turn.role === 'user' ? 'user' : 'assistant',
           content: turn.content,
         });
       }
     }
-    chatMessages.push({ role: "user", content: args.query });
+    chatMessages.push({ role: 'user', content: args.query });
 
-    const response = await fetch(
-      "https://api.anthropic.com/v1/messages",
-      {
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1024,
-          system: systemPrompt,
-          messages: chatMessages,
-        }),
-      }
-    );
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: chatMessages,
+      }),
+    });
 
     if (!response.ok) {
       const err = await response.text();
@@ -117,7 +114,7 @@ When a user asks a vague or short question (e.g., "helmet fine", "license", "sig
     }
 
     const data = await response.json();
-    const text = data.content?.[0]?.text || "No response";
+    const text = data.content?.[0]?.text || 'No response';
 
     if (args.userId) {
       await ctx.runMutation(api.chat.saveAdvisory, {
@@ -125,12 +122,12 @@ When a user asks a vague or short question (e.g., "helmet fine", "license", "sig
         query: args.query,
         response: text,
         language: args.language,
-        source: "claude",
-        confidence: "verified",
+        source: 'claude',
+        confidence: 'verified',
         locationContext: args.locationContext,
       });
     }
 
-    return { response: text, source: "claude", confidence: "verified" };
+    return { response: text, source: 'claude', confidence: 'verified' };
   },
 });

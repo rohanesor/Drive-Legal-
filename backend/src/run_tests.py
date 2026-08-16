@@ -165,6 +165,51 @@ class TestPipeline(unittest.TestCase):
         # Should return a zone alert
         self.assertIn(result['status'], ['zone_alert', 'no_alert'])
 
+    def test_handle_speed_limit(self):
+        """Test getting speed limits."""
+        payload = json.dumps({
+            'action': 'get_speed_limit',
+            'lat': 13.0,
+            'lng': 80.0,
+            'state': 'TN',
+            'vehicle_type': 'car'
+        })
+        result = json.loads(handle_query(payload))
+        self.assertEqual(result['status'], 'success')
+        self.assertEqual(result['speed_limit'], 50)  # TN urban car default limit
+        self.assertEqual(result['source'], 'default')
+
+    def test_handle_health(self):
+        """Test getting health check status."""
+        payload = json.dumps({
+            'action': 'health'
+        })
+        result = json.loads(handle_query(payload))
+        self.assertEqual(result['status'], 'success')
+        self.assertEqual(result['health']['status'], 'healthy')
+        self.assertEqual(result['health']['database'], 'connected')
+
+    def test_handle_navigation_intent(self):
+        """Test getting contextual navigation query answers."""
+        payload = json.dumps({
+            'action': 'query',
+            'text': 'How far to my destination?',
+            'language': 'en',
+            'navigationContext': {
+                'isNavigating': True,
+                'destinationName': 'Coimbatore Airport',
+                'distanceRemaining': 3500,
+                'durationRemaining': 480,
+                'currentStepInstruction': 'Turn right on Airport Road',
+                'routeSafetyScore': 95,
+                'activeRouteName': 'Safe Route'
+            }
+        })
+        result = json.loads(handle_query(payload))
+        self.assertEqual(result['status'], 'success')
+        self.assertIn('3.5 km remaining', result['response_text'])
+        self.assertIn('8 minutes', result['response_text'])
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

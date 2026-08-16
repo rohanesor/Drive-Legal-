@@ -17,6 +17,14 @@
     "outDir": "./dist",
     "noEmit": true
   },
-  "include": ["frontend/src/**/*.ts", "frontend/src/**/*.tsx"],
-  "exclude": ["node_modules", "android", "ios", "__tests__"]
+  "include": [
+    "frontend/src/**/*.ts",
+    "frontend/src/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "frontend/android",
+    "frontend/__tests__",
+    "convex/_generated"
+  ]
 }

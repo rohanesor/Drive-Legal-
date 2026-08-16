@@ -31,6 +31,9 @@ PYTHON_FILES = [
     'src/stt.py',
     'src/tts.py',
     'src/llm.py',
+    'src/sync_service.py',
+    'src/search_enhancer.py',
+    'src/api_integration.py',
 ]
 
 # Directories to copy (for models and data)

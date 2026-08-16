@@ -1,6 +1,5 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import { SplashScreen } from '../screens/SplashScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { ChatScreen } from '../screens/ChatScreen';
 import { ChallanCalculatorScreen } from '../screens/ChallanCalculatorScreen';
@@ -8,16 +7,19 @@ import { EmergencyScreen } from '../screens/EmergencyScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { LocationScreen } from '../screens/LocationScreen';
 import { VoiceAssistantScreen } from '../screens/VoiceAssistantScreen';
-import { COLORS } from '../constants/theme';
+import { NavigationScreen } from '../screens/NavigationScreen';
+import { useThemeColors } from '../context/ThemeContext';
 
 const Stack = createStackNavigator();
 
 export const MobileNavigator = () => {
+  const colors = useThemeColors();
+
   return (
     <Stack.Navigator
       initialRouteName="Dashboard" // Launch straight to Dashboard inside the adaptive shell
       screenOptions={{
-        headerStyle: { backgroundColor: COLORS.navy },
+        headerStyle: { backgroundColor: colors.navy },
         headerTintColor: '#ffffff',
         headerTitleStyle: { fontWeight: 'bold' },
       }}
@@ -56,6 +58,11 @@ export const MobileNavigator = () => {
         name="VoiceAssistant"
         component={VoiceAssistantScreen}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Navigation"
+        component={NavigationScreen}
+        options={{ title: 'Safety Navigation' }}
       />
     </Stack.Navigator>
   );

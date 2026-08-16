@@ -1,27 +1,17 @@
 /**
  * Alert Slice - Redux state for zone-based traffic alerts
- * 
+ *
  * Manages:
  * - alerts: History of all triggered zone alerts
  * - lastAlertTimes: Tracks when each zone was last alerted (for cooldown)
  * - activeAlert: Currently displayed alert banner
- * 
+ *
  * ALERT COOLDOWN:
  * The same zone won't trigger more than once every 30 minutes
  * to prevent notification spam while driving through an area.
  */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-
-export interface ZoneAlert {
-  id: string;
-  zone_type: string;
-  zone_name: string;
-  message: string;
-  suggested_query: string;
-  severity: 'low' | 'medium' | 'high';
-  timestamp: number;
-  dismissed: boolean;
-}
+import type { ZoneAlert } from '../types';
 
 interface AlertState {
   alerts: ZoneAlert[];

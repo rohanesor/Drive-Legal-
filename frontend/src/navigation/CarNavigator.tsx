@@ -1,5 +1,8 @@
 import React from 'react';
-import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
+import {
+  createStackNavigator,
+  CardStyleInterpolators,
+} from '@react-navigation/stack';
 import { CarDashboardScreen } from '../screens/car/CarDashboardScreen';
 import { CarVoiceScreen } from '../screens/car/CarVoiceScreen';
 import { CarEmergencyScreen } from '../screens/car/CarEmergencyScreen';
@@ -17,22 +20,10 @@ export const CarNavigator = () => {
         cardStyleInterpolator: CardStyleInterpolators.forFadeFromBottomAndroid, // Clean instant fade
       }}
     >
-      <Stack.Screen
-        name="CarDashboard"
-        component={CarDashboardScreen}
-      />
-      <Stack.Screen
-        name="CarVoice"
-        component={CarVoiceScreen}
-      />
-      <Stack.Screen
-        name="CarEmergency"
-        component={CarEmergencyScreen}
-      />
-      <Stack.Screen
-        name="CarAlert"
-        component={CarAlertScreen}
-      />
+      <Stack.Screen name="CarDashboard" component={CarDashboardScreen} />
+      <Stack.Screen name="CarVoice" component={CarVoiceScreen} />
+      <Stack.Screen name="CarEmergency" component={CarEmergencyScreen} />
+      <Stack.Screen name="CarAlert" component={CarAlertScreen} />
     </Stack.Navigator>
   );
 };

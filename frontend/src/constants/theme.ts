@@ -2,46 +2,17 @@
  * Theme constants matching the DriveLegal Brand Identity & Design System.
  */
 
-export const COLORS = {
-  // Primary Colors
-  primary: '#2563EB',      // Trust & Authority Blue
-  navy: '#0F172A',         // Legal/Government Deep Navy
-  cyan: '#06B6D4',         // AI & Automation Smart Cyan
-  success: '#22C55E',      // Approved/Valid Success Green
+import { colorsLight } from './colorsLight';
+import { colorsDark } from './colorsDark';
 
-  // Semantic Colors
-  warning: '#F59E0B',      // Warning
-  error: '#EF4444',        // Error/Fine
-  pending: '#F97316',      // Pending
-  info: '#3B82F6',         // Information
+export { colorsLight, colorsDark };
 
-  // Neutral Colors
-  background: '#F8FAFC',   // Off-white slate background
-  surface: '#FFFFFF',      // Card / Sheet backgrounds
-  border: '#E2E8F0',       // Subtle borders
-  textPrimary: '#0F172A',  // Heavy navy for titles/primary text
-  textSecondary: '#64748B',// Cool slate-grey for captions/subtext
+export const COLORS = colorsLight;
 
-  // Utility
-  white: '#FFFFFF',
-  black: '#000000',
-
-  // Light semantic backgrounds
-  lightPrimary: '#eff6ff',   // Light blue (primary @ 6%)
-  lightSuccess: '#f0fdf4',   // Light green
-  lightError: '#fef2f2',     // Light red
-  lightWarning: '#fef3c7',   // Light amber background
-  borderWarning: '#fde68a',  // Amber border
-  textWarning: '#92400e',    // Amber/dark text
-
-  // Semantic red shades
-  redLight: '#fecaca',
-  redBorder: '#fca5a5',
-  redDark: '#991b1b',
-  orangeLight: '#fed7aa',
-  orangeBorder: '#fdba74',
-  orangeDark: '#9a3412',
+export const createColors = (isDark: boolean) => {
+  return isDark ? colorsDark : colorsLight;
 };
+
 
 export const TYPOGRAPHY = {
   h1: {
@@ -160,28 +131,51 @@ export const GRADIENTS = {
 };
 
 export const CAR_COLORS = {
-  background: '#000000',      // Pure black for OLED power savings & high contrast
-  surface: '#0A0A0A',         // High-contrast dark grey surface
-  surfaceHover: '#161616',    // High-contrast touch feedback state
-  text: '#FFFFFF',            // Maximum contrast white text
-  textSecondary: '#A3A3A3',   // Muted gray subtexts
-  accent: '#00E5FF',          // High-visibility cyan
-  warning: '#FFD600',         // Vibrant safety yellow
-  danger: '#FF1744',          // Brilliant emergency red
-  success: '#00E676',         // High-contrast valid green
-  border: '#262626',          // Dark, defined borders
+  background: '#000000', // Pure black for OLED power savings & high contrast
+  surface: '#0A0A0A', // High-contrast dark grey surface
+  surfaceHover: '#161616', // High-contrast touch feedback state
+  text: '#FFFFFF', // Maximum contrast white text
+  textSecondary: '#A3A3A3', // Muted gray subtexts
+  accent: '#00E5FF', // High-visibility cyan
+  warning: '#FFD600', // Vibrant safety yellow
+  danger: '#FF1744', // Brilliant emergency red
+  success: '#00E676', // High-contrast valid green
+  border: '#262626', // Dark, defined borders
+
+  // Aliases for compatibility with shared mobile components
+  primary: '#00E5FF',
+  navy: '#000000',
+  cyan: '#00E5FF',
+  error: '#FF1744',
+  pending: '#FFD600',
+  info: '#00E5FF',
+  textPrimary: '#FFFFFF',
+  white: '#FFFFFF',
+  black: '#000000',
+  lightPrimary: 'rgba(0, 229, 255, 0.1)',
+  lightSuccess: 'rgba(0, 230, 118, 0.1)',
+  lightError: 'rgba(255, 23, 68, 0.1)',
+  lightWarning: 'rgba(255, 214, 0, 0.1)',
+  borderWarning: 'rgba(255, 214, 0, 0.2)',
+  textWarning: '#FFD600',
+  redLight: 'rgba(255, 23, 68, 0.15)',
+  redBorder: 'rgba(255, 23, 68, 0.25)',
+  redDark: '#FF1744',
+  orangeLight: 'rgba(255, 214, 0, 0.15)',
+  orangeBorder: 'rgba(255, 214, 0, 0.25)',
+  orangeDark: '#FFD600',
 };
 
 export const CAR_TYPOGRAPHY = {
-  speed: { fontSize: 72, fontWeight: '900' as const },     // High-glance speed display
-  alert: { fontSize: 24, fontWeight: '800' as const },      // Crucial alert texts
-  title: { fontSize: 20, fontWeight: '700' as const },      // Glanceable screen titles
-  label: { fontSize: 18, fontWeight: '700' as const },      // Glanceable buttons / action labels
-  status: { fontSize: 14, fontWeight: '600' as const },     // Small badge statuses
+  speed: { fontSize: 72, fontWeight: '900' as const }, // High-glance speed display
+  alert: { fontSize: 24, fontWeight: '800' as const }, // Crucial alert texts
+  title: { fontSize: 20, fontWeight: '700' as const }, // Glanceable screen titles
+  label: { fontSize: 18, fontWeight: '700' as const }, // Glanceable buttons / action labels
+  status: { fontSize: 14, fontWeight: '600' as const }, // Small badge statuses
 };
 
 export const CAR_SPACING = {
-  touchTarget: 80,           // Massive tactile touch target sizing
+  touchTarget: 80, // Massive tactile touch target sizing
   buttonGap: 16,
   padding: 24,
 };

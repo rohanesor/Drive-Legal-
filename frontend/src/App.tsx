@@ -9,27 +9,29 @@ import { syncService } from './services/syncService';
 import { setSyncStatus, setLastSync } from './store/convexSlice';
 import { SplashScreen } from './screens/SplashScreen';
 import { PaperProvider } from 'react-native-paper';
-import { COLORS } from './constants/theme';
 import { LocationProvider } from './context/LocationContext';
-import { setupLocationListener, removeLocationListener, startLocationService } from './services/backgroundService';
+import {
+  setupLocationListener,
+  removeLocationListener,
+  startLocationService,
+} from './services/backgroundService';
 import { useAppMode } from './hooks/useAppMode';
 import { MobileNavigator } from './navigation/MobileNavigator';
 import { CarNavigator } from './navigation/CarNavigator';
 import * as Sentry from '@sentry/react-native';
+import { getSettings } from './services/storage';
+import { loadSettings } from './store/settingsSlice';
+import { ThemeProvider } from './context/ThemeContext';
+import { notificationService } from './services/notificationService';
 
-Sentry.init({
-  dsn: 'https://b88b0eb17855b563f2e4ff7f53c6df07@o4511528544370688.ingest.us.sentry.io/4511528546140160',
 
-  // Adds more context data to events (IP address, cookies, user, etc.)
-  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
-  sendDefaultPii: true,
-
-  // Enable Logs
-  enableLogs: false,
-
-  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
-  // spotlight: __DEV__,
-});
+if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+    sendDefaultPii: true,
+    enableLogs: false,
+  });
+}
 
 const Stack = createStackNavigator();
 
@@ -72,6 +74,19 @@ const SyncInitializer = ({ children }: { children: React.ReactNode }) => {
 
 const AppContent = () => {
   const { mode } = useAppMode();
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const loadSettingsFromStorage = async () => {
+      try {
+        const stored = await getSettings();
+        dispatch(loadSettings(stored as any));
+      } catch (e) {
+        console.error('Failed to load settings from storage on startup:', e);
+      }
+    };
+    loadSettingsFromStorage();
+  }, [dispatch]);
 
   return (
     <PaperProvider>
@@ -80,14 +95,8 @@ const AppContent = () => {
           <CarNavigator />
         ) : (
           <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen
-              name="Splash"
-              component={SplashScreen}
-            />
-            <Stack.Screen
-              name="Mobile"
-              component={MobileNavigator}
-            />
+            <Stack.Screen name="Splash" component={SplashScreen} />
+            <Stack.Screen name="Mobile" component={MobileNavigator} />
           </Stack.Navigator>
         )}
       </NavigationContainer>
@@ -97,6 +106,10 @@ const AppContent = () => {
 
 const App = () => {
   useEffect(() => {
+    // Initialize push notifications
+    notificationService.configure();
+    notificationService.createChannels();
+
     // Start listeners and location service if enabled
     setupLocationListener();
     const checkAndStartBackgroundService = async () => {
@@ -105,7 +118,10 @@ const App = () => {
         try {
           await startLocationService();
         } catch (e) {
-          console.error("Failed to autostart background GPS service on launch:", e);
+          console.error(
+            'Failed to autostart background GPS service on launch:',
+            e,
+          );
         }
       }
     };
@@ -122,11 +138,15 @@ const App = () => {
         {convexClient ? (
           <ConvexProvider client={convexClient}>
             <SyncInitializer>
-              <AppContent />
+              <ThemeProvider>
+                <AppContent />
+              </ThemeProvider>
             </SyncInitializer>
           </ConvexProvider>
         ) : (
-          <AppContent />
+          <ThemeProvider>
+            <AppContent />
+          </ThemeProvider>
         )}
       </LocationProvider>
     </Provider>

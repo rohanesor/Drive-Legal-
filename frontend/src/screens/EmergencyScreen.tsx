@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from 'react';
 import {
   View,
   Text,
@@ -14,50 +20,54 @@ import {
   Dimensions,
 } from 'react-native';
 import { LocationMap, MapMarker } from '../components/LocationMap';
-import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS, GLASS } from '../constants/theme';
-import { 
-  Phone, 
-  MapPin, 
-  Shield, 
-  Heart, 
-  Activity, 
-  Compass, 
-  ArrowLeft, 
-  Navigation, 
-  Sparkles, 
-  X, 
-  AlertOctagon, 
-  AlertTriangle, 
+import { useThemeColors } from '../context/ThemeContext';
+import {
+  Phone,
+  Shield,
+  Heart,
+  Activity,
+  Compass,
+  Navigation,
+  Sparkles,
+  AlertTriangle,
   AlertCircle,
-  CreditCard, 
-  Zap, 
-  Flame, 
-  Info 
+  CreditCard,
+  Zap,
+  Flame,
+  Info,
 } from 'lucide-react-native';
-import { 
-  requestGPSCoordinates, 
-  fetchOSMReverseGeocode, 
-  discoverNearbyEmergencies, 
-  EmergencyLocation, 
-  GeocodedAddress 
+import {
+  requestGPSCoordinates,
+  fetchOSMReverseGeocode,
+  discoverNearbyEmergencies,
+  EmergencyLocation,
+  GeocodedAddress,
 } from '../services/emergencyService';
 import { useLocation } from '../context/LocationContext';
 
 export const EmergencyScreen = () => {
+  const colors = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { location: contextLocation, geoInfo: contextGeoInfo } = useLocation();
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // States
   const [gpsLoading, setGpsLoading] = useState(true);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; accuracy: string } | null>(null);
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+    accuracy: string;
+  } | null>(null);
   const [address, setAddress] = useState<GeocodedAddress | null>(null);
   const [radius, setRadius] = useState<2 | 5 | 10>(5);
-  const [nearbyEmergencies, setNearbyEmergencies] = useState<EmergencyLocation[]>([]);
+  const [nearbyEmergencies, setNearbyEmergencies] = useState<
+    EmergencyLocation[]
+  >([]);
   const [isOffline, setIsOffline] = useState(false);
 
   const mapMarkers: MapMarker[] = useMemo(() => {
-    return nearbyEmergencies.map(em => ({
+    return nearbyEmergencies.map((em) => ({
       id: em.id,
       type: em.type as MapMarker['type'],
       name: em.name,
@@ -73,81 +83,114 @@ export const EmergencyScreen = () => {
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.04, duration: 1000, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1.0, duration: 1000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, {
+          toValue: 1.04,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1.0,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
       ]),
     ).start();
-  }, []);
+  }, [pulseAnim]);
 
-  const loadEmergencySystem = async (forceRadius?: 2 | 5 | 10) => {
-    setGpsLoading(true);
-    try {
-      let lat = 11.0168;
-      let lng = 76.9558;
-      let accuracy = 'low';
-
-      // 1. Try to read location from context
-      if (contextLocation) {
-        lat = contextLocation.latitude;
-        lng = contextLocation.longitude;
-        accuracy = 'high';
-        setUserLocation({ lat, lng, accuracy });
-      } else {
-        // Fallback to active GPS fetch if not in context yet
-        try {
-          const coords = await requestGPSCoordinates();
-          lat = coords.lat;
-          lng = coords.lng;
-          accuracy = coords.accuracy;
-          setUserLocation(coords);
-        } catch (gpsErr) {
-          console.warn('GPS Permission or sensor failed, using fallback:', gpsErr);
-          setUserLocation({ lat, lng, accuracy });
-        }
-      }
-
-      // 2. Reverse Geocoding
-      if (contextGeoInfo) {
-        setAddress({
-          city: contextGeoInfo.city || contextGeoInfo.district || 'Coimbatore',
-          state: contextGeoInfo.state || 'Tamil Nadu',
-          country: 'India',
-        });
-      } else {
-        try {
-          const geocoded = await fetchOSMReverseGeocode(lat, lng);
-          setAddress(geocoded);
-        } catch (geoErr) {
-          console.warn('Nominatim reverse geocode failed, using fallback:', geoErr);
-          setAddress({ city: 'Coimbatore', state: 'Tamil Nadu', country: 'India' });
-        }
-      }
-
-      // 3. Emergency Discovery via Overpass API
-      const selectedRadius = forceRadius || radius;
+  const loadEmergencySystem = useCallback(
+    async (forceRadius?: 2 | 5 | 10) => {
+      setGpsLoading(true);
       try {
-        const discovered = await discoverNearbyEmergencies(lat, lng, selectedRadius);
-        setNearbyEmergencies(discovered);
-        setIsOffline(discovered.length === 0);
-      } catch (discoverErr) {
-        console.warn('Overpass discovery failed, using cached fallback:', discoverErr);
+        let lat = 11.0168;
+        let lng = 76.9558;
+        let accuracy = 'low';
+
+        // 1. Try to read location from context
+        if (contextLocation) {
+          lat = contextLocation.latitude;
+          lng = contextLocation.longitude;
+          accuracy = 'high';
+          setUserLocation({ lat, lng, accuracy });
+        } else {
+          // Fallback to active GPS fetch if not in context yet
+          try {
+            const coords = await requestGPSCoordinates();
+            lat = coords.lat;
+            lng = coords.lng;
+            accuracy = coords.accuracy;
+            setUserLocation(coords);
+          } catch (gpsErr) {
+            console.warn(
+              'GPS Permission or sensor failed, using fallback:',
+              gpsErr,
+            );
+            setUserLocation({ lat, lng, accuracy });
+          }
+        }
+
+        // 2. Reverse Geocoding
+        if (contextGeoInfo) {
+          setAddress({
+            city:
+              contextGeoInfo.city || contextGeoInfo.district || 'Coimbatore',
+            state: contextGeoInfo.state || 'Tamil Nadu',
+            country: 'India',
+          });
+        } else {
+          try {
+            const geocoded = await fetchOSMReverseGeocode(lat, lng);
+            setAddress(geocoded);
+          } catch (geoErr) {
+            console.warn(
+              'Nominatim reverse geocode failed, using fallback:',
+              geoErr,
+            );
+            setAddress({
+              city: 'Coimbatore',
+              state: 'Tamil Nadu',
+              country: 'India',
+            });
+          }
+        }
+
+        // 3. Emergency Discovery via Overpass API
+        const selectedRadius = forceRadius || radius;
+        try {
+          const discovered = await discoverNearbyEmergencies(
+            lat,
+            lng,
+            selectedRadius,
+          );
+          setNearbyEmergencies(discovered);
+          setIsOffline(discovered.length === 0);
+        } catch (discoverErr) {
+          console.warn(
+            'Overpass discovery failed, using cached fallback:',
+            discoverErr,
+          );
+          setIsOffline(true);
+          // Load fallback caches safely inside try-catch to prevent crash
+          const discoveredFallback = await discoverNearbyEmergencies(
+            lat,
+            lng,
+            selectedRadius,
+          );
+          setNearbyEmergencies(discoveredFallback);
+        }
+      } catch (e) {
+        console.warn('GPS Emergency platform failed:', e);
         setIsOffline(true);
-        // Load fallback caches safely inside try-catch to prevent crash
-        const discoveredFallback = await discoverNearbyEmergencies(lat, lng, selectedRadius);
-        setNearbyEmergencies(discoveredFallback);
+      } finally {
+        setGpsLoading(false);
       }
-    } catch (e) {
-      console.warn('GPS Emergency platform failed:', e);
-      setIsOffline(true);
-    } finally {
-      setGpsLoading(false);
-    }
-  };
+    },
+    [contextGeoInfo, contextLocation, radius],
+  );
 
   // Run on mount or when context location changes
   useEffect(() => {
     loadEmergencySystem();
-  }, [contextLocation, contextGeoInfo]);
+  }, [loadEmergencySystem]);
 
   // Run when radius changes
   const handleRadiusChange = (newRadius: 2 | 5 | 10) => {
@@ -159,59 +202,80 @@ export const EmergencyScreen = () => {
   const handleNavigate = (em: EmergencyLocation) => {
     const latLng = `${em.lat},${em.lng}`;
     const label = encodeURIComponent(em.name);
-    
+
     const url = Platform.select({
       ios: `maps://0,0?q=${label}@${latLng}`,
-      android: `geo:0,0?q=${latLng}(${label})`
+      android: `geo:0,0?q=${latLng}(${label})`,
     });
 
     if (url) {
-      Linking.canOpenURL(url).then(supported => {
-        if (supported) {
-          Linking.openURL(url);
-        } else {
-          // Web fallback
-          Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${em.lat},${em.lng}`);
-        }
-      }).catch(() => {
-        Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${em.lat},${em.lng}`);
-      });
+      Linking.canOpenURL(url)
+        .then((supported) => {
+          if (supported) {
+            Linking.openURL(url);
+          } else {
+            // Web fallback
+            Linking.openURL(
+              `https://www.google.com/maps/search/?api=1&query=${em.lat},${em.lng}`,
+            );
+          }
+        })
+        .catch(() => {
+          Linking.openURL(
+            `https://www.google.com/maps/search/?api=1&query=${em.lat},${em.lng}`,
+          );
+        });
     }
   };
 
-  const handleCall = (number: string, name: string) => {
+  const handleCall = (number: string, _name: string) => {
     const url = `tel:${number}`;
     Linking.openURL(url).catch(() => {
-      Alert.alert('Unable to dial', `Direct calling is unsupported. Copying ${number} to clipboard.`);
+      Alert.alert(
+        'Unable to dial',
+        `Direct calling is unsupported. Copying ${number} to clipboard.`,
+      );
     });
   };
 
   const getEmergencyIcon = (type: string) => {
     switch (type) {
-      case 'police': return Shield;
-      case 'hospital': return Heart;
-      case 'fire': return Flame;
-      case 'charging_station': return Zap;
-      case 'rto': return CreditCard;
-      default: return AlertTriangle;
+      case 'police':
+        return Shield;
+      case 'hospital':
+        return Heart;
+      case 'fire':
+        return Flame;
+      case 'charging_station':
+        return Zap;
+      case 'rto':
+        return CreditCard;
+      default:
+        return AlertTriangle;
     }
   };
 
   const getEmergencyColor = (type: string) => {
     switch (type) {
-      case 'police': return '#3B82F6';
-      case 'hospital': return '#10B981';
-      case 'fire': return '#EF4444';
-      case 'charging_station': return '#06B6D4';
-      case 'rto': return '#F59E0B';
-      default: return '#E2E8F0';
+      case 'police':
+        return '#3B82F6';
+      case 'hospital':
+        return '#10B981';
+      case 'fire':
+        return '#EF4444';
+      case 'charging_station':
+        return '#06B6D4';
+      case 'rto':
+        return '#F59E0B';
+      default:
+        return '#E2E8F0';
     }
   };
 
   // Filter nearest emergency icons
-  const nearestPolice = nearbyEmergencies.find(e => e.type === 'police');
-  const nearestHospital = nearbyEmergencies.find(e => e.type === 'hospital');
-  const nearestFire = nearbyEmergencies.find(e => e.type === 'fire');
+  const nearestPolice = nearbyEmergencies.find((e) => e.type === 'police');
+  const nearestHospital = nearbyEmergencies.find((e) => e.type === 'hospital');
+  const nearestFire = nearbyEmergencies.find((e) => e.type === 'fire');
 
   return (
     <View style={styles.container}>
@@ -228,32 +292,47 @@ export const EmergencyScreen = () => {
             <Text style={styles.headerSub}>Real-Time Location-Aware Help</Text>
           </View>
         </View>
-        <Animated.View style={[styles.pulsePill, { transform: [{ scale: pulseAnim }] }]}>
+        <Animated.View
+          style={[styles.pulsePill, { transform: [{ scale: pulseAnim }] }]}
+        >
           <Text style={styles.pulsePillText}>SOS ACTIVE</Text>
         </Animated.View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* CURRENT LOCATION HUD CARD */}
         <View style={styles.locationCard}>
           <View style={styles.locationHeaderRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Compass size={18} color={COLORS.cyan} />
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+            >
+              <Compass size={18} color={colors.cyan} />
               <Text style={styles.locationTitle}>📍 CURRENT GPS TELEMETRY</Text>
             </View>
             <View style={styles.accuracyBadge}>
               <Text style={styles.accuracyBadgeText}>
-                {userLocation ? `ACCURACY: ${userLocation.accuracy.toUpperCase()}` : 'LOCKING GPS...'}
+                {userLocation
+                  ? `ACCURACY: ${userLocation.accuracy.toUpperCase()}`
+                  : 'LOCKING GPS...'}
               </Text>
             </View>
           </View>
 
           <Text style={styles.locationCity}>
-            {address ? `${address.city}, ${address.state}` : 'Coimbatore, Tamil Nadu'}
+            {address
+              ? `${address.city}, ${address.state}`
+              : 'Coimbatore, Tamil Nadu'}
           </Text>
           <Text style={styles.locationCountry}>
-            {address ? address.country : 'India'} • {userLocation ? `${userLocation.lat.toFixed(5)}°N, ${userLocation.lng.toFixed(5)}°E` : 'Detecting...'}
+            {address ? address.country : 'India'} •{' '}
+            {userLocation
+              ? `${userLocation.lat.toFixed(5)}°N, ${userLocation.lng.toFixed(
+                  5,
+                )}°E`
+              : 'Detecting...'}
           </Text>
         </View>
 
@@ -261,13 +340,21 @@ export const EmergencyScreen = () => {
         <View style={styles.radiusTabsWrapper}>
           <Text style={styles.radiusLabel}>DISCOVERY SCAN RANGE:</Text>
           <View style={styles.radiusTabs}>
-            {([2, 5, 10] as const).map(r => (
+            {([2, 5, 10] as const).map((r) => (
               <TouchableOpacity
                 key={r}
-                style={[styles.radiusTabButton, radius === r && styles.radiusTabButtonActive]}
+                style={[
+                  styles.radiusTabButton,
+                  radius === r && styles.radiusTabButtonActive,
+                ]}
                 onPress={() => handleRadiusChange(r)}
               >
-                <Text style={[styles.radiusTabText, radius === r && styles.radiusTabTextActive]}>
+                <Text
+                  style={[
+                    styles.radiusTabText,
+                    radius === r && styles.radiusTabTextActive,
+                  ]}
+                >
                   {r} km Radius
                 </Text>
               </TouchableOpacity>
@@ -288,75 +375,127 @@ export const EmergencyScreen = () => {
         {/* MAP SECTION */}
         <View style={styles.mapContainer}>
           <LocationMap
-            currentLocation={userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : undefined}
+            currentLocation={
+              userLocation
+                ? { lat: userLocation.lat, lng: userLocation.lng }
+                : undefined
+            }
             mapType="roadsos"
             markers={mapMarkers}
             height={280}
             interactive={true}
           />
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.refreshBadge}
             onPress={() => loadEmergencySystem()}
           >
-            <Activity size={12} color={COLORS.cyan} />
+            <Activity size={12} color={colors.cyan} />
             <Text style={styles.refreshBadgeText}>SCAN AGAIN</Text>
           </TouchableOpacity>
         </View>
 
         {/* NEAREST EMERGENCY HELP CARDS */}
         <View style={styles.sectionHeader}>
-          <Shield size={16} color={COLORS.cyan} />
+          <Shield size={16} color={colors.cyan} />
           <Text style={styles.sectionTitle}>NEAREST HELP (OVERPASS SCAN)</Text>
         </View>
 
         {gpsLoading ? (
           <View style={styles.loadingBox}>
-            <ActivityIndicator size="large" color={COLORS.cyan} />
-            <Text style={styles.loadingText}>Polling nearest emergency entities...</Text>
+            <ActivityIndicator size="large" color={colors.cyan} />
+            <Text style={styles.loadingText}>
+              Polling nearest emergency entities...
+            </Text>
           </View>
         ) : nearbyEmergencies.length === 0 ? (
           <View style={styles.emptyBox}>
             <AlertCircle size={28} color="#64748B" />
-            <Text style={styles.emptyText}>No emergency resources found within {radius}km.</Text>
+            <Text style={styles.emptyText}>
+              No emergency resources found within {radius}km.
+            </Text>
           </View>
         ) : (
           <View style={styles.emergencyDiscoveredContainer}>
             {/* Display Top 3 discovered resources (Police, Hospital, Fire) */}
-            {[nearestPolice, nearestHospital, nearestFire].map((item, idx) => {
-              if (!item) return null;
+            {[nearestPolice, nearestHospital, nearestFire].map((item, _idx) => {
+              if (!item) {
+                return null;
+              }
               const Icon = getEmergencyIcon(item.type);
               const color = getEmergencyColor(item.type);
-              
+
               return (
-                <View key={item.id} style={[styles.helpCard, { borderColor: color + '33' }]}>
+                <View
+                  key={item.id}
+                  style={[styles.helpCard, { borderColor: color + '33' }]}
+                >
                   <View style={styles.helpCardTop}>
-                    <View style={[styles.iconContainer, { backgroundColor: color + '12' }]}>
+                    <View
+                      style={[
+                        styles.iconContainer,
+                        { backgroundColor: color + '12' },
+                      ]}
+                    >
                       <Icon size={20} color={color} />
                     </View>
                     <View style={styles.helpInfo}>
-                      <Text style={styles.helpName} numberOfLines={1}>{item.name}</Text>
-                      <Text style={styles.helpAddress} numberOfLines={1}>{item.address}</Text>
+                      <Text style={styles.helpName} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <Text style={styles.helpAddress} numberOfLines={1}>
+                        {item.address}
+                      </Text>
                     </View>
-                    <View style={[styles.distanceBadge, { backgroundColor: color + '22' }]}>
-                      <Text style={[styles.distanceBadgeText, { color: color }]}>{item.distance} km</Text>
+                    <View
+                      style={[
+                        styles.distanceBadge,
+                        { backgroundColor: color + '22' },
+                      ]}
+                    >
+                      <Text
+                        style={[styles.distanceBadgeText, { color: color }]}
+                      >
+                        {item.distance} km
+                      </Text>
                     </View>
                   </View>
 
                   <View style={styles.helpActionRow}>
-                    <TouchableOpacity 
-                      style={[styles.helpButton, { backgroundColor: '#111C31', borderColor: '#1F3456', borderWidth: 1 }]}
-                      onPress={() => handleCall(item.phone || (item.type === 'police' ? '100' : '102'), item.name)}
+                    <TouchableOpacity
+                      style={[
+                        styles.helpButton,
+                        {
+                          backgroundColor: '#111C31',
+                          borderColor: '#1F3456',
+                          borderWidth: 1,
+                        },
+                      ]}
+                      onPress={() =>
+                        handleCall(
+                          item.phone ||
+                            (item.type === 'police' ? '100' : '102'),
+                          item.name,
+                        )
+                      }
                     >
-                      <Phone size={14} color={COLORS.cyan} />
-                      <Text style={[styles.helpButtonText, { color: COLORS.cyan }]}>CALL HELPLINE</Text>
+                      <Phone size={14} color={colors.cyan} />
+                      <Text
+                        style={[styles.helpButtonText, { color: colors.cyan }]}
+                      >
+                        CALL HELPLINE
+                      </Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={[styles.helpButton, { backgroundColor: color }]}
                       onPress={() => handleNavigate(item)}
                     >
                       <Navigation size={14} color="#000000" />
-                      <Text style={[styles.helpButtonText, { color: '#000000' }]}>ROUTING NAV</Text>
+                      <Text
+                        style={[styles.helpButtonText, { color: '#000000' }]}
+                      >
+                        ROUTING NAV
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -369,29 +508,43 @@ export const EmergencyScreen = () => {
         {!gpsLoading && nearbyEmergencies.length > 0 && (
           <View style={styles.safetyNearbyCard}>
             <View style={styles.safetyHeader}>
-              <Sparkles size={16} color={COLORS.cyan} />
+              <Sparkles size={16} color={colors.cyan} />
               <Text style={styles.safetyTitle}>SAFETY NEARBY INDEX</Text>
             </View>
-            <Text style={styles.safetySubtitle}>Nearest support hubs resolved from GPS:</Text>
-            
+            <Text style={styles.safetySubtitle}>
+              Nearest support hubs resolved from GPS:
+            </Text>
+
             <View style={styles.safetyGrid}>
               <View style={styles.safetyItem}>
                 <Text style={styles.safetyItemLabel}>🚔 POLICE</Text>
                 <Text style={styles.safetyItemValue}>
-                  {nearestPolice ? `${nearestPolice.name} (${nearestPolice.distance} km)` : 'Not in Scan Radius'}
+                  {nearestPolice
+                    ? `${nearestPolice.name} (${nearestPolice.distance} km)`
+                    : 'Not in Scan Radius'}
                 </Text>
               </View>
               <View style={styles.safetyItem}>
                 <Text style={styles.safetyItemLabel}>🏥 HOSPITALS</Text>
                 <Text style={styles.safetyItemValue}>
-                  {nearestHospital ? `${nearestHospital.name} (${nearestHospital.distance} km)` : 'Not in Scan Radius'}
+                  {nearestHospital
+                    ? `${nearestHospital.name} (${nearestHospital.distance} km)`
+                    : 'Not in Scan Radius'}
                 </Text>
               </View>
               <View style={styles.safetyItem}>
                 <Text style={styles.safetyItemLabel}>⚡ EV CHARGING</Text>
                 <Text style={styles.safetyItemValue}>
-                  {nearbyEmergencies.find(e => e.type === 'charging_station')
-                    ? `${nearbyEmergencies.find(e => e.type === 'charging_station')?.name} (${nearbyEmergencies.find(e => e.type === 'charging_station')?.distance} km)`
+                  {nearbyEmergencies.find((e) => e.type === 'charging_station')
+                    ? `${
+                        nearbyEmergencies.find(
+                          (e) => e.type === 'charging_station',
+                        )?.name
+                      } (${
+                        nearbyEmergencies.find(
+                          (e) => e.type === 'charging_station',
+                        )?.distance
+                      } km)`
                     : 'No Chargers nearby'}
                 </Text>
               </View>
@@ -401,12 +554,12 @@ export const EmergencyScreen = () => {
 
         {/* STATIC PUBLIC EMERGENCY BUTTONS */}
         <View style={styles.sectionHeader}>
-          <Phone size={16} color={COLORS.cyan} />
+          <Phone size={16} color={colors.cyan} />
           <Text style={styles.sectionTitle}>RAPID HOTLINE DIRECT DIAL</Text>
         </View>
 
         <View style={styles.hotlinesRow}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.hotlinePill, { borderColor: '#EF4444' }]}
             onPress={() => handleCall('112', 'Unified Emergency')}
           >
@@ -414,7 +567,7 @@ export const EmergencyScreen = () => {
             <Text style={styles.hotlineName}>UNIFIED SOS</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.hotlinePill, { borderColor: '#3B82F6' }]}
             onPress={() => handleCall('100', 'Police')}
           >
@@ -422,7 +575,7 @@ export const EmergencyScreen = () => {
             <Text style={styles.hotlineName}>POLICE FORCE</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.hotlinePill, { borderColor: '#10B981' }]}
             onPress={() => handleCall('108', 'Ambulance')}
           >
@@ -430,7 +583,7 @@ export const EmergencyScreen = () => {
             <Text style={styles.hotlineName}>AMBULANCE</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.hotlinePill, { borderColor: '#F59E0B' }]}
             onPress={() => handleCall('1033', 'NHAI Highway')}
           >
@@ -442,24 +595,24 @@ export const EmergencyScreen = () => {
         <View style={styles.noticeContainer}>
           <Info size={14} color="#64748B" />
           <Text style={styles.noticeText}>
-            Overpass OpenStreetMap emergency querying does not store user location coordinates and is completely free of charge.
+            Overpass OpenStreetMap emergency querying does not store user
+            location coordinates and is completely free of charge.
           </Text>
         </View>
-
       </ScrollView>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#080E1A',
+    backgroundColor: colors.background,
   },
   header: {
-    backgroundColor: '#0C1424',
-    borderBottomWidth: 1.5,
-    borderBottomColor: '#1A2E4C',
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.border,
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'ios' ? 50 : 16,
     paddingBottom: 16,
@@ -483,12 +636,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     fontSize: 15,
     fontWeight: 'bold',
   },
   headerSub: {
-    color: '#64748B',
+    color: colors.textSecondary,
     fontSize: 10,
     fontWeight: '600',
     marginTop: 1,
@@ -511,10 +664,10 @@ const styles = StyleSheet.create({
 
   // GPS Location Card
   locationCard: {
-    backgroundColor: '#0C1424',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#1A2E4C',
+    borderColor: colors.border,
     padding: 12,
     marginBottom: 16,
   },
@@ -525,29 +678,29 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   locationTitle: {
-    color: '#64748B',
+    color: colors.textSecondary,
     fontSize: 10,
     fontWeight: 'bold',
     letterSpacing: 1.2,
   },
   accuracyBadge: {
-    backgroundColor: '#1E293B',
+    backgroundColor: colors.border,
     borderRadius: 6,
     paddingVertical: 3,
     paddingHorizontal: 6,
   },
   accuracyBadgeText: {
-    color: COLORS.cyan,
+    color: colors.cyan,
     fontSize: 8,
     fontWeight: 'bold',
   },
   locationCity: {
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     fontSize: 18,
     fontWeight: '800',
   },
   locationCountry: {
-    color: '#64748B',
+    color: colors.textSecondary,
     fontSize: 11,
     fontWeight: '700',
     marginTop: 3,
@@ -558,7 +711,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   radiusLabel: {
-    color: '#64748B',
+    color: colors.textSecondary,
     fontSize: 8,
     fontWeight: 'bold',
     letterSpacing: 1,
@@ -572,23 +725,23 @@ const styles = StyleSheet.create({
   radiusTabButton: {
     flex: 1,
     paddingVertical: 8,
-    backgroundColor: '#0C1424',
+    backgroundColor: colors.surface,
     borderWidth: 1.5,
-    borderColor: '#1A2E4C',
+    borderColor: colors.border,
     borderRadius: 8,
     alignItems: 'center',
   },
   radiusTabButtonActive: {
-    borderColor: COLORS.cyan,
-    backgroundColor: '#0F2C46',
+    borderColor: colors.cyan,
+    backgroundColor: colors.lightPrimary,
   },
   radiusTabText: {
-    color: '#64748B',
+    color: colors.textSecondary,
     fontSize: 11,
     fontWeight: 'bold',
   },
   radiusTabTextActive: {
-    color: COLORS.cyan,
+    color: colors.cyan,
   },
 
   // Offline banner
@@ -616,7 +769,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1.5,
-    borderColor: '#1A2E4C',
+    borderColor: colors.border,
     position: 'relative',
     marginBottom: 16,
   },
@@ -638,7 +791,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   refreshBadgeText: {
-    color: COLORS.cyan,
+    color: colors.cyan,
     fontSize: 8,
     fontWeight: 'bold',
   },
@@ -651,7 +804,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sectionTitle: {
-    color: '#64748B',
+    color: colors.textSecondary,
     fontSize: 10,
     fontWeight: 'bold',
     letterSpacing: 1.2,
@@ -662,7 +815,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loadingText: {
-    color: '#64748B',
+    color: colors.textSecondary,
     fontSize: 11,
     fontWeight: 'bold',
   },
@@ -672,7 +825,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyText: {
-    color: '#64748B',
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: 'bold',
   },
@@ -681,9 +834,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   helpCard: {
-    backgroundColor: '#0C1424',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 1.5,
+    borderColor: colors.border,
     padding: 12,
   },
   helpCardTop: {
@@ -702,12 +856,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   helpName: {
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     fontSize: 13,
     fontWeight: 'bold',
   },
   helpAddress: {
-    color: '#64748B',
+    color: colors.textSecondary,
     fontSize: 10,
     fontWeight: '500',
     marginTop: 2,
@@ -727,7 +881,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#1A2E4C',
+    borderTopColor: colors.border,
     paddingTop: 10,
   },
   helpButton: {
@@ -746,10 +900,10 @@ const styles = StyleSheet.create({
 
   // Safety Index Card
   safetyNearbyCard: {
-    backgroundColor: '#0C1424',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#1E3255',
+    borderColor: colors.border,
     padding: 12,
     marginBottom: 16,
   },
@@ -760,13 +914,13 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   safetyTitle: {
-    color: COLORS.cyan,
+    color: colors.cyan,
     fontSize: 10,
     fontWeight: 'bold',
     letterSpacing: 1.2,
   },
   safetySubtitle: {
-    color: '#64748B',
+    color: colors.textSecondary,
     fontSize: 10,
     fontWeight: '600',
     marginBottom: 10,
@@ -779,16 +933,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'baseline',
     borderBottomWidth: 0.5,
-    borderBottomColor: '#1A2E4C',
+    borderBottomColor: colors.border,
     paddingBottom: 6,
   },
   safetyItemLabel: {
-    color: '#94A3B8',
+    color: colors.textSecondary,
     fontSize: 10,
     fontWeight: 'bold',
   },
   safetyItemValue: {
-    color: '#CBD5E1',
+    color: colors.textPrimary,
     fontSize: 11,
     fontWeight: '600',
   },
@@ -803,7 +957,7 @@ const styles = StyleSheet.create({
   },
   hotlinePill: {
     width: (Dimensions.get('window').width - 42) / 2,
-    backgroundColor: '#0C1424',
+    backgroundColor: colors.surface,
     borderWidth: 1.5,
     borderRadius: 10,
     padding: 10,
@@ -814,7 +968,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   hotlineName: {
-    color: '#64748B',
+    color: colors.textSecondary,
     fontSize: 8,
     fontWeight: 'bold',
     marginTop: 2,

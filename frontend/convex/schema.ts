@@ -1,5 +1,5 @@
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
+import { defineSchema, defineTable } from 'convex/server';
+import { v } from 'convex/values';
 
 export default defineSchema({
   users: defineTable({
@@ -9,7 +9,7 @@ export default defineSchema({
     state: v.string(),
     vehicleType: v.string(),
     driveScore: v.number(),
-  }).index("by_email", ["email"]),
+  }).index('by_email', ['email']),
 
   regions: defineTable({
     country: v.string(),
@@ -17,10 +17,10 @@ export default defineSchema({
     city: v.optional(v.string()),
     boundaryGeoJson: v.string(),
     rulesetVersion: v.number(),
-  }).index("by_location", ["country", "state"]),
+  }).index('by_location', ['country', 'state']),
 
   violationRules: defineTable({
-    regionId: v.id("regions"),
+    regionId: v.id('regions'),
     code: v.string(),
     title: v.string(),
     description: v.string(),
@@ -31,38 +31,38 @@ export default defineSchema({
     conditions: v.optional(v.string()),
     lawReference: v.string(),
     severity: v.string(),
-  }).index("by_region", ["regionId"]),
+  }).index('by_region', ['regionId']),
 
   aiAdvisories: defineTable({
-    userId: v.id("users"),
+    userId: v.id('users'),
     query: v.string(),
     response: v.string(),
     language: v.string(),
     source: v.string(),
     confidence: v.string(),
     locationContext: v.optional(v.string()),
-  }).index("by_user", ["userId"]),
+  }).index('by_user', ['userId']),
 
   emergencyContacts: defineTable({
-    regionId: v.id("regions"),
+    regionId: v.id('regions'),
     type: v.string(),
     name: v.string(),
     phone: v.string(),
     address: v.optional(v.string()),
-  }).index("by_region", ["regionId"]),
+  }).index('by_region', ['regionId']),
 
   drivingHistory: defineTable({
-    userId: v.id("users"),
+    userId: v.id('users'),
     timestamp: v.number(),
     lat: v.number(),
     lng: v.number(),
     speed: v.number(),
     eventType: v.string(),
-  }).index("by_user", ["userId"]),
+  }).index('by_user', ['userId']),
 
   syncLogs: defineTable({
-    userId: v.id("users"),
+    userId: v.id('users'),
     tableName: v.string(),
     lastSync: v.number(),
-  }).index("by_user_table", ["userId", "tableName"]),
+  }).index('by_user_table', ['userId', 'tableName']),
 });

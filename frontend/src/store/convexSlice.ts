@@ -1,6 +1,6 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-type SyncStatus = "idle" | "syncing" | "online" | "offline" | "error";
+type SyncStatus = 'idle' | 'syncing' | 'online' | 'offline' | 'error';
 
 interface ConvexState {
   syncStatus: SyncStatus;
@@ -10,19 +10,19 @@ interface ConvexState {
 }
 
 const initialState: ConvexState = {
-  syncStatus: "idle",
+  syncStatus: 'idle',
   lastSync: 0,
   isOnline: false,
   syncError: null,
 };
 
 const convexSlice = createSlice({
-  name: "convex",
+  name: 'convex',
   initialState,
   reducers: {
     setSyncStatus: (state, action: PayloadAction<SyncStatus>) => {
       state.syncStatus = action.payload;
-      state.isOnline = action.payload === "online";
+      state.isOnline = action.payload === 'online';
     },
     setLastSync: (state, action: PayloadAction<number>) => {
       state.lastSync = action.payload;
@@ -33,6 +33,5 @@ const convexSlice = createSlice({
   },
 });
 
-export const { setSyncStatus, setLastSync, setSyncError } =
-  convexSlice.actions;
+export const { setSyncStatus, setLastSync, setSyncError } = convexSlice.actions;
 export default convexSlice.reducer;
