@@ -306,12 +306,32 @@ class TestDownloadPortal(unittest.TestCase):
         self.assertEqual(res.headers.get('Content-Type'), 'application/vnd.android.package-archive')
         self.assertEqual(res.read().strip(), b"DriveLegal dummy APK binary content.")
 
+    def test_download_binary_apk_head(self):
+        class HeadRequest(urllib.request.Request):
+            def get_method(self): return 'HEAD'
+        url = f"http://127.0.0.1:{self.port}/download/files/DriveLegal-v1.0.0.apk"
+        req = HeadRequest(url)
+        res = urllib.request.urlopen(req)
+        self.assertEqual(res.status, 200)
+        self.assertEqual(res.headers.get('Content-Type'), 'application/vnd.android.package-archive')
+        self.assertEqual(res.read(), b"")
+
     def test_download_binary_aab(self):
         url = f"http://127.0.0.1:{self.port}/download/files/DriveLegal-v1.0.0.aab"
         res = urllib.request.urlopen(url)
         self.assertEqual(res.status, 200)
         self.assertEqual(res.headers.get('Content-Type'), 'application/octet-stream')
         self.assertEqual(res.read().strip(), b"DriveLegal dummy AAB binary content.")
+
+    def test_download_binary_aab_head(self):
+        class HeadRequest(urllib.request.Request):
+            def get_method(self): return 'HEAD'
+        url = f"http://127.0.0.1:{self.port}/download/files/DriveLegal-v1.0.0.aab"
+        req = HeadRequest(url)
+        res = urllib.request.urlopen(req)
+        self.assertEqual(res.status, 200)
+        self.assertEqual(res.headers.get('Content-Type'), 'application/octet-stream')
+        self.assertEqual(res.read(), b"")
 
     def test_download_nonexistent_file(self):
         url = f"http://127.0.0.1:{self.port}/download/files/nonexistent.apk"

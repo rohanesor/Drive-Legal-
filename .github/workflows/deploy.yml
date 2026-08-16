@@ -118,12 +118,12 @@ jobs:
           # Create static folders on the EC2 host if they don't exist
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_SSH_HOST }} "mkdir -p /home/ubuntu/DriveLegal/backend/src/static/files"
           
-          # Copy APK from downloaded flat root folder
-          scp -o StrictHostKeyChecking=no app-debug.apk ubuntu@${{ secrets.EC2_SSH_HOST }}:/home/ubuntu/DriveLegal/backend/src/static/files/DriveLegal-v1.0.0.apk
+          # Copy APK to the versioned static files directory
+          scp -o StrictHostKeyChecking=no frontend/android/app/build/outputs/apk/debug/app-debug.apk ubuntu@${{ secrets.EC2_SSH_HOST }}:/home/ubuntu/DriveLegal/backend/src/static/files/DriveLegal-v1.0.0.apk
           
-          # Copy Manifests from downloaded flat root folder
-          scp -o StrictHostKeyChecking=no latest.json ubuntu@${{ secrets.EC2_SSH_HOST }}:/home/ubuntu/DriveLegal/backend/src/static/latest.json
-          scp -o StrictHostKeyChecking=no releases.json ubuntu@${{ secrets.EC2_SSH_HOST }}:/home/ubuntu/DriveLegal/backend/src/static/releases.json
+          # Copy Manifests to the static directory
+          scp -o StrictHostKeyChecking=no backend/src/static/latest.json ubuntu@${{ secrets.EC2_SSH_HOST }}:/home/ubuntu/DriveLegal/backend/src/static/latest.json
+          scp -o StrictHostKeyChecking=no backend/src/static/releases.json ubuntu@${{ secrets.EC2_SSH_HOST }}:/home/ubuntu/DriveLegal/backend/src/static/releases.json
 
       - name: Deploy to AWS EC2 via SSH
         run: |

@@ -20,7 +20,7 @@ class DriveLegalServer(BaseHTTPRequestHandler):
         }
         print(json.dumps(log_entry), flush=True)
 
-    def serve_static_file(self, filename, content_type):
+    def serve_static_file(self, filename, content_type, write_body=True):
         static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
         filepath = os.path.join(static_dir, filename)
         if os.path.exists(filepath) and os.path.isfile(filepath):
@@ -28,15 +28,17 @@ class DriveLegalServer(BaseHTTPRequestHandler):
             self.send_header('Content-Type', content_type)
             self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
             self.end_headers()
-            with open(filepath, 'rb') as f:
-                self.wfile.write(f.read())
+            if write_body:
+                with open(filepath, 'rb') as f:
+                    self.wfile.write(f.read())
         else:
             self.send_response(404)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps({'status': 'error', 'message': f'File {filename} Not Found'}).encode('utf-8'))
+            if write_body:
+                self.wfile.write(json.dumps({'status': 'error', 'message': f'File {filename} Not Found'}).encode('utf-8'))
 
-    def serve_binary_file(self, filepath):
+    def serve_binary_file(self, filepath, write_body=True):
         if os.path.exists(filepath) and os.path.isfile(filepath):
             self.send_response(200)
             filename = os.path.basename(filepath)
@@ -49,19 +51,27 @@ class DriveLegalServer(BaseHTTPRequestHandler):
             self.send_header('Content-Length', str(os.path.getsize(filepath)))
             self.send_header('Content-Disposition', f'attachment; filename="{filename}"')
             self.end_headers()
-            with open(filepath, 'rb') as f:
-                while True:
-                    chunk = f.read(65536)
-                    if not chunk:
-                        break
-                    self.wfile.write(chunk)
+            if write_body:
+                with open(filepath, 'rb') as f:
+                    while True:
+                        chunk = f.read(65536)
+                        if not chunk:
+                            break
+                        self.wfile.write(chunk)
         else:
             self.send_response(404)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps({'status': 'error', 'message': 'Release File Not Found'}).encode('utf-8'))
+            if write_body:
+                self.wfile.write(json.dumps({'status': 'error', 'message': 'Release File Not Found'}).encode('utf-8'))
+
+    def do_HEAD(self):
+        self.handle_get_or_head(write_body=False)
 
     def do_GET(self):
+        self.handle_get_or_head(write_body=True)
+
+    def handle_get_or_head(self, write_body=True):
         clean_path = self.path.rstrip('/')
         if clean_path == '':
             clean_path = '/'
@@ -70,41 +80,43 @@ class DriveLegalServer(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
-            health_response = handle_query(json.dumps({'action': 'health'}))
-            self.wfile.write(health_response.encode('utf-8'))
+            if write_body:
+                health_response = handle_query(json.dumps({'action': 'health'}))
+                self.wfile.write(health_response.encode('utf-8'))
             
         elif clean_path == '/download':
-            self.serve_static_file('download.html', 'text/html')
+            self.serve_static_file('download.html', 'text/html', write_body)
             
         elif clean_path == '/download/android':
-            self.serve_static_file('android.html', 'text/html')
+            self.serve_static_file('android.html', 'text/html', write_body)
             
         elif clean_path == '/download/ios':
-            self.serve_static_file('ios.html', 'text/html')
+            self.serve_static_file('ios.html', 'text/html', write_body)
             
         elif clean_path == '/download/android-auto':
-            self.serve_static_file('android_auto.html', 'text/html')
+            self.serve_static_file('android_auto.html', 'text/html', write_body)
             
         elif clean_path == '/download/releases':
-            self.serve_static_file('releases.html', 'text/html')
+            self.serve_static_file('releases.html', 'text/html', write_body)
             
         elif clean_path == '/releases/latest.json':
-            self.serve_static_file('latest.json', 'application/json')
+            self.serve_static_file('latest.json', 'application/json', write_body)
             
         elif clean_path == '/releases/history.json':
-            self.serve_static_file('releases.json', 'application/json')
+            self.serve_static_file('releases.json', 'application/json', write_body)
             
         elif self.path.startswith('/download/files/'):
             filename = os.path.basename(self.path)
             static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
             filepath = os.path.join(static_dir, 'files', filename)
-            self.serve_binary_file(filepath)
+            self.serve_binary_file(filepath, write_body)
             
         else:
             self.send_response(404)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps({'status': 'error', 'message': 'Not Found'}).encode('utf-8'))
+            if write_body:
+                self.wfile.write(json.dumps({'status': 'error', 'message': 'Not Found'}).encode('utf-8'))
 
     def do_POST(self):
         if self.path == '/query':
