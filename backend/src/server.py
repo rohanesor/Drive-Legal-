@@ -20,15 +20,86 @@ class DriveLegalServer(BaseHTTPRequestHandler):
         }
         print(json.dumps(log_entry), flush=True)
 
+    def serve_static_file(self, filename, content_type):
+        static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+        filepath = os.path.join(static_dir, filename)
+        if os.path.exists(filepath) and os.path.isfile(filepath):
+            self.send_response(200)
+            self.send_header('Content-Type', content_type)
+            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            self.end_headers()
+            with open(filepath, 'rb') as f:
+                self.wfile.write(f.read())
+        else:
+            self.send_response(404)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'status': 'error', 'message': f'File {filename} Not Found'}).encode('utf-8'))
+
+    def serve_binary_file(self, filepath):
+        if os.path.exists(filepath) and os.path.isfile(filepath):
+            self.send_response(200)
+            filename = os.path.basename(filepath)
+            if filename.endswith('.apk'):
+                self.send_header('Content-Type', 'application/vnd.android.package-archive')
+            elif filename.endswith('.aab'):
+                self.send_header('Content-Type', 'application/octet-stream')
+            else:
+                self.send_header('Content-Type', 'application/octet-stream')
+            self.send_header('Content-Length', str(os.path.getsize(filepath)))
+            self.send_header('Content-Disposition', f'attachment; filename="{filename}"')
+            self.end_headers()
+            with open(filepath, 'rb') as f:
+                while True:
+                    chunk = f.read(65536)
+                    if not chunk:
+                        break
+                    self.wfile.write(chunk)
+        else:
+            self.send_response(404)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'status': 'error', 'message': 'Release File Not Found'}).encode('utf-8'))
+
     def do_GET(self):
-        if self.path == '/health' or self.path == '/':
+        clean_path = self.path.rstrip('/')
+        if clean_path == '':
+            clean_path = '/'
+
+        if clean_path == '/health' or clean_path == '/':
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
-            
-            # Query backend main handler for database and model checks
             health_response = handle_query(json.dumps({'action': 'health'}))
             self.wfile.write(health_response.encode('utf-8'))
+            
+        elif clean_path == '/download':
+            self.serve_static_file('download.html', 'text/html')
+            
+        elif clean_path == '/download/android':
+            self.serve_static_file('android.html', 'text/html')
+            
+        elif clean_path == '/download/ios':
+            self.serve_static_file('ios.html', 'text/html')
+            
+        elif clean_path == '/download/android-auto':
+            self.serve_static_file('android_auto.html', 'text/html')
+            
+        elif clean_path == '/download/releases':
+            self.serve_static_file('releases.html', 'text/html')
+            
+        elif clean_path == '/releases/latest.json':
+            self.serve_static_file('latest.json', 'application/json')
+            
+        elif clean_path == '/releases/history.json':
+            self.serve_static_file('releases.json', 'application/json')
+            
+        elif self.path.startswith('/download/files/'):
+            filename = os.path.basename(self.path)
+            static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+            filepath = os.path.join(static_dir, 'files', filename)
+            self.serve_binary_file(filepath)
+            
         else:
             self.send_response(404)
             self.send_header('Content-Type', 'application/json')

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriveLegal - Download Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #070d19;
+            --card-bg: #0f172a;
+            --accent-cyan: #00e5ff;
+            --accent-blue: #2563eb;
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3.5rem;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            letter-spacing: -0.05em;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tagline {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            width: 100%;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(0, 229, 255, 0.3);
+            box-shadow: 0 12px 30px rgba(0, 229, 255, 0.05);
+        }
+
+        .card-header {
+            margin-bottom: 2rem;
+        }
+
+        .platform-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 2rem;
+        }
+
+        .btn-cyan {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            color: #000;
+            font-weight: 700;
+        }
+
+        .btn-cyan:hover {
+            opacity: 0.9;
+            box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3);
+        }
+
+        .btn-outline {
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: var(--text-secondary);
+        }
+
+        .meta-section {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .meta-info {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .meta-item {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .meta-item span {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .releases-link {
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        .releases-link:hover {
+            text-decoration: underline;
+            opacity: 0.8;
+        }
+
+        footer {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+            .meta-section {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>DriveLegal</h1>
+            <p class="tagline">Smarter driving. Safer journeys.</p>
+        </header>
+
+        <div class="meta-section">
+            <div class="meta-info">
+                <div class="meta-item">Latest Stable: <span id="latest-version">Loading...</span></div>
+                <div class="meta-item">Build: <span id="latest-build">Loading...</span></div>
+                <div class="meta-item">Released: <span id="latest-date">Loading...</span></div>
+            </div>
+            <a href="/download/releases" class="releases-link">View all releases →</a>
+        </div>
+
+        <div class="cards-grid">
+            <!-- Android Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="platform-icon">🤖</div>
+                    <h2>Android</h2>
+                    <p>Download the production Android package (APK) directly to your mobile device or emulator.</p>
+                </div>
+                <a href="/download/android" class="btn btn-cyan">Get Android Build</a>
+            </div>
+
+            <!-- iOS Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="platform-icon">🍎</div>
+                    <h2>iOS</h2>
+                    <p>Access DriveLegal via Apple TestFlight for development/beta validation or via the App Store.</p>
+                </div>
+                <a href="/download/ios" class="btn btn-outline">Get iOS Build</a>
+            </div>
+
+            <!-- Android Auto Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="platform-icon">🚗</div>
+                    <h2>Android Auto</h2>
+                    <p>Seamlessly check compliance, speed limits, and safety scoring on your vehicle dashboard console.</p>
+                </div>
+                <a href="/download/android-auto" class="btn btn-outline">Setup Android Auto</a>
+            </div>
+        </div>
+
+        <footer>
+            &copy; 2026 DriveLegal. All rights reserved. Serviced securely via HTTPS.
+        </footer>
+    </div>
+
+    <script>
+        fetch('/releases/latest.json')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('latest-version').innerText = 'v' + data.version;
+                document.getElementById('latest-build').innerText = data.build;
+                document.getElementById('latest-date').innerText = data.releaseDate;
+            })
+            .catch(err => {
+                console.error("Error loading release manifest:", err);
+                document.getElementById('latest-version').innerText = 'v1.0.0';
+                document.getElementById('latest-build').innerText = '100';
+                document.getElementById('latest-date').innerText = '2026-08-16';
+            });
+    </script>
+</body>
+</html>

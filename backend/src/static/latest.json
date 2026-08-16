@@ -1,0 +1,19 @@
+{
+  "version": "1.0.0",
+  "build": 100,
+  "releaseDate": "2026-08-16",
+  "android": {
+    "apk": "/download/files/DriveLegal-v1.0.0.apk",
+    "aab": "/download/files/DriveLegal-v1.0.0.aab",
+    "sha256": "5c68f2bc55dbd5a0c0a52df0d5a322409f52f36d4df21a28a3064cb05c10229db972e"
+  },
+  "ios": {
+    "testflight": "https://testflight.apple.com/join/xxxxxx",
+    "appStore": "https://apps.apple.com/app/drivelegal/idxxxxxx"
+  },
+  "androidAuto": {
+    "supported": true,
+    "androidDownload": "/download/android"
+  },
+  "releaseNotes": "Initial stable release of DriveLegal, bringing real-time safety scoring, offline speed limit detection, and Whisper STT bridged locally."
+}

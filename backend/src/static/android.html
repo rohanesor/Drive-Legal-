@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriveLegal - Android Download</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #070d19;
+            --card-bg: #0f172a;
+            --accent-cyan: #00e5ff;
+            --accent-blue: #2563eb;
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 700px;
+            width: 100%;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            transition: var(--transition);
+        }
+
+        .back-link:hover {
+            opacity: 0.8;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header-section {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .icon {
+            font-size: 3.5rem;
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .meta-item label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .meta-item span {
+            font-size: 1.05rem;
+            font-weight: 600;
+        }
+
+        .btn-download {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 1.25rem;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-decoration: none;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            color: #000;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 2.5rem;
+            box-shadow: 0 4px 15px rgba(0, 229, 255, 0.15);
+        }
+
+        .btn-download:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 229, 255, 0.25);
+        }
+
+        .checksum-box {
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .checksum-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .checksum-title {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            color: var(--accent-cyan);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .checksum-value {
+            font-family: monospace;
+            font-size: 0.85rem;
+            word-break: break-all;
+            color: var(--text-primary);
+        }
+
+        .release-notes {
+            border-top: 1px solid var(--border-color);
+            padding-top: 2rem;
+        }
+
+        .release-notes h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .release-notes p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .meta-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/download" class="back-link">← Back to Portal</a>
+
+        <div class="card">
+            <div class="header-section">
+                <div class="icon">🤖</div>
+                <div>
+                    <h1>DriveLegal for Android</h1>
+                    <p style="color: var(--text-secondary); margin-top: 0.25rem;">Direct APK Installation</p>
+                </div>
+            </div>
+
+            <div class="meta-grid">
+                <div class="meta-item">
+                    <label>Version</label>
+                    <span id="version">Loading...</span>
+                </div>
+                <div class="meta-item">
+                    <label>Build</label>
+                    <span id="build">Loading...</span>
+                </div>
+                <div class="meta-item">
+                    <label>Released</label>
+                    <span id="date">Loading...</span>
+                </div>
+                <div class="meta-item">
+                    <label>File Size</label>
+                    <span id="size">24.5 MB</span>
+                </div>
+                <div class="meta-item">
+                    <label>Minimum OS</label>
+                    <span>Android 6.0 (API 23)</span>
+                </div>
+                <div class="meta-item">
+                    <label>Architecture</label>
+                    <span>Universal (ARM64 / v7a / x86_64)</span>
+                </div>
+            </div>
+
+            <a href="#" id="download-btn" class="btn-download">Download Production APK</a>
+
+            <div class="checksum-box">
+                <div class="checksum-header">
+                    <span class="checksum-title">SHA-256 Checksum</span>
+                    <button class="copy-btn" onclick="copyChecksum()">Copy</button>
+                </div>
+                <div class="checksum-value" id="sha256">Loading...</div>
+            </div>
+
+            <div class="release-notes">
+                <h3>Release Notes</h3>
+                <p id="release-notes">Loading release notes details...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        fetch('/releases/latest.json')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('version').innerText = 'v' + data.version;
+                document.getElementById('build').innerText = data.build;
+                document.getElementById('date').innerText = data.releaseDate;
+                document.getElementById('sha256').innerText = data.android.sha256;
+                document.getElementById('release-notes').innerText = data.releaseNotes;
+                
+                // Point download button to the versioned APK served by server
+                document.getElementById('download-btn').href = data.android.apk;
+            })
+            .catch(err => {
+                console.error("Error loading release manifest:", err);
+                document.getElementById('version').innerText = 'v1.0.0';
+                document.getElementById('build').innerText = '100';
+                document.getElementById('date').innerText = '2026-08-16';
+                document.getElementById('sha256').innerText = 'a7a58b29c9b0e27150c95a322409f52f36d4df21a28a3064cb05c10229db972e';
+                document.getElementById('release-notes').innerText = 'Initial stable release.';
+                document.getElementById('download-btn').href = '/download/files/DriveLegal-v1.0.0.apk';
+            });
+
+        function copyChecksum() {
+            const sha = document.getElementById('sha256').innerText;
+            navigator.clipboard.writeText(sha);
+            alert('SHA-256 Checksum copied to clipboard!');
+        }
+    </script>
+</body>
+</html>

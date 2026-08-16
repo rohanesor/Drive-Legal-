@@ -213,5 +213,111 @@ class TestPipeline(unittest.TestCase):
         self.assertIn('8 minutes', result['response_text'])
 
 
+import threading
+import urllib.request
+import urllib.error
+import time
+from http.server import HTTPServer
+from server import DriveLegalServer
+
+class TestDownloadPortal(unittest.TestCase):
+    """Test release distribution and download portal routes on a running server."""
+    
+    @classmethod
+    def setUpClass(cls):
+        # Initialize database and seed
+        initialize_database()
+        seed_database()
+        
+        # Start server on a dynamic local port
+        cls.server = HTTPServer(('127.0.0.1', 0), DriveLegalServer)
+        cls.port = cls.server.server_port
+        cls.thread = threading.Thread(target=cls.server.serve_forever)
+        cls.thread.daemon = True
+        cls.thread.start()
+        time.sleep(0.5)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+        cls.thread.join()
+
+    def test_download_landing_page(self):
+        url = f"http://127.0.0.1:{self.port}/download"
+        res = urllib.request.urlopen(url)
+        self.assertEqual(res.status, 200)
+        html = res.read().decode('utf-8')
+        self.assertIn("DriveLegal", html)
+        self.assertIn("Smarter driving. Safer journeys.", html)
+
+    def test_download_android_page(self):
+        url = f"http://127.0.0.1:{self.port}/download/android"
+        res = urllib.request.urlopen(url)
+        self.assertEqual(res.status, 200)
+        html = res.read().decode('utf-8')
+        self.assertIn("DriveLegal for Android", html)
+
+    def test_download_ios_page(self):
+        url = f"http://127.0.0.1:{self.port}/download/ios"
+        res = urllib.request.urlopen(url)
+        self.assertEqual(res.status, 200)
+        html = res.read().decode('utf-8')
+        self.assertIn("DriveLegal for iOS", html)
+
+    def test_download_android_auto_page(self):
+        url = f"http://127.0.0.1:{self.port}/download/android-auto"
+        res = urllib.request.urlopen(url)
+        self.assertEqual(res.status, 200)
+        html = res.read().decode('utf-8')
+        self.assertIn("Android Auto Integration", html)
+
+    def test_download_releases_page(self):
+        url = f"http://127.0.0.1:{self.port}/download/releases"
+        res = urllib.request.urlopen(url)
+        self.assertEqual(res.status, 200)
+        html = res.read().decode('utf-8')
+        self.assertIn("Version Release History", html)
+
+    def test_releases_latest_json(self):
+        url = f"http://127.0.0.1:{self.port}/releases/latest.json"
+        res = urllib.request.urlopen(url)
+        self.assertEqual(res.status, 200)
+        self.assertEqual(res.headers.get('Content-Type'), 'application/json')
+        data = json.loads(res.read().decode('utf-8'))
+        self.assertEqual(data['version'], '1.0.0')
+        self.assertEqual(data['build'], 100)
+        self.assertIn('android', data)
+        self.assertIn('ios', data)
+
+    def test_releases_history_json(self):
+        url = f"http://127.0.0.1:{self.port}/releases/history.json"
+        res = urllib.request.urlopen(url)
+        self.assertEqual(res.status, 200)
+        self.assertEqual(res.headers.get('Content-Type'), 'application/json')
+        data = json.loads(res.read().decode('utf-8'))
+        self.assertGreater(len(data), 0)
+        self.assertEqual(data[0]['version'], '1.0.0')
+
+    def test_download_binary_apk(self):
+        url = f"http://127.0.0.1:{self.port}/download/files/DriveLegal-v1.0.0.apk"
+        res = urllib.request.urlopen(url)
+        self.assertEqual(res.status, 200)
+        self.assertEqual(res.headers.get('Content-Type'), 'application/vnd.android.package-archive')
+        self.assertEqual(res.read().strip(), b"DriveLegal dummy APK binary content.")
+
+    def test_download_binary_aab(self):
+        url = f"http://127.0.0.1:{self.port}/download/files/DriveLegal-v1.0.0.aab"
+        res = urllib.request.urlopen(url)
+        self.assertEqual(res.status, 200)
+        self.assertEqual(res.headers.get('Content-Type'), 'application/octet-stream')
+        self.assertEqual(res.read().strip(), b"DriveLegal dummy AAB binary content.")
+
+    def test_download_nonexistent_file(self):
+        url = f"http://127.0.0.1:{self.port}/download/files/nonexistent.apk"
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            urllib.request.urlopen(url)
+        self.assertEqual(ctx.exception.code, 404)
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
