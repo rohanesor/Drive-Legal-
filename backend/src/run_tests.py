@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 from database import initialize_database, get_laws, get_laws_by_type, get_penalties, get_procedures, get_zones
 from zones import haversine, check_zones, point_in_polygon
 from main import build_template_response, validate_citations, handle_query, handle_zone_check
+from ingest.seed import seed_database
 
 
 class TestDatabase(unittest.TestCase):
@@ -27,6 +28,7 @@ class TestDatabase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         initialize_database()
+        seed_database()
 
     def test_laws_exist(self):
         """Test that laws were seeded."""
