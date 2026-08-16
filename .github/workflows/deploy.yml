@@ -54,13 +54,13 @@ jobs:
         run: |
           python backend/src/run_tests.py
 
-      - name: Run Build Verification Checks
-        run: |
-          python backend/src/verify_build.py
-
       - name: Setup Chaquopy Bundle Assets
         run: |
           python backend/src/setup_build.py
+
+      - name: Run Build Verification Checks
+        run: |
+          python backend/src/verify_build.py
 
       - name: Build Android Unsigned Debug APK
         run: |

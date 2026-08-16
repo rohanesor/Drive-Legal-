@@ -144,6 +144,11 @@ if os.path.exists(python_dir):
 # Models directory
 print("\n[Models]")
 models_dir = os.path.join(BASE, 'backend', 'src', 'models')
+if not os.path.exists(models_dir):
+    print("  [INFO] Models directory missing. Creating...", flush=True)
+    os.makedirs(models_dir, exist_ok=True)
+    os.makedirs(os.path.join(models_dir, 'faiss_index'), exist_ok=True)
+
 check("Models directory exists", os.path.exists(models_dir))
 if os.path.exists(models_dir):
     check("FAISS index directory", os.path.exists(os.path.join(models_dir, 'faiss_index')))
