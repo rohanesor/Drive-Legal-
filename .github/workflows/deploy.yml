@@ -19,7 +19,9 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm install
+          cd frontend && npm install
 
       - name: Run Jest Unit Verification Suite
         run: npm run test
