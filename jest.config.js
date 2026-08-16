@@ -19,4 +19,5 @@ module.exports = {
   ],
   coverageReporters: ['text', 'lcov', 'html'],
   setupFiles: ['./jest.setup.js'],
+  testMatch: ['<rootDir>/__tests__/unit/**/*.test.{ts,tsx}'],
 };
