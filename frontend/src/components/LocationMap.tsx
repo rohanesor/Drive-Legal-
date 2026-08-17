@@ -30,7 +30,13 @@ const MAP_HTML = `
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #070D19; }
-    #map { width: 100vw; height: 100vh; background: #070D19; }
+    #map { width: 100vw; height: 100vh; background: #070D19; perspective: 1000px; overflow: hidden; }
+    .leaflet-map-pane {
+      transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    .neon-marker, .car-marker, .user-marker {
+      transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
 
     /* ── Coordinate Badge ─────────────────────────────── */
     .coord-badge {
@@ -269,6 +275,8 @@ const MAP_HTML = `
 
     // INITIALIZATION_INJECTION
 
+    var currentMapType = 'jurisdiction';
+
     function updateLocation(lat, lng, heading, speed) {
       document.getElementById('coordBadge').textContent = lat.toFixed(5) + ', ' + lng.toFixed(5) + (heading ? ' · ' + heading.toFixed(0) + '°' : '');
       var latlng = [lat, lng];
@@ -291,15 +299,47 @@ const MAP_HTML = `
         }).addTo(map);
       }
 
-      if (heading !== undefined && heading !== null) {
-        var arrowDiv = document.getElementById('carMarkerDiv');
-        if (arrowDiv) {
-          arrowDiv.style.transform = 'rotate(' + heading + 'deg)';
-        }
-      }
+      var is3DMode = currentMapType === 'cockpit' || currentMapType === 'navigation';
+      var currentZoom = map.getZoom();
 
-      // Smooth transition to viewport
-      map.setView(latlng, map.getZoom() < 14 ? 15 : map.getZoom());
+      if (is3DMode) {
+        map.setView(latlng, currentZoom < 14 ? 16 : currentZoom, { animate: true });
+        update3DCamera(heading, speed);
+      } else {
+        var mapPane = document.querySelector('.leaflet-map-pane');
+        if (mapPane) mapPane.style.transform = '';
+        
+        if (heading !== undefined && heading !== null) {
+          var arrowDiv = document.getElementById('carMarkerDiv');
+          if (arrowDiv) {
+            arrowDiv.style.transform = 'rotate(' + heading + 'deg)';
+          }
+        }
+        map.setView(latlng, currentZoom < 14 ? 15 : currentZoom, { animate: true });
+      }
+    }
+
+    function update3DCamera(heading, speed) {
+      var mapPane = document.querySelector('.leaflet-map-pane');
+      if (!mapPane) return;
+
+      var speedKmh = speed || 0;
+      var targetTilt = speedKmh > 60 ? 52 : speedKmh > 30 ? 58 : 64; 
+      var targetZoom = speedKmh > 60 ? 15 : speedKmh > 30 ? 16 : 17; 
+
+      var headVal = heading !== undefined && heading !== null ? heading : 0;
+
+      mapPane.style.transform = 'rotateX(' + targetTilt + 'deg) rotateZ(' + (-headVal) + 'deg) translateY(-8%) scale(1.3)';
+      mapPane.style.transformOrigin = '50% 80%';
+
+      var markers = document.querySelectorAll('.neon-marker, .car-marker, .user-marker');
+      markers.forEach(function(el) {
+        el.style.transform = 'rotateX(-' + targetTilt + 'deg) rotateZ(' + headVal + 'deg)';
+      });
+
+      if (map.getZoom() !== targetZoom) {
+        map.setZoom(targetZoom);
+      }
     }
 
     function updateMarkers(markers) {
@@ -459,6 +499,7 @@ export const LocationMap: React.FC<LocationMapProps> = ({
     const linesStr = JSON.stringify(lines);
 
     const injection = `
+      currentMapType = '${mapType}';
       map.setView([${currentLocation.lat}, ${currentLocation.lng}], ${
       mapType === 'cockpit' ? 16 : 14
     });

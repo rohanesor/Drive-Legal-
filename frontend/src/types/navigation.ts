@@ -12,7 +12,8 @@ export type MobileRouteName =
   | 'Settings'
   | 'Location'
   | 'VoiceAssistant'
-  | 'Navigation';
+  | 'Navigation'
+  | 'TripPlanner';
 
 export type CarRouteName =
   | 'CarDashboard'
@@ -37,6 +38,7 @@ export type RootStackParamList = {
   Location: undefined;
   VoiceAssistant: undefined;
   Navigation: undefined;
+  TripPlanner: undefined;
   CarDashboard: undefined;
   CarVoice: undefined;
   CarEmergency: undefined;

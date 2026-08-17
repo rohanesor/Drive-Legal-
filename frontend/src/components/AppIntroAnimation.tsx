@@ -368,8 +368,8 @@ export const AppIntroAnimation = ({ onFinish }: AppIntroAnimationProps) => {
           {/* Shield shape made with nested views */}
           <View style={styles.shieldOuter}>
             <View style={styles.shieldInner}>
-              {/* D letter mark */}
-              <Text style={styles.logoLetter}>DL</Text>
+              {/* V letter mark */}
+              <Text style={styles.logoLetter}>VZ</Text>
             </View>
           </View>
 
@@ -396,8 +396,8 @@ export const AppIntroAnimation = ({ onFinish }: AppIntroAnimationProps) => {
           ]}
         >
           <Text style={styles.appName}>
-            <Text style={styles.appNameDrive}>Drive</Text>
-            <Text style={styles.appNameLegal}>Legal</Text>
+            <Text style={styles.appNameDrive}>Va</Text>
+            <Text style={styles.appNameLegal}>zhi</Text>
           </Text>
         </Animated.View>
 
@@ -412,7 +412,7 @@ export const AppIntroAnimation = ({ onFinish }: AppIntroAnimationProps) => {
           ]}
         >
           <View style={styles.taglineLine} />
-          <Text style={styles.tagline}>AI-Powered Traffic Law</Text>
+          <Text style={styles.tagline}>Intelligent Navigation Co-Pilot</Text>
           <View style={styles.taglineLine} />
         </Animated.View>
       </View>

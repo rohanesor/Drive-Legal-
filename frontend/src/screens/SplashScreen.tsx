@@ -163,7 +163,7 @@ export const SplashScreen = ({
           <View style={styles.miniLogo}>
             <ShieldCheck size={16} color={colors.cyan} />
           </View>
-          <Text style={styles.logoText}>DriveLegal</Text>
+          <Text style={styles.logoText}>Vazhi</Text>
         </View>
         {currentSlide < onboardingData.length - 1 && (
           <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>

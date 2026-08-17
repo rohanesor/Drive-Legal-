@@ -1,0 +1,22 @@
+# VAZHI Migration Matrix
+
+This matrix classifies the major components of the codebase for the Vazhi rebuild.
+
+| Path | Current Purpose | Classification | Why | Vazhi Destination | Dependencies | Action |
+|------|-----------------|----------------|-----|-------------------|--------------|--------|
+| `frontend/src/screens/DashboardScreen.tsx` | Old main screen showing feature grid list | **DELETE** | Obsolete visual layout. The map navigation screen is now the home screen. | — | — | Delete file and clean up routing refs |
+| `frontend/src/screens/NavigationScreen.tsx` | Map search and simulated navigation | **REBUILD** | Needs restructuring into a navigation-first co-pilot interface with 3D capability. | `frontend/src/features/navigation/` | Leaflet `LocationMap`, OSRM Provider | Restructure, integrate 3D visual state, add start/stop controls |
+| `frontend/src/screens/LocationScreen.tsx` | Jurisdiction and geofence zone updates | **EXTRACT IDEA/DATA** | Extract Nominatim reverse-geocoding, taluk hierarchy display logic. | `frontend/src/domain/geo/` | Nominatim reverse geocode | Move geo logic to domain services, integrate with navigation |
+| `frontend/src/screens/VoiceAssistantScreen.tsx` | Voice chatbot UI | **REBUILD** | Chat UI is replaced by proactive driving safety voice warnings and mic HUD sheets. | `frontend/src/features/voice/` | Native speech / TTS | Re-implement voice priority queue, cooldowns, and voice notifications |
+| `frontend/src/screens/ChallanCalculatorScreen.tsx` | Fine search and compounding list | **EXTRACT IDEA/DATA** | Extract business logic for fine scaling and RTO structures. Redesign the UI around the new design system. | `frontend/src/features/challan/` | Local sqlite database | Re-implement as taluk-aware fine sheet |
+| `frontend/src/screens/EmergencyScreen.tsx` | Direct calls and nearby facility lists | **REBUILD** | Move direct SOS and contact lists into the Map bottom sheets. | `frontend/src/features/emergency/` | Emergency Contacts JSON | Integrate inside Map HUD as a primary SOS drawer |
+| `frontend/src/components/LocationMap.tsx` | Leaflet WebView rendering map and markers | **REBUILD** | Add 3D map tilt animations, speed-aware camera zoom levels, and follow-vehicle pathing. | `frontend/src/services/maps/` | react-native-webview | Update Leaflet HTML to support CSS transform perspective and dynamic user heading chevrons |
+| `frontend/src/services/routingService.ts` | Route calculations and safety scoring | **REBUILD** | Split into clean `RoutingProvider` abstractions (OSM, Valhalla) and domain route models. | `frontend/src/domain/navigation/` | `apiService` | Create RoutingProvider interface, clean route geometry segments |
+| `frontend/src/services/speedLimitService.ts` | Overpass speed queries | **KEEP** | Standard infrastructure matching OSM tag values. | `frontend/src/services/navigation/` | OSM Overpass API | Wrap inside new Navigation Engine |
+| `frontend/src/services/emergencyService.ts` | SOS facility locator | **REBUILD** | Adapt locator query structures to return clean POI structures. | `frontend/src/domain/emergency/` | location API | Wrap inside Emergency Engine |
+| `frontend/src/services/offlineService.ts` | Local JSON files reader | **KEEP** | Reliable offline database matching penalties and laws lists. | `frontend/src/services/offline/` | penalties.json, laws.json | Adapt to Vazhi offline degradation |
+| `frontend/src/store/settingsSlice.ts` | Spacing, unit metrics, speed limit prefs | **KEEP** | Core user settings slice. | `frontend/src/store/` | redux toolkit | Retain settings configuration |
+| `frontend/src/store/appModeSlice.ts` | Track cockpit vs dashboard mode | **DELETE** | Vazhi is navigation-centric by default. We do not need a split mode selector. | — | — | Delete and replace with drawer settings |
+| `frontend/src/store/chatSlice.ts` | History list of chat queries | **KEEP** | Retain history data model. | `frontend/src/store/` | redux toolkit | Integrate with Legal Assistant |
+| `backend/src/main.py` | Query router and fallback parser | **REBUILD** | Refactor to expose separate clean domains for Route segments, Geo boundaries, POIs, and Legal fines. | `backend/src/api/` | sqlite3 | Restructure FastAPI/routing methods, isolate old LLM prompt templates |
+| `backend/src/zones.py` | Haversine calculations and zone geofences | **KEEP** | Core polygon and circular boundary checks. | `backend/src/domain/geo/` | math | Maintain zone queries |

@@ -1,6 +1,6 @@
 {
-  "name": "DriveLegal",
-  "displayName": "DriveLegal",
+  "name": "Vazhi",
+  "displayName": "Vazhi",
   "plugins": ["expo-font"],
   "expo": {
     "plugins": [
