@@ -84,9 +84,21 @@ export const VoiceAssistantScreen = ({
   const colors = useThemeColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const userState = useSelector((state: RootState) => state.settings.state);
-  const userLanguage =
-    useSelector((state: RootState) => state.settings.language) || 'en';
+  const initialLanguage = useSelector((state: RootState) => state.settings.language) || 'en';
+  const [selectedLang, setSelectedLang] = useState<string>(initialLanguage);
+  const userLanguage = selectedLang;
   const { location, geoInfo } = useLocation();
+
+  const SUPPORTED_LANGUAGES = useMemo(() => [
+    { code: 'en', label: 'EN' },
+    { code: 'ta', label: 'தமிழ்' },
+    { code: 'hi', label: 'हिंदी' },
+    { code: 'kn', label: 'ಕನ್ನಡ' },
+    { code: 'te', label: 'తెలుగు' },
+    { code: 'ml', label: 'മലയാളം' },
+    { code: 'mr', label: 'मराठी' },
+    { code: 'gu', label: 'ગુજરાતી' },
+  ], []);
 
   // Voice Interaction States
   const [voiceState, setVoiceState] = useState<VoiceState>('READY');
@@ -780,6 +792,23 @@ export const VoiceAssistantScreen = ({
         </View>
       </View>
 
+      {/* Multilingual Co-Pilot Selector Bar */}
+      <View style={styles.langBar}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.langBarContent}>
+          {SUPPORTED_LANGUAGES.map((item) => (
+            <TouchableOpacity
+              key={item.code}
+              style={[styles.langPill, selectedLang === item.code && styles.langPillActive]}
+              onPress={() => setSelectedLang(item.code)}
+            >
+              <Text style={[styles.langText, selectedLang === item.code && styles.langTextActive]}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
       {/* ChatGPT-style Conversational Scroll Area */}
       <ScrollView
         ref={scrollViewRef}
@@ -1085,6 +1114,37 @@ const createStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     marginRight: 10,
     marginTop: 2,
+  },
+  langBar: {
+    backgroundColor: '#070D19',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+  },
+  langBarContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  langPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  langPillActive: {
+    backgroundColor: 'rgba(0, 255, 194, 0.15)',
+    borderColor: '#00FFC2',
+  },
+  langText: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    fontWeight: '700',
+  },
+  langTextActive: {
+    color: '#00FFC2',
+    fontWeight: '900',
   },
   messageBubble: {
     borderRadius: 16,

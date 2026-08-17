@@ -28,18 +28,16 @@ class AITripIntentParser:
             return {"intent": "AVOID_HIGHWAYS", "requiresConfirmation": True, "reason": "User requested route modification to bypass major highways."}
 
         # 2. Find Charging Station (EV)
-        if "charge" in text_lower or "charging" in text_lower or "ev station" in text_lower:
-            # Check context for state of charge (SOC) threshold
+        if any(k in text_lower for k in ["charge", "charging", "ev station", "சார்ஜர்", "चार्जर", "ಚಾರ್ಜರ್", "ఛార్జర్", "ചാർജർ"]):
             soc_limit = 30
             if current_context and current_context.get("vehicle", {}).get("fuelType") == "EV":
-                # Match "battery reaches X%" or SOC patterns
                 match = re.search(r'(\d+)%', text_lower)
                 if match:
                     soc_limit = int(match.group(1))
             return {
                 "intent": "FIND_CHARGER",
                 "requiresConfirmation": True,
-                "reason": f"Locate EV charging facility along route before range limits.",
+                "reason": "Locate EV charging facility along route before range limits.",
                 "poiQuery": {
                     "category": "charging_station",
                     "soc_threshold": soc_limit
@@ -47,7 +45,7 @@ class AITripIntentParser:
             }
 
         # 3. Find Hotel / Lodging
-        if "hotel" in text_lower or "stay" in text_lower or "lodge" in text_lower:
+        if any(k in text_lower for k in ["hotel", "stay", "lodge", "ஹோட்டல்", "होटल", "ಹೋಟೆಲ್", "హోటల్", "ഹോട്ടൽ"]):
             hours_limit = 6
             match = re.search(r'(\d+)\s*hour', text_lower)
             if match:
@@ -55,7 +53,7 @@ class AITripIntentParser:
             return {
                 "intent": "FIND_HOTEL",
                 "requiresConfirmation": True,
-                "reason": f"Locate lodging option after driving parameters.",
+                "reason": "Locate lodging option after driving parameters.",
                 "poiQuery": {
                     "category": "hotel",
                     "driving_hours_threshold": hours_limit
@@ -63,17 +61,17 @@ class AITripIntentParser:
             }
 
         # 4. Find Restaurant
-        if "restaurant" in text_lower or "food" in text_lower or "veg" in text_lower or "eat" in text_lower or "lunch" in text_lower:
+        if any(k in text_lower for k in ["restaurant", "food", "veg", "eat", "lunch", "உணவகம்", "சாப்பாடு", "रेस्टोरेंट", "खाना", "ಊಟ", "భోజనం", "ഭക്ഷണം"]):
             diet = "any"
-            if "veg" in text_lower:
+            if "veg" in text_lower or "சைவம்" in text_lower or "शाकाहारी" in text_lower:
                 diet = "vegetarian"
             cuisine = "any"
-            if "south indian" in text_lower or "south_indian" in text_lower:
+            if "south indian" in text_lower or "south_indian" in text_lower or "தென்னிந்திய" in text_lower:
                 cuisine = "south_indian"
             return {
                 "intent": "FIND_RESTAURANT",
                 "requiresConfirmation": True,
-                "reason": f"Locate restaurant matching driver cuisine/diet parameters.",
+                "reason": "Locate restaurant matching driver cuisine/diet parameters.",
                 "poiQuery": {
                     "category": "restaurant",
                     "diet": diet,
@@ -83,7 +81,7 @@ class AITripIntentParser:
             }
 
         # 5. Find Fuel Station
-        if "fuel" in text_lower or "petrol" in text_lower or "diesel" in text_lower or "gas station" in text_lower:
+        if any(k in text_lower for k in ["fuel", "petrol", "diesel", "gas station", "பெட்ரோல்", "पेट्रोल", "डीजल", "ಪೆಟ್ರೋಲ್", "పెట్రోల్", "പെട്രോൾ"]):
             return {
                 "intent": "FIND_FUEL",
                 "requiresConfirmation": True,
@@ -94,19 +92,19 @@ class AITripIntentParser:
             }
 
         # 6. Route Explanations / Comparisons
-        if "why" in text_lower and ("route" in text_lower or "this way" in text_lower or "take" in text_lower):
+        if ("why" in text_lower or "ஏன்" in text_lower or "क्यों" in text_lower) and ("route" in text_lower or "this way" in text_lower or "take" in text_lower or "வழி" in text_lower or "रास्ता" in text_lower):
             return {"intent": "EXPLAIN_ROUTE", "requiresConfirmation": False, "reason": "Query about route selection properties."}
         if "safer" in text_lower or "compare" in text_lower or "which route" in text_lower:
             return {"intent": "COMPARE_ROUTES", "requiresConfirmation": False, "reason": "Requesting comparison metrics for alternative routes."}
 
         # 7. Add / Remove waypoint
-        if "add stop" in text_lower or "add waypoint" in text_lower:
+        if "add stop" in text_lower or "add waypoint" in text_lower or "நிறுத்தம்" in text_lower or "स्टॉप" in text_lower:
             return {"intent": "ADD_WAYPOINT", "requiresConfirmation": True, "reason": "Request to add waypoint to path."}
         if "remove stop" in text_lower or "remove waypoint" in text_lower:
             return {"intent": "REMOVE_WAYPOINT", "requiresConfirmation": True, "reason": "Request to remove active waypoint."}
 
         # 8. Legal queries
-        if any(w in text_lower for w in ["fine", "penalty", "rule", "law", "police", "license"]):
+        if any(w in text_lower for w in ["fine", "penalty", "rule", "law", "police", "license", "அபராதம்", "சட்டம்", "ஹெல்மெட்", "चालान", "जुर्माना", "कानून", "हेलमेट", "ದಂಡ", "ಜರಿಮಾನ", "പിഴ"]):
             return {"intent": "LEGAL_QUERY", "requiresConfirmation": False, "reason": "Query about traffic rules or RTO penalties."}
 
         # Default fallback

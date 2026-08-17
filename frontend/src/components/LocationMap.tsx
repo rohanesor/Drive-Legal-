@@ -14,6 +14,7 @@ interface LocationMapProps {
   markers?: MapMarker[];
   zones?: MapZone[];
   lines?: MapLine[];
+  routeCoords?: Array<{ lat: number; lng: number }>;
   height?: number;
   interactive?: boolean;
   onMarkerSelect?: (marker: MapMarker) => void;
@@ -36,6 +37,24 @@ const MAP_HTML = `
     }
     .neon-marker, .car-marker, .user-marker {
       transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .predictive-tunnel-beam {
+      stroke-dasharray: 12, 12;
+      animation: beamFlow 1.5s linear infinite;
+      filter: drop-shadow(0 0 8px #00E5FF);
+    }
+    @keyframes beamFlow {
+      to { stroke-dashoffset: -24; }
+    }
+    .hazard-dome-label {
+      background: rgba(239, 68, 68, 0.95);
+      border: 1px solid #EF4444;
+      color: #FFFFFF;
+      font-size: 10px; font-weight: bold;
+      padding: 3px 8px; border-radius: 12px;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
+      white-space: nowrap;
     }
 
     /* ── Coordinate Badge ─────────────────────────────── */
@@ -319,26 +338,75 @@ const MAP_HTML = `
       }
     }
 
-    function update3DCamera(heading, speed) {
+    var activeHazardDomeLayer = null;
+    var predictiveTunnelLayer = null;
+    var isManualOrbiting = false;
+    var manualOrbitHeading = 0;
+
+    function update3DCamera(heading, speed, routeCoords) {
       var mapPane = document.querySelector('.leaflet-map-pane');
       if (!mapPane) return;
 
       var speedKmh = speed || 0;
-      var targetTilt = speedKmh > 60 ? 52 : speedKmh > 30 ? 58 : 64; 
-      var targetZoom = speedKmh > 60 ? 15 : speedKmh > 30 ? 16 : 17; 
+      // Novelty 3: Speed-Adaptive Dynamic Yaw & Flight Horizon Lock
+      var targetTilt = speedKmh > 70 ? 68 : speedKmh > 35 ? 60 : 50; 
+      var targetZoom = speedKmh > 70 ? 15 : speedKmh > 35 ? 16 : 17; 
 
       var headVal = heading !== undefined && heading !== null ? heading : 0;
+      if (isManualOrbiting) {
+        headVal = manualOrbitHeading;
+      }
 
-      mapPane.style.transform = 'rotateX(' + targetTilt + 'deg) rotateZ(' + (-headVal) + 'deg) translateY(-8%) scale(1.3)';
+      // Smooth perspective transform
+      mapPane.style.transform = 'rotateX(' + targetTilt + 'deg) rotateZ(' + (-headVal) + 'deg) translateY(-10%) scale(1.35)';
       mapPane.style.transformOrigin = '50% 80%';
 
-      var markers = document.querySelectorAll('.neon-marker, .car-marker, .user-marker');
+      // Inverse 3D billboard projection for markers so they stay vertical
+      var markers = document.querySelectorAll('.neon-marker, .car-marker, .user-marker, .hazard-dome-label');
       markers.forEach(function(el) {
         el.style.transform = 'rotateX(-' + targetTilt + 'deg) rotateZ(' + headVal + 'deg)';
       });
 
       if (map.getZoom() !== targetZoom) {
         map.setZoom(targetZoom);
+      }
+
+      // Novelty 1: Predictive 360° Curvature Tunnel Projection
+      if (routeCoords && routeCoords.length > 2) {
+        renderPredictive3DTunnel(routeCoords, headVal);
+      }
+    }
+
+    function renderPredictive3DTunnel(coords, currentHeading) {
+      if (predictiveTunnelLayer) {
+        map.removeLayer(predictiveTunnelLayer);
+        predictiveTunnelLayer = null;
+      }
+
+      // Check upcoming 5 points for sharp bend (>45 deg turn)
+      var sharpBendFound = false;
+      var bendCoords = [];
+      for (var i = 0; i < Math.min(coords.length - 1, 8); i++) {
+        bendCoords.push([coords[i].lat, coords[i].lng]);
+        if (i >= 2) {
+          var p1 = coords[i-2], p2 = coords[i-1], p3 = coords[i];
+          var a1 = Math.atan2(p2.lng - p1.lng, p2.lat - p1.lat);
+          var a2 = Math.atan2(p3.lng - p2.lng, p3.lat - p2.lat);
+          var diff = Math.abs((a2 - a1) * (180 / Math.PI));
+          if (diff > 45 && diff < 315) {
+            sharpBendFound = true;
+          }
+        }
+      }
+
+      if (sharpBendFound && bendCoords.length > 1) {
+        predictiveTunnelLayer = L.polyline(bendCoords, {
+          color: '#00E5FF',
+          weight: 12,
+          opacity: 0.8,
+          lineCap: 'round',
+          className: 'predictive-tunnel-beam'
+        }).addTo(map);
       }
     }
 
@@ -386,16 +454,30 @@ const MAP_HTML = `
                     
         if (z.coords && z.coords.length > 0) {
           if (z.coords.length === 1 && z.radius) {
-            // Draw circle
-            var circ = L.circle([z.coords[0].lat, z.coords[0].lng], {
+            // Novelty 2: Volumetric 3D Hazard Dome Hemisphere
+            var center = [z.coords[0].lat, z.coords[0].lng];
+            var circ = L.circle(center, {
               radius: z.radius,
               color: color,
               fillColor: color,
-              fillOpacity: 0.15,
-              weight: 2
+              fillOpacity: z.severity === 'high' ? 0.25 : 0.15,
+              weight: z.severity === 'high' ? 3 : 2,
+              dashArray: z.severity === 'high' ? '6, 6' : null
             }).addTo(map);
-            circ.bindTooltip(z.name);
+
+            // Elevated 3D Volumetric Label Marker
+            var labelMarker = L.marker(center, {
+              icon: L.divIcon({
+                className: '',
+                html: '<div class="hazard-dome-label" style="border-color:' + color + '; background:' + color + 'EE;">⚠️ ' + z.name + '</div>',
+                iconSize: [100, 20],
+                iconAnchor: [50, 30]
+              })
+            }).addTo(map);
+
+            circ.bindTooltip('<b>' + z.name + '</b><br>3D Hazard Dome Zone');
             zoneLayers.push(circ);
+            zoneLayers.push(labelMarker);
           } else {
             // Draw polygon
             var polyCoords = z.coords.map(function(c) { return [c.lat, c.lng]; });
@@ -452,6 +534,9 @@ const MAP_HTML = `
         var data = JSON.parse(e.data);
         if (data.type === 'location') {
           updateLocation(data.lat, data.lng, data.heading, data.speed);
+          if (data.routeCoords) {
+            update3DCamera(data.heading, data.speed, data.routeCoords);
+          }
         } else if (data.type === 'markers') {
           updateMarkers(data.markers || []);
         } else if (data.type === 'zones') {
@@ -474,6 +559,7 @@ export const LocationMap: React.FC<LocationMapProps> = ({
   markers = [],
   zones = [],
   lines = [],
+  routeCoords = [],
   height = 300,
   interactive = true,
   onMarkerSelect,
@@ -524,9 +610,10 @@ export const LocationMap: React.FC<LocationMapProps> = ({
         lng: currentLocation.lng,
         heading: currentLocation.heading,
         speed: currentLocation.speed,
+        routeCoords: routeCoords,
       });
     }
-  }, [currentLocation, sendMessageToMap]);
+  }, [currentLocation, routeCoords, sendMessageToMap]);
 
   // Sync update markers
   useEffect(() => {

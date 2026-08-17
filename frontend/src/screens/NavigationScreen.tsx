@@ -314,6 +314,7 @@ export const NavigationScreen = ({
         mapType={isNavigating ? 'cockpit' : 'jurisdiction'}
         markers={mapMarkers}
         lines={mapLines}
+        routeCoords={selectedRoute?.coords}
         height={height}
         interactive={true}
         onMarkerSelect={(m) => Alert.alert('Waypoint Selected', `${m.name}`)}

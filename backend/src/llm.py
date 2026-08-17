@@ -87,39 +87,32 @@ def generate_response(
                 'q': 'speeding',
                 'keywords': [speeding_val, 'fine', 'speeding'],
                 'res': {
-                    'en': f'The fine for speeding in Tamil Nadu is {speeding_val} for the first offense.',
+                    'en': f'The fine for speeding in {state} is {speeding_val} for the first offense.',
                     'ta': f'அதிவேகமாக வாகனம் ஓட்டியதற்கான அபராதம் {speeding_val} ஆகும்.',
-                    'hi': f'तेज गति से गाड़ी चलाने पर {speeding_val} का जुर्माना लगता है।'
+                    'hi': f'तेज गति से गाड़ी चलाने पर {speeding_val} का जुर्माना लगता है।',
+                    'kn': f'ವೇಗದ ಚಾಲನೆಗೆ ಮೊದಲ ಅಪರಾಧಕ್ಕೆ {speeding_val} ದಂಡ ವಿಧಿಸಲಾಗುತ್ತದೆ.',
+                    'te': f'అతివేగానికి మొదటి నేరానికి {speeding_val} జరిమానా విధించబడుతుంది.',
+                    'ml': f'അതിവേഗ ഡ്രൈവിംഗിന് {speeding_val} പിഴ ചുമത്തും.',
+                    'mr': f'भरधाव वेगाने वाहन चालवल्यास {speeding_val} दंड आकारला जातो.',
+                    'gu': f'ઓવર સ્પીડિંગ માટે પ્રથમ ગુના માટે {speeding_val} દંડ છે.'
                 }
             },
             {
                 'q': 'helmet',
-                'keywords': [helmet_val, 'ஹெல்மெட்'],
+                'keywords': [helmet_val, 'ஹெல்மெட்', 'हेलमेट', 'ಹೆಲ್ಮೆಟ್'],
                 'res': {
                     'en': f'Wearing a helmet is mandatory; the fine is {helmet_val}.',
                     'ta': f'ஹெல்மெட் அணியாததற்கான தண்டனை மற்றும் அபராதம் {helmet_val} ஆகும்.',
-                    'hi': f'हेलमेट नहीं पहनने पर {helmet_val} का जुर्माना लगता है।'
-                }
-            },
-            {
-                'q': 'ஹெல்மெட்',
-                'keywords': [helmet_val, 'ஹெல்மெட்'],
-                'res': {
-                    'en': f'Wearing a helmet is mandatory; the fine is {helmet_val}.',
-                    'ta': f'ஹெல்மெட் அணியாததற்கான தண்டனை மற்றும் அபராதம் {helmet_val} ஆகும்.',
-                    'hi': f'हेलमेट नहीं पहनने पर {helmet_val} का जुर्माना लगता है।'
+                    'hi': f'हेलमेट नहीं पहनने पर {helmet_val} का जुर्माना लगता है।',
+                    'kn': f'ಹೆಲ್ಮೆಟ್ ಧರಿಸುವುದು ಕಡ್ಡಾಯ; ದಂಡ {helmet_val}.',
+                    'te': f'హెల్మెట్ ధరించడం తప్పనిసరి; జరిమానా {helmet_val}.',
+                    'ml': f'ഹെൽമറ്റ് ധരിക്കുന്നത് നിർബന്ധമാണ്; പിഴ {helmet_val}.',
+                    'mr': f'हेल्मेट घालणे अनिवार्य आहे; दंड {helmet_val}.',
+                    'gu': f'હેલ્મેટ પહેરવું ફરજિયાત છે; દંડ {helmet_val}.'
                 }
             },
             {
                 'q': 'license',
-                'keywords': ['10 years', '10 वर्ष', 'वैध'],
-                'res': {
-                    'en': 'A driving license is valid for 10 years.',
-                    'ta': 'ஓட்டுநர் உரிமம் 10 ஆண்டுகளுக்கு செல்லுபடியாகும்.',
-                    'hi': 'भारत में driving license 10 वर्ष तक वैध रहता है।'
-                }
-            },
-            {
                 'q': 'लाइसेंस',
                 'keywords': ['10 वर्ष', 'वैध'],
                 'res': {

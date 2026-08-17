@@ -93,8 +93,20 @@ export class VoicePriorityEngine {
       timestamp,
     };
 
+    const localeMap: Record<string, string> = {
+      en: 'en-IN',
+      ta: 'ta-IN',
+      hi: 'hi-IN',
+      kn: 'kn-IN',
+      te: 'te-IN',
+      ml: 'ml-IN',
+      mr: 'mr-IN',
+      gu: 'gu-IN',
+    };
+    const targetLocale = localeMap[langCode] || langCode || 'en-IN';
+
     if (DriveLegalTTS) {
-      DriveLegalTTS.speak(text, langCode)
+      DriveLegalTTS.speak(text, targetLocale)
         .then(() => {
           // Estimate speech duration: ~150 words per minute (2.5 words per second)
           const wordCount = text.split(/\s+/).length;
