@@ -75,13 +75,26 @@ def search(query: str, top_k: int = 3, state: str = None) -> List[Dict]:
         if idx == -1:
             continue
         if _metadata and idx < len(_metadata):
-            law_id = _metadata[idx]
-            cursor.execute("SELECT * FROM laws WHERE id = ?", [law_id])
-            row = cursor.fetchone()
-            if row:
-                result = dict(row)
-                result['similarity'] = max(0.0, float(1 - distances[0][i]))
-                results.append(result)
+            meta_entry = _metadata[idx]
+            item_id = meta_entry['id'] if isinstance(meta_entry, dict) else meta_entry
+            item_type = meta_entry.get('type', 'law') if isinstance(meta_entry, dict) else 'law'
+
+            if item_type == 'law':
+                cursor.execute("SELECT * FROM laws WHERE id = ?", [item_id])
+                row = cursor.fetchone()
+                if row:
+                    result = dict(row)
+                    result['similarity'] = max(0.0, float(1 - distances[0][i]))
+                    results.append(result)
+            elif item_type == 'penalty':
+                cursor.execute("SELECT * FROM penalties WHERE id = ?", [item_id])
+                row = cursor.fetchone()
+                if row:
+                    result = dict(row)
+                    result['title'] = f"Penalty for {result.get('violation_type', '')}"
+                    result['description'] = f"Section {result.get('section', '')}: First offense fine {result.get('first_offense', '')}. {result.get('additional_details', '')}"
+                    result['similarity'] = max(0.0, float(1 - distances[0][i]))
+                    results.append(result)
 
     conn.close()
 

@@ -69,7 +69,8 @@ def handle_query(json_payload: str) -> str:
             return handle_speed_limit_query(json_payload)
 
         result = execute_pipeline(payload)
-        return json.dumps({'status': 'success', **result})
+        resp_text = result.get('response_text', result.get('response', ''))
+        return json.dumps({'status': 'success', 'response': resp_text, **result})
     except Exception as e:
         return json.dumps({'status': 'error', 'code': 'UNKNOWN_ERROR', 'message': str(e)})
 
@@ -291,7 +292,7 @@ def execute_pipeline(payload: Dict) -> Dict:
     audio_uri = payload.get('audio_uri')
     location = payload.get('location', {})
     language = payload.get('language', 'en')
-    state = location.get('state', 'TN')
+    state = payload.get('state') or location.get('state', 'TN')
     lat = location.get('lat', 0)
     lng = location.get('lng', 0)
     city = location.get('city')

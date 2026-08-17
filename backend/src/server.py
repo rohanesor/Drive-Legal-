@@ -216,6 +216,101 @@ class DriveLegalServer(BaseHTTPRequestHandler):
                 self.send_header('X-Request-ID', req_id)
                 self.end_headers()
                 self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
+
+        elif self.path == '/navigation/map_match':
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length).decode('utf-8')
+                body = json.loads(post_data)
+                
+                from services.map_matching_service import map_matching_service
+                gps_points = body.get("gpsPoints", [])
+                result = map_matching_service.match_trace(gps_points)
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(json.dumps(result).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
+
+        elif self.path == '/navigation/geocode':
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length).decode('utf-8')
+                body = json.loads(post_data)
+                
+                from services.geocoding_service import geocoding_service
+                if "lat" in body and "lng" in body:
+                    result = geocoding_service.reverse_geocode(body["lat"], body["lng"], body.get("language", "en"))
+                else:
+                    result = geocoding_service.geocode_address(body.get("query", ""), body.get("state", "TN"), body.get("language", "en"))
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(json.dumps(result).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
+
+        elif self.path == '/navigation/safety_matrix':
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length).decode('utf-8')
+                body = json.loads(post_data)
+                
+                from services.safety_matrix_service import safety_matrix_service
+                origins = body.get("origins", [])
+                destinations = body.get("destinations", [])
+                result = safety_matrix_service.calculate_matrix(origins, destinations, body.get("vehicleType", "car"))
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(json.dumps(result).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
+
+        elif self.path == '/navigation/poi':
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length).decode('utf-8')
+                body = json.loads(post_data)
+                
+                from services.poi_service import poi_service
+                lat = body.get("lat", 11.0168)
+                lng = body.get("lng", 76.9558)
+                poi_type = body.get("poiType", "charging_station")
+                limit = body.get("limit", 5)
+                
+                result = poi_service.query_pois(lat, lng, poi_type, limit=limit)
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "success", "pois": result}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
         else:
             self.send_response(404)
             self.send_header('X-Request-ID', req_id)
