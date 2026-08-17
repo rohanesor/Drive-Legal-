@@ -421,7 +421,7 @@ export const CarVoiceScreen = () => {
         {
           title: 'Microphone Access',
           message:
-            'RoadMind AI needs microphone access to listen to driver voice queries.',
+            'Vazhi AI needs microphone access to listen to driver voice queries.',
           buttonPositive: 'Allow',
           buttonNegative: 'Deny',
         },
@@ -543,13 +543,13 @@ export const CarVoiceScreen = () => {
       const keywordResponse = getKeywordResponse(transcribedText);
       if (keywordResponse) {
         addLog('Local Router: Keyword matched! Bypassing Python RAG.');
-        addLog('RoadMind AI: Request Sent...');
-        addLog('RoadMind AI: Response Received successfully (Fast-Path).');
+        addLog('Vazhi AI: Request Sent...');
+        addLog('Vazhi AI: Response Received successfully (Fast-Path).');
         speakResponse(keywordResponse);
         return;
       }
 
-      addLog('RoadMind AI: Request Sent...');
+      addLog('Vazhi AI: Request Sent...');
       const result = await driveLegalService.query(
         transcribedText,
         userState,
@@ -571,7 +571,7 @@ export const CarVoiceScreen = () => {
         setConfidenceScore(Math.round((result as any).confidence * 100));
       }
 
-      addLog('RoadMind AI: Response Received successfully.');
+      addLog('Vazhi AI: Response Received successfully.');
       speakResponse(textResponse);
     } catch (e) {
       console.error('Voice processing failure:', e);

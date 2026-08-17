@@ -87,7 +87,7 @@ const ThinkingIndicator = () => {
           style={[styles.dot, { transform: [{ translateY: dot3 }] }]}
         />
       </View>
-      <Text style={styles.thinkingText}>RoadMind AI is thinking...</Text>
+      <Text style={styles.thinkingText}>Vazhi AI is thinking...</Text>
     </View>
   );
 };
@@ -455,7 +455,7 @@ export const ChatScreen = ({
             <View
               style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
             >
-              <Text style={styles.headerTitle}>RoadMind AI Assistant</Text>
+              <Text style={styles.headerTitle}>Vazhi AI Assistant</Text>
               <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
                 <Sparkles size={16} color={colors.cyan} />
               </Animated.View>
@@ -510,7 +510,7 @@ export const ChatScreen = ({
           />
         )}
 
-        {/* RoadMind AI Intelligence Map */}
+        {/* Vazhi AI Intelligence Map */}
         {showAIMap && location && (
           <Animated.View
             style={{
@@ -592,7 +592,7 @@ export const ChatScreen = ({
               <VoiceInput onVoiceInput={handleVoiceInput} />
               <TextInput
                 style={styles.input}
-                placeholder="Message RoadMind AI..."
+                placeholder="Message Vazhi AI..."
                 placeholderTextColor={colors.textSecondary}
                 value={inputText}
                 onChangeText={setInputText}

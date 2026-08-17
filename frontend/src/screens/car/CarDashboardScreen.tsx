@@ -257,7 +257,7 @@ export const CarDashboardScreen = () => {
 
   const [userTranscript, setUserTranscript] = useState('');
   const [botResponseText, setBotResponseText] = useState(
-    'RoadMind AI co-driver Active.\nTap the mic and speak.',
+    'Vazhi AI co-driver Active.\nTap the mic and speak.',
   );
   const [inputText, setInputText] = useState('');
   const [showTextInput, setShowTextInput] = useState(false);
@@ -679,7 +679,7 @@ export const CarDashboardScreen = () => {
         {
           title: 'Microphone Access',
           message:
-            'RoadMind AI needs microphone access to listen to driver voice queries.',
+            'Vazhi AI needs microphone access to listen to driver voice queries.',
           buttonPositive: 'Allow',
           buttonNegative: 'Deny',
         },
@@ -828,13 +828,13 @@ export const CarDashboardScreen = () => {
       const keywordResponse = getKeywordResponse(transcribedText);
       if (keywordResponse) {
         addLog('Local Router: Keyword matched! Bypassing Python RAG.');
-        addLog('RoadMind AI: Request Sent...');
-        addLog('RoadMind AI: Response Received successfully (Fast-Path).');
+        addLog('Vazhi AI: Request Sent...');
+        addLog('Vazhi AI: Response Received successfully (Fast-Path).');
         speakResponse(keywordResponse);
         return;
       }
 
-      addLog('RoadMind AI: Request Sent...');
+      addLog('Vazhi AI: Request Sent...');
       const result = await driveLegalService.query(
         transcribedText,
         userState,
@@ -856,7 +856,7 @@ export const CarDashboardScreen = () => {
         setConfidenceScore(Math.round((result as any).confidence * 100));
       }
 
-      addLog('RoadMind AI: Response Received successfully.');
+      addLog('Vazhi AI: Response Received successfully.');
       speakResponse(textResponse);
     } catch (e) {
       console.error('Voice processing failure:', e);
@@ -1263,13 +1263,13 @@ export const CarDashboardScreen = () => {
           UNIFIED EXPANDABLE OVERLAYS & BOTTOM SHEETS
          ──────────────────────────────────────────────────────── */}
 
-      {/* 1. RoadMind AI Voice Panel Overlay Sheet */}
+      {/* 1. Vazhi AI Voice Panel Overlay Sheet */}
       {activeTabOverlay === 'talk' && (
         <View style={styles.overlayBottomCard}>
           <View style={styles.overlayHeader}>
             <View style={styles.panelTitleRow}>
               <Mic color={CAR_COLORS.accent} size={18} />
-              <Text style={styles.overlayTitle}>RoadMind AI Co-Driver</Text>
+              <Text style={styles.overlayTitle}>Vazhi AI Co-Driver</Text>
             </View>
             <View style={styles.telemetryBadge}>
               <Text style={styles.telemetryBadgeText}>

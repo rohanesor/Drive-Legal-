@@ -878,7 +878,7 @@ export const ChallanCalculatorScreen = ({
             }}
           >
             <Sparkles size={16} color="#000000" />
-            <Text style={styles.aiButtonText}>CONSULT ROADMIND AI</Text>
+            <Text style={styles.aiButtonText}>CONSULT VAZHI AI</Text>
           </TouchableOpacity>
         </View>
       )}

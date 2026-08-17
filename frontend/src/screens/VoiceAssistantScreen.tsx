@@ -112,7 +112,7 @@ export const VoiceAssistantScreen = ({
     {
       id: 'welcome',
       sender: 'ai',
-      text: 'RoadMind AI co-driver is active. Tap the microphone and tell me what is happening, or select a quick query below.',
+      text: 'Vazhi AI co-driver is active. Tap the microphone and tell me what is happening, or select a quick query below.',
       timestamp: new Date().toLocaleTimeString([], {
         hour: '2-digit',
         minute: '2-digit',
@@ -782,7 +782,7 @@ export const VoiceAssistantScreen = ({
         </TouchableOpacity>
         <View style={styles.headerTitleRow}>
           <Shield size={18} color="#00FFC2" />
-          <Text style={styles.headerText}>ROADMIND AI</Text>
+          <Text style={styles.headerText}>VAZHI AI</Text>
         </View>
         <View style={styles.locationBadge}>
           <Text style={styles.locationBadgeText}>
