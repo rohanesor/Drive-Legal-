@@ -16,7 +16,7 @@
 -->
 <!--suppress ALL -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.drivelegal">
+    package="com.vazhi">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -40,8 +40,9 @@
         android:supportsRtl="true"
         android:usesCleartextTraffic="false">
 
-        <!-- Map uses OpenStreetMap tiles via Leaflet (no API key required).
-             OpenRouteService key for routing/geocoding is in constants/config.ts -->
+        <meta-data
+            android:name="androidx.car.app.minCarApiLevel"
+            android:value="1" />
 
         <!-- Main activity - entry point for React Native -->
         <activity
@@ -57,12 +58,16 @@
             </intent-filter>
         </activity>
 
-        <!-- Foreground service for continuous GPS monitoring -->
+        <!-- Android Auto Vehicle Navigation Service -->
         <service
-            android:name=".DriveLegalLocationService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="location" />
+            android:name="com.vazhi.car.VazhiCarAppService"
+            android:exported="true"
+            android:label="Vazhi Navigation">
+            <intent-filter>
+                <action android:name="androidx.car.app.category.NAVIGATION" />
+                <category android:name="androidx.car.app.category.NAVIGATION" />
+            </intent-filter>
+        </service>
 
         <!-- Push notification receivers for zone alerts -->
         <receiver android:name="com.dieam.reactnativepushnotification.modules.RNPushNotificationActions" />
