@@ -77,11 +77,6 @@ export const SplashScreen = ({
     }));
   }, [colors]);
 
-  // Show the intro animation first
-  if (showIntro) {
-    return <AppIntroAnimation onFinish={() => setShowIntro(false)} />;
-  }
-
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -112,6 +107,11 @@ export const SplashScreen = ({
       ]),
     ).start();
   }, []);
+
+  // Show the intro animation first (Moved after all hooks to comply with React Rules of Hooks)
+  if (showIntro) {
+    return <AppIntroAnimation onFinish={() => setShowIntro(false)} />;
+  }
 
   const handleNext = () => {
     if (currentSlide < onboardingData.length - 1) {
