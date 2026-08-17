@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "build": 100,
-  "releaseDate": "2026-08-17",
+  "build": 101,
+  "releaseDate": "2026-08-18",
   "android": {
     "apk": "/download/files/DriveLegal-v1.0.0.apk",
     "aab": "/download/files/DriveLegal-v1.0.0.aab",
-    "sha256": "2ade394dca0c9c87cb9cb46db0599c7e8eef99c2ffde8562a8049a2e326bb969",
+    "sha256": "08a0230161e05e298de7c1822ad5c57ac1bb58ec537215e3ff40b77389e9df9b",
     "minOs": "Android 8.0 (API 26)",
     "architecture": "arm64-v8a"
   },
@@ -17,5 +17,5 @@
     "supported": true,
     "note": "Android Auto-style driving mode is included in the Android app."
   },
-  "releaseNotes": "DriveLegal v1.0.0 Production Release. High-performance server-connected architecture with HTTPS API, persistent backend, and lightweight deterministic offline mode."
+  "releaseNotes": "Vazhi v1.0.0-b101: AI-Native Routing & Conversational Driving Co-Pilot. Route comparison engine, trip intent parser, waypoint confirmation modals, and navigation context synchronization."
 }
