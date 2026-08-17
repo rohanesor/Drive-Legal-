@@ -311,6 +311,79 @@ class DriveLegalServer(BaseHTTPRequestHandler):
                 self.send_header('X-Request-ID', req_id)
                 self.end_headers()
                 self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
+
+        elif self.path == '/navigation/isochrone':
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length).decode('utf-8')
+                body = json.loads(post_data)
+                
+                from services.isochrone_service import isochrone_service
+                lat = body.get("lat", 11.0168)
+                lng = body.get("lng", 76.9558)
+                range_mins = body.get("rangeMinutes", 30)
+                soc = body.get("socPercentage")
+                
+                result = isochrone_service.calculate_isochrone(lat, lng, range_mins, soc)
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(json.dumps(result).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
+
+        elif self.path == '/navigation/networkx_route':
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length).decode('utf-8')
+                body = json.loads(post_data)
+                
+                from services.networkx_routing_service import networkx_routing_service
+                origin = body.get("origin", {"lat": 11.0168, "lng": 76.9558})
+                dest = body.get("destination", {"lat": 11.4102, "lng": 76.6950})
+                black_spots = body.get("blackSpots", [])
+                
+                result = networkx_routing_service.prototype_safety_route(origin, dest, black_spots)
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(json.dumps(result).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
+
+        elif self.path == '/navigation/spatial_analytics':
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length).decode('utf-8')
+                body = json.loads(post_data)
+                
+                from services.spatial_analytics_service import spatial_analytics_service
+                lat = body.get("lat", 11.0168)
+                lng = body.get("lng", 76.9558)
+                radius = body.get("radiusMeters", 1000.0)
+                
+                result = spatial_analytics_service.analyze_corridor(lat, lng, radius)
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(json.dumps(result).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
         else:
             self.send_response(404)
             self.send_header('X-Request-ID', req_id)

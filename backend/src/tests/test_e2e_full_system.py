@@ -151,6 +151,37 @@ class TestVazhiE2EFullSystem(unittest.TestCase):
         self.assertEqual(res.get('status'), 'success')
         self.assertGreater(len(res.get('pois', [])), 0)
 
+    def test_09_isochrone(self):
+        """Verify POST /navigation/isochrone EV reachability calculation."""
+        res = self._post('/navigation/isochrone', {
+            'lat': 11.0168,
+            'lng': 76.9558,
+            'rangeMinutes': 25,
+            'socPercentage': 80
+        })
+        self.assertEqual(res.get('status'), 'success')
+        self.assertIn('polygon_coords', res)
+        self.assertGreater(len(res.get('polygon_coords', [])), 0)
+
+    def test_10_networkx_route(self):
+        """Verify POST /navigation/networkx_route graph routing."""
+        res = self._post('/navigation/networkx_route', {
+            'origin': {'lat': 11.0168, 'lng': 76.9558},
+            'destination': {'lat': 11.4102, 'lng': 76.6950}
+        })
+        self.assertEqual(res.get('status'), 'success')
+        self.assertIn('path_coords', res)
+
+    def test_11_spatial_analytics(self):
+        """Verify POST /navigation/spatial_analytics network density analysis."""
+        res = self._post('/navigation/spatial_analytics', {
+            'lat': 11.0168,
+            'lng': 76.9558,
+            'radiusMeters': 1000
+        })
+        self.assertEqual(res.get('status'), 'success')
+        self.assertIn('engine', res)
+
 
 if __name__ == '__main__':
     unittest.main()
