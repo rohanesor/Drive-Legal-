@@ -26,8 +26,14 @@ import { getAudioPath } from '../utils/audioPath';
 import { useMemo } from 'react';
 import { useThemeColors } from '../context/ThemeContext';
 
-// Single instance of the audio recorder (shared across the app)
-const audioRecorderPlayer = new AudioRecorderPlayer();
+// Single instance of the audio recorder (deferred to avoid native crash at module load)
+let audioRecorderPlayer: AudioRecorderPlayer | null = null;
+function getAudioRecorder(): AudioRecorderPlayer {
+  if (!audioRecorderPlayer) {
+    audioRecorderPlayer = new AudioRecorderPlayer();
+  }
+  return audioRecorderPlayer;
+}
 
 interface VoiceInputProps {
   onVoiceInput: (audioUri: string) => void; // Callback with audio file path
@@ -74,7 +80,7 @@ export const VoiceInput = ({ onVoiceInput }: VoiceInputProps) => {
       }
 
       // Start recording to a temporary file
-      await audioRecorderPlayer.startRecorder();
+      await getAudioRecorder().startRecorder();
       setIsRecording(true); // Turn button red to show recording state
     } catch (error) {
       console.error('Start recording error:', error);
@@ -88,7 +94,7 @@ export const VoiceInput = ({ onVoiceInput }: VoiceInputProps) => {
    */
   const stopRecording = async () => {
     try {
-      const rawPath = await audioRecorderPlayer.stopRecorder();
+      const rawPath = await getAudioRecorder().stopRecorder();
       setIsRecording(false);
 
       const path = getAudioPath(rawPath);
