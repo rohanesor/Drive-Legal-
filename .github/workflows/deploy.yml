@@ -142,6 +142,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_SSH_HOST }} "mkdir -p /home/ubuntu/DriveLegal/backend/src/static/files"
           scp -o StrictHostKeyChecking=no frontend/android/app/build/outputs/apk/release/app-release.apk ubuntu@${{ secrets.EC2_SSH_HOST }}:/home/ubuntu/DriveLegal/backend/src/static/files/vazhi-v1.0.0.apk
+          scp -o StrictHostKeyChecking=no frontend/android/app/build/outputs/apk/release/app-release.apk ubuntu@${{ secrets.EC2_SSH_HOST }}:/home/ubuntu/DriveLegal/backend/src/static/files/DriveLegal-v1.0.0.apk
           scp -o StrictHostKeyChecking=no backend/src/static/latest.json ubuntu@${{ secrets.EC2_SSH_HOST }}:/home/ubuntu/DriveLegal/backend/src/static/latest.json
 
       - name: Run Live Verification and Smoke Tests
