@@ -281,4 +281,24 @@ export const apiService = {
       payload: { lat, lng, state },
     });
   },
+
+  /**
+   * Compare routes using multi-engine routing.
+   */
+  async compareRoutes(origin: [number, number], destination: [number, number]): Promise<any> {
+    return makeRequest<any>({
+      action: 'compare_routes',
+      payload: { origin, destination },
+    });
+  },
+
+  /**
+   * Explain route rationale using server-side LLM.
+   */
+  async explainRoute(routeData: any): Promise<any> {
+    return makeRequest<any>({
+      action: 'explain_route',
+      payload: { route: routeData },
+    });
+  },
 };

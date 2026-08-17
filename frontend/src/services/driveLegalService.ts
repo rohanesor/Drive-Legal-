@@ -127,4 +127,12 @@ export const driveLegalService = {
   onConnectionChange(listener: (status: string) => void): () => void {
     return connectionManager.subscribe(listener);
   },
+
+  async compareRoutes(origin: [number, number], destination: [number, number]): Promise<any> {
+    return apiService.compareRoutes(origin, destination);
+  },
+
+  async explainRoute(routeData: any): Promise<any> {
+    return apiService.explainRoute(routeData);
+  },
 };
