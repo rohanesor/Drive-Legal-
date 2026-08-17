@@ -403,6 +403,7 @@ export const ChatScreen = ({
         language,
         location ? { lat: location.latitude, lng: location.longitude } : undefined,
         chatHistory,
+        navigationState.getContext(),
       );
 
       const botText =

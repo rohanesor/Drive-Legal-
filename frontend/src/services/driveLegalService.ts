@@ -35,10 +35,11 @@ export const driveLegalService = {
     language: string = 'en',
     location?: { lat: number; lng: number },
     history?: Array<{ role: string; content: string }>,
+    navigationContext?: Record<string, unknown>,
   ): Promise<ServiceResponse> {
     if (connectionManager.isOnline()) {
       try {
-        const result = await apiService.query(text, state, language, location, history);
+        const result = await apiService.query(text, state, language, location, history, navigationContext);
         return { ...result, offline: false };
       } catch {
         // Fall through to offline

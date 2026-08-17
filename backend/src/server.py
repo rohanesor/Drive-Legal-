@@ -7,6 +7,8 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from main import handle_query
+from ai.route_intelligence_service import RouteIntelligenceService
+from ai.route_comparison import RouteComparisonEngine
 
 class DriveLegalServer(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -130,6 +132,7 @@ class DriveLegalServer(BaseHTTPRequestHandler):
         import time, uuid
         req_id = self.headers.get('X-Request-ID') or str(uuid.uuid4())
         start_time = time.time()
+        
         if self.path == '/query':
             try:
                 content_length = int(self.headers.get('Content-Length', 0))
@@ -162,6 +165,57 @@ class DriveLegalServer(BaseHTTPRequestHandler):
                 error_response = json.dumps({'status': 'error', 'message': str(e)})
                 self.wfile.write(error_response.encode('utf-8'))
                 print(json.dumps({"request_id": req_id, "status": 500, "error": str(e), "latency_ms": latency_ms}), flush=True)
+                
+        elif self.path == '/navigation/explain':
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length).decode('utf-8')
+                body = json.loads(post_data)
+                
+                question = body.get("question", "")
+                context = body.get("navigationContext", {})
+                alt_routes = body.get("alternativeRoutes", [])
+                
+                result = RouteIntelligenceService.explain_route(question, context, alt_routes)
+                response = json.dumps({"status": "success", **result})
+                latency_ms = round((time.time() - start_time) * 1000, 2)
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(response.encode('utf-8'))
+                print(json.dumps({"request_id": req_id, "action": "explain_route", "status": 200, "latency_ms": latency_ms}), flush=True)
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
+                
+        elif self.path == '/navigation/compare':
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length).decode('utf-8')
+                body = json.loads(post_data)
+                
+                alt_routes = body.get("alternativeRoutes", [])
+                result = RouteComparisonEngine.compare_routes(alt_routes)
+                response = json.dumps({"status": "success", **result})
+                latency_ms = round((time.time() - start_time) * 1000, 2)
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(response.encode('utf-8'))
+                print(json.dumps({"request_id": req_id, "action": "compare_routes", "status": 200, "latency_ms": latency_ms}), flush=True)
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
         else:
             self.send_response(404)
             self.send_header('X-Request-ID', req_id)

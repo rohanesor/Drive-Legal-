@@ -188,10 +188,11 @@ export const apiService = {
     language: string = 'en',
     location?: { lat: number; lng: number },
     history?: Array<{ role: string; content: string }>,
+    navigationContext?: Record<string, unknown>,
   ): Promise<QueryResponse> {
     return makeRequest<QueryResponse>({
       action: 'query',
-      payload: { text, state, language, location, history },
+      payload: { text, state, language, location, history, navigationContext },
     });
   },
 

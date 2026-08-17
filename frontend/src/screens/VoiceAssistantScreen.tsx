@@ -553,6 +553,8 @@ export const VoiceAssistantScreen = ({
         userState,
         userLanguage,
         location ? { lat: location.latitude, lng: location.longitude } : undefined,
+        undefined,
+        navigationState.getContext(),
       );
 
       const textResponse =
@@ -566,6 +568,9 @@ export const VoiceAssistantScreen = ({
       }
       if ((result as any).confidence !== undefined) {
         setConfidenceScore(Math.round((result as any).confidence * 100));
+      }
+      if (result && (result as any).intent) {
+        DeviceEventEmitter.emit('vazhi:ai_intent', result);
       }
       speakBotResponse(textResponse);
     } catch (e) {
@@ -601,6 +606,8 @@ export const VoiceAssistantScreen = ({
         userState,
         userLanguage,
         location ? { lat: location.latitude, lng: location.longitude } : undefined,
+        undefined,
+        navigationState.getContext(),
       );
 
       const textResponse =
@@ -614,6 +621,9 @@ export const VoiceAssistantScreen = ({
       }
       if ((result as any).confidence !== undefined) {
         setConfidenceScore(Math.round((result as any).confidence * 100));
+      }
+      if (result && (result as any).intent) {
+        DeviceEventEmitter.emit('vazhi:ai_intent', result);
       }
       speakBotResponse(textResponse);
     } catch (e) {
@@ -646,6 +656,8 @@ export const VoiceAssistantScreen = ({
         userState,
         userLanguage,
         location ? { lat: location.latitude, lng: location.longitude } : undefined,
+        undefined,
+        navigationState.getContext(),
       );
 
       const textResponse =
@@ -659,6 +671,9 @@ export const VoiceAssistantScreen = ({
       }
       if ((result as any).confidence !== undefined) {
         setConfidenceScore(Math.round((result as any).confidence * 100));
+      }
+      if (result && (result as any).intent) {
+        DeviceEventEmitter.emit('vazhi:ai_intent', result);
       }
       speakBotResponse(textResponse);
     } catch (e) {

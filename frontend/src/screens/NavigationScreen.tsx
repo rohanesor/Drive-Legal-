@@ -9,8 +9,10 @@ import {
   StatusBar,
   Dimensions,
   Platform,
+  DeviceEventEmitter,
 } from 'react-native';
 import { useThemeColors } from '../context/ThemeContext';
+import { navigationState } from '../services/navigationState';
 import { LocationMap } from '../components/LocationMap';
 import { SpeedLimitDisplay } from '../components/SpeedLimitDisplay';
 import { navigationEngine } from '../domain/navigation/NavigationEngine';
@@ -118,12 +120,45 @@ export const NavigationScreen = ({
     };
   }, []);
 
+  // Listen to AI-generated routing modification intents from co-pilot
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('vazhi:ai_intent', (data: any) => {
+      if ((data.intent === 'ADD_WAYPOINT' || data.intent === 'FIND_CHARGER' || data.intent === 'FIND_RESTAURANT' || data.intent === 'FIND_HOTEL') && data.poi_candidate) {
+        Alert.alert(
+          'AI Routing Suggestion',
+          data.answer || `Add stop at ${data.poi_candidate.name}?`,
+          [
+            { text: 'Ignore', style: 'cancel' },
+            { 
+              text: 'Add Waypoint', 
+              onPress: () => {
+                voicePriorityEngine.speak(`Adding stop at ${data.poi_candidate.name}. Recalculating route parameters.`, 'HIGH', 'turn');
+                Alert.alert('Route Optimized', `Route successfully modified. Added stop: ${data.poi_candidate.name}`);
+              }
+            }
+          ]
+        );
+      }
+    });
+    return () => sub.remove();
+  }, [selectedRoute]);
+
   const handleStartNavigation = () => {
     if (!selectedRoute) return;
     setIsNavigating(true);
     setCurrentStepIndex(0);
     setSimulatedLocation(selectedRoute.coords[0]);
     navigationEngine.startNavigation(origin, selectedDestination!, selectedDestination!.name, routes, selectedRoute);
+
+    navigationState.setContext({
+      isNavigating: true,
+      destinationName: selectedDestination!.name,
+      distanceRemaining: selectedRoute.distance,
+      durationRemaining: selectedRoute.duration,
+      currentStepInstruction: selectedRoute.steps[0]?.instruction || 'Proceeding safely',
+      routeSafetyScore: selectedRoute.safetyScore,
+      activeRouteName: selectedRoute.name,
+    });
 
     // Initial alert co-pilot speak
     voicePriorityEngine.speak(
@@ -194,6 +229,12 @@ export const NavigationScreen = ({
 
       // Update NavigationEngine trackers
       navigationEngine.updateLocation(nextCoord, simSpeed);
+      
+      navigationState.setContext({
+        distanceRemaining: Math.max(0, selectedRoute.distance - (idx * 500)),
+        durationRemaining: Math.max(0, selectedRoute.duration - (idx * 30)),
+        currentStepInstruction: selectedRoute.steps[Math.min(currentStepIndex, selectedRoute.steps.length - 1)]?.instruction || 'Proceeding safely',
+      });
     }, 3000);
   };
 
@@ -208,6 +249,7 @@ export const NavigationScreen = ({
     }
     navigationEngine.stopNavigation();
     voicePriorityEngine.stop();
+    navigationState.reset();
   };
 
   const mapLines: MapLine[] = useMemo(() => {

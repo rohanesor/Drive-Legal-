@@ -60,8 +60,46 @@ export class VazhiApiClient {
     return this.makeRequest('get_penalties', { state, violation_type: violationType });
   }
 
-  static async queryLegalAssistant(text: string, state: string, language: string, location?: { lat: number; lng: number }): Promise<any> {
-    return this.makeRequest('query', { text, state, language, location });
+  static async queryLegalAssistant(
+    text: string, 
+    state: string, 
+    language: string, 
+    location?: { lat: number; lng: number },
+    navigationContext?: Record<string, unknown>
+  ): Promise<any> {
+    return this.makeRequest('query', { text, state, language, location, navigationContext });
+  }
+
+  static async explainRoute(
+    question: string, 
+    navigationContext: Record<string, unknown>, 
+    alternativeRoutes: any[]
+  ): Promise<any> {
+    const requestId = this.generateRequestId();
+    const response = await fetch(`${CONFIG.API_BASE_URL}/navigation/explain`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Request-ID': requestId,
+      },
+      body: JSON.stringify({ question, navigationContext, alternativeRoutes }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+  }
+
+  static async compareRoutes(alternativeRoutes: any[]): Promise<any> {
+    const requestId = this.generateRequestId();
+    const response = await fetch(`${CONFIG.API_BASE_URL}/navigation/compare`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Request-ID': requestId,
+      },
+      body: JSON.stringify({ alternativeRoutes }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
   }
 
   static async generateTripPlan(

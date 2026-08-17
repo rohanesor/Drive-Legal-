@@ -1,4 +1,5 @@
 export interface NavigationContext {
+  [key: string]: unknown;
   isNavigating: boolean;
   destinationName?: string;
   distanceRemaining?: number; // meters
