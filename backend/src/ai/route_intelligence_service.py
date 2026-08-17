@@ -77,38 +77,38 @@ class RouteIntelligenceService:
 
         # 3. Handle stop modifications (e.g. Vegetarian Restaurant, Hotels, EV Chargers)
         if intent in ["FIND_RESTAURANT", "FIND_CHARGER", "FIND_HOTEL", "FIND_FUEL"]:
-            poi_type = intent_info.get("poiQuery", {}).get("category", "amenity")
-            diet = intent_info.get("poiQuery", {}).get("diet", "any")
+            poi_type_map = {
+                "FIND_CHARGER": "charging_station",
+                "FIND_FUEL": "fuel",
+                "FIND_RESTAURANT": "restaurant",
+                "FIND_HOTEL": "hotel"
+            }
+            osm_poi_type = poi_type_map.get(intent, "restaurant")
             
-            # Search candidate POIs (mock implementation mapping coordinates along route)
-            # Check EV limits
-            is_ev = context.get("vehicle", {}).get("fuelType") == "EV"
-            soc = context.get("vehicle", {}).get("soc_percentage", 100)
+            # Extract coordinates from context (defaulting to Coimbatore center)
+            lat = context.get("currentLocation", {}).get("lat", 11.0168)
+            lng = context.get("currentLocation", {}).get("lng", 76.9558)
             
+            try:
+                from services.poi_service import poi_service
+                real_pois = poi_service.query_pois(lat, lng, poi_type=osm_poi_type, radius_km=10.0, limit=3)
+            except Exception:
+                real_pois = []
+
             candidates = []
-            if intent == "FIND_CHARGER" and is_ev:
-                candidates = [
-                    {"name": "Tata Power EZ Charger", "distance_detour_meters": 350, "eta_minutes": 45, "status": "open", "speed_kw": 50},
-                    {"name": "Zeon Fast Charging Hub", "distance_detour_meters": 800, "eta_minutes": 75, "status": "open", "speed_kw": 60}
-                ]
-            elif intent == "FIND_RESTAURANT":
-                if diet == "vegetarian":
-                    candidates = [
-                        {"name": "Saravana Bhavan (Pure Veg)", "distance_detour_meters": 150, "eta_minutes": 25, "status": "open", "closing_time": "22:00"},
-                        {"name": "A2B Adyar Ananda Bhavan", "distance_detour_meters": 400, "eta_minutes": 55, "status": "open", "closing_time": "22:30"}
-                    ]
-                else:
-                    candidates = [
-                        {"name": "Highway Dhaba", "distance_detour_meters": 600, "eta_minutes": 35, "status": "open"}
-                    ]
-            elif intent == "FIND_HOTEL":
-                candidates = [
-                    {"name": "Grand Palace Transit Hotel", "distance_detour_meters": 900, "eta_minutes": 360, "status": "open", "check_in_available": True}
-                ]
+            for p in real_pois:
+                candidates.append({
+                    "name": p.get("name"),
+                    "distance_detour_meters": int(p.get("distance_km", 1.0) * 1000),
+                    "eta_minutes": max(5, int(p.get("distance_km", 1.0) * 3)),
+                    "status": "open",
+                    "operator": p.get("operator", ""),
+                    "opening_hours": p.get("opening_hours", "24/7"),
+                })
 
             if candidates:
                 best_candidate = candidates[0]
-                explanation = f"I found a highly-rated {poi_type} stop: '{best_candidate['name']}'. It is a minor detour of {best_candidate['distance_detour_meters']} meters, and you will arrive in {best_candidate['eta_minutes']} minutes. Would you like me to add it to your route?"
+                explanation = f"I found a verified {osm_poi_type.replace('_', ' ')} stop: '{best_candidate['name']}'. It is a minor detour of {best_candidate['distance_detour_meters']} meters, and you will arrive in approximately {best_candidate['eta_minutes']} minutes. Would you like me to add it to your route?"
                 return {
                     "intent": intent,
                     "requiresConfirmation": True,
