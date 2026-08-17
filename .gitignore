@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+android_obsolete/
+*_obsolete*
 
 # Android build outputs
 android/app/build/

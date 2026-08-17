@@ -551,7 +551,7 @@ export const DashboardScreen = ({
           <View style={styles.statusFooterDot} />
           <Server size={13} color={colors.textSecondary} />
           <Text style={styles.statusFooterText}>
-            Offline DB: Active · Engine v1.0.0
+            DriveLegal Production Build: 1.0.0 · Git Commit: 0a8e1b2
           </Text>
         </View>
       </ScrollView>

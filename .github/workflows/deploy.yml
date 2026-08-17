@@ -54,11 +54,35 @@ jobs:
         run: |
           python backend/src/run_tests.py
 
+      - name: Log Build Metadata
+        run: |
+          echo "BUILDING DRIVELEGAL FROM:"
+          pwd
+          git rev-parse --short HEAD
+          git branch --show-current
+          echo "Package Version:"
+          cat frontend/package.json | grep '"version"' || true
+          echo "Application ID:"
+          cat frontend/android/app/build.gradle | grep 'applicationId' || true
+          echo "Version Name / Code:"
+          cat frontend/android/app/build.gradle | grep 'versionName' || true
+          cat frontend/android/app/build.gradle | grep 'versionCode' || true
+
+      - name: Clean Stale APKs
+        run: |
+          find . -name "*.apk" -delete
+
       - name: Build Android Production Release APK and AAB
         run: |
           cd frontend/android
           chmod +x gradlew
-          ./gradlew assembleRelease bundleRelease --no-daemon -Psentry.autoUpload=false
+          ./gradlew clean --no-daemon
+          ./gradlew assembleRelease bundleRelease --no-daemon "-Psentry.autoUpload=false"
+
+      - name: Verify Newly Generated APK
+        run: |
+          echo "Newly generated APKs:"
+          find frontend/android -name "*.apk" -type f
 
       - name: Calculate Release Checksums
         run: |
