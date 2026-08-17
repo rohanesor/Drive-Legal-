@@ -10,7 +10,7 @@ from main import handle_query
 from ai.route_intelligence_service import RouteIntelligenceService
 from ai.route_comparison import RouteComparisonEngine
 
-class DriveLegalServer(BaseHTTPRequestHandler):
+class VazhiServer(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         # Structured JSON logs compatible with CloudWatch
         log_entry = {
@@ -390,9 +390,11 @@ class DriveLegalServer(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({'status': 'error', 'message': 'Not Found'}).encode('utf-8'))
 
+DriveLegalServer = VazhiServer
+
 def run(port=8000):
     server_address = ('', port)
-    httpd = HTTPServer(server_address, DriveLegalServer)
+    httpd = HTTPServer(server_address, VazhiServer)
     print(json.dumps({"event": "server_started", "port": port}), flush=True)
     try:
         httpd.serve_forever()

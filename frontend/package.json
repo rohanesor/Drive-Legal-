@@ -1,8 +1,8 @@
 {
-  "name": "DriveLegal",
+  "name": "vazhi",
   "version": "1.0.0",
   "private": true,
-  "description": "AI-powered offline traffic law assistant for Indian citizens",
+  "description": "Vazhi — An intelligent navigation and driving co-pilot",
   "scripts": {
     "android": "react-native run-android",
     "ios": "react-native run-ios",

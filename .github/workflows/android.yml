@@ -1,4 +1,4 @@
-name: DriveLegal Android CI/CD
+name: Vazhi Android CI/CD
 
 on:
   push:

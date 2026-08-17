@@ -16,7 +16,7 @@ def initialize() -> str:
     try:
         initialize_database()
         sync_result = sync_on_app_launch()
-        return json.dumps({'status': 'success', 'message': 'DriveLegal initialized', 'sync': sync_result})
+        return json.dumps({'status': 'success', 'message': 'Vazhi initialized', 'sync': sync_result})
     except Exception as e:
         return json.dumps({'status': 'error', 'code': 'INIT_ERROR', 'message': str(e)})
 

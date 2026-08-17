@@ -1,7 +1,6 @@
 /**
- * Root Gradle build configuration
+ * Root Gradle build configuration for Vazhi
  * Defines Android SDK versions and build dependencies
- * Includes Chaquopy plugin for embedding Python in Android
  */
 ext {
     buildToolsVersion = "34.0.0"

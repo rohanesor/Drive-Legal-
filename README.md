@@ -1,122 +1,138 @@
-# DriveLegal - AI Traffic Law Assistant
+# Vazhi (வழி) — Intelligent Driving & Navigation Co-Pilot
 
-A multilingual (Tamil / Hindi / English), fully offline AI-powered traffic law assistant for Indian citizens. Built with React Native + embedded Python (Chaquopy) for Android 8+.
+**Vazhi** is an intelligent, context-aware navigation and driving co-pilot designed for complex Indian road infrastructure, highway corridors, ghat roads, and multi-state legal jurisdictions.
 
-*Deployment Status: Production AWS environment configured and verified.*
+---
 
-## Features
+## What is Vazhi?
 
-- **Chat Interface** — ask traffic law questions in EN/TA/HI, get answers with source citations & confidence indicators
-- **Challan Calculator** — compute fines with compounding fees, offense multipliers, commercial surcharges, and late payment penalties
-- **GPS Zone Alerts** — foreground service detects state boundaries and alerts when entering restricted/paid-parking zones
-- **AI-Powered Responses** — Claude API (online) → TinyLlama (device fallback) → template responses (last resort)
-- **Offline-First** — all laws, penalties, calculator logic, and chat templates work without internet
-- **Trust Signals** — every response shows `verified`/`draft`/`stale` badge, source URL, and legal disclaimer
-- **Scalable Architecture** — country abstraction layer for global expansion beyond India
+Vazhi goes beyond traditional point-A to point-B routing by unifying **volumetric 3D perspective navigation**, **contextual AI route reasoning**, **proactive voice safety alerts**, and **jurisdiction-aware legal intelligence** into a single cohesive driver assistant.
 
-## Tech Stack
+---
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React Native 0.73.6, TypeScript, Redux Toolkit, React Navigation |
-| Backend | Python 3.11 (embedded via Chaquopy 15.0.1) |
-| Database | SQLite (offline, on-device) |
-| AI (online) | Claude API (claude-sonnet-4-20250514) |
-| AI (offline) | TinyLlama 1.1B, FAISS semantic search |
-| Speech | Whisper tiny (on-device STT) |
-| Maps/GPS | Google Play Services Location (zone detection only) |
-| i18n | i18next (English / தமிழ் / हिन्दी) |
+## Why Vazhi?
 
-## Architecture
+Standard navigation apps treat all asphalt equally. Vazhi calculates route safety scores by evaluating:
+- **Accident Black Spots** (MoRTH / iRAD verified high-severity crash zones)
+- **Road Geometry** (Predictive 3D curvature beams on bends >45°)
+- **Speed Breakers & Infrastructure Quality**
+- **State & RTO Jurisdiction Boundaries** (1,400 RTO district mappings across 10 Indian states)
+- **EV Battery Reachability & Isochrones**
+
+---
+
+## Core Features
+
+### 🧭 Intelligent Navigation
+- Multi-route calculation with real-time safety scores, toll avoidance, and hill perspective camera locks.
+
+### 🗣️ AI Conversational Routing
+- Server-side LLM route intelligence providing:
+  - **Route Explanation**: Natural language explanations of why a specific route was chosen.
+  - **Route Comparison**: Multi-route trade-off matrices comparing time, distance, tolls, and hazard density.
+  - **Natural-Language Modification**: Structured intent parsing for requests like *"Find a fast charger before battery reaches 20%"* or *"Find vegetarian food near the highway"*.
+
+### 🛣️ Road Intelligence
+- Deterministic extraction of sharp curves, hairpins, speed breakers, school zones, and toll plazas without fabricating missing map geometries.
+
+### 🔊 Proactive Voice Safety
+- 8-language voice alerts (**Tamil, Hindi, English, Kannada, Telugu, Malayalam, Marathi, Gujarati**) using zero-latency template prompts for critical safety events (*"Sharp curve ahead"*, *"Entering Karnataka"*) so safety alerts never block on AI network roundtrips.
+
+### 🗺️ State / District / Taluk Jurisdiction Awareness
+- `GeoContextEngine` tracks real-time state and district boundary crossings (`STATE_BORDER_CROSSED`), automatically updating localized traffic fines, RTO regulations, and municipal rules.
+
+### 📅 Intelligent Trip Planning
+- Time-aware itinerary planner for long-distance driving (e.g. Chennai to Ladakh or Bangalore to Ooty), generating scheduled rest stops, restaurants, hotels, and EV charging points based on actual arrival times and opening hours.
+
+### 📍 Contextual & Coordinate Routing
+- Direct coordinate-to-coordinate routing supporting exact latitude/longitude waypoints for peer location sharing.
+
+### 🔮 3D Navigation Engine
+- GPU-accelerated 3D perspective rendering featuring:
+  - **Predictive 360° Curvature Tunnel**: `#00E5FF` glowing cyan projection beams on sharp bends.
+  - **Volumetric 3D Hazard Domes**: Semi-transparent red threat domes around accident black spots.
+  - **Speed-Adaptive Dynamic Yaw Horizon**: Camera pitch tilts up to 68° at speeds above 70 km/h.
+
+### ⚖️ Legal Intelligence
+- Instant localized fine lookup and Motor Vehicle Act section search across Tamil Nadu, Karnataka, Kerala, Maharashtra, Delhi, and 5 additional priority states.
+
+### 🆘 Emergency & SOS Assistance
+- One-tap access to nearest verified hospitals, police stations, fire stations, mechanics, and petrol pumps with direct call and navigation actions.
+
+### 📡 Graceful Offline Capability
+- On-device BRouter offline routing, local geometric HMM map-matching, and cached SQLite legal databases ensuring core navigation and safety alerts remain operational in cellular dead zones.
+
+---
+
+## AI Architecture
 
 ```
-┌─────────────────────────────────────────────────┐
-│              React Native UI                     │
-│  ChatScreen  │  CalculatorScreen  │  Settings    │
-│  MapScreen   │  i18n (EN/TA/HI)  │  Redux Store  │
-└──────────────┬──────────────────────────────────┘
-               │ Chaquopy Bridge (JSON over JNI)
-┌──────────────▼──────────────────────────────────┐
-│            Python Backend (Embedded)              │
-│  main.py      │  llm.py (Claude→TinyLlama)      │
-│  calculator.py│  security.py (integrity checks)  │
-│  scrapers/    │  SQLite DB                       │
-└─────────────────────────────────────────────────┘
+USER
+  ↓
+VAZHI FRONTEND (React Native / MapLibre 3D)
+  ↓
+NAVIGATION ENGINE
+  ↓
+ROUTE + LIVE CONTEXT (Speed, Pitch, State, Coordinates)
+  ↓
+SAFETY + LEGAL + GEO + POI DATA
+  ↓
+AI ROUTE INTELLIGENCE (Server-Side LLM + FAISS Vector Index)
+  ↓
+DRIVER GUIDANCE / VOICE / ACTIONS
 ```
 
-## Project Structure
+---
+
+## Repository Architecture
 
 ```
-DriveLegal/
-├── frontend/                    # React Native app
-│   ├── android/                 # Android native (Chaquopy, services)
-│   ├── src/
-│   │   ├── screens/             # Chat, Calculator, Map, Settings
-│   │   ├── store/               # Redux (settings, claudeApiKey)
-│   │   ├── i18n/                # EN/TA/HI translations
-│   │   ├── services/            # GPS, bridge helpers
-│   │   └── App.tsx              # Root component
-│   ├── index.js                 # Entry point
-│   └── package.json
-├── backend/                     # Python backend
-│   └── src/
-│       ├── main.py              # Chaquopy entry, query routing
-│       ├── llm.py               # AI chain (Claude → TinyLlama → template)
-│       ├── calculator.py        # Fine computation engine
-│       ├── security.py          # SHA-256 integrity checks
-│       ├── data/                # SQLite DB, scraped JSON
-│       ├── scrapers/            # Parivahan/state transport scrapers
-│       └── ingest/              # Verified data pipeline
-└── docs/                        # Design specs
+Vazhi Platform
+ ├── frontend/                 # Single React Native Mobile App
+ │    ├── src/components/       # LocationMap 3D, Navigation overlays
+ │    ├── src/screens/          # Navigation, Voice Assistant, Trip Planner, Legal, SOS
+ │    ├── src/domain/voice/     # VoicePriorityEngine & 8-language TTS
+ │    └── src/services/         # BRouter offline client, Vazhi API client
+ └── backend/                  # Single Python Backend Engine
+      ├── src/server.py         # HTTP API Router (11 Endpoints)
+      ├── src/ai/               # RouteIntelligence, RouteComparison, TripIntent
+      ├── src/services/         # MapMatching, Geocoding, SafetyMatrix, Isochrone, POI
+      ├── src/ingest/           # CSV Data Loaders & FAISS Vector Embedder (695 vectors)
+      └── src/tests/            # 32 Unit Tests + 11 E2E System Tests
 ```
 
-## Build & Run
+---
 
-### Prerequisites
-- Node.js >= 18
-- JDK 17
-- Android SDK (API 34)
-- Python 3.11
+## Development Setup
 
-### Setup
+### Backend Setup
 ```bash
-# Frontend
-cd frontend && npm install
-
-# Build debug APK
-set ANDROID_HOME=C:\AndroidSDK
-set JAVA_HOME=C:\Program Files\Microsoft\jdk-17.0.18.8-hotspot
-cd frontend/android && gradlew assembleDebug
-
-# Install on device
-adb install -r frontend/android/app/build/outputs/apk/debug/app-debug.apk
-
-# Start Metro dev server
-cd frontend && npx react-native start
+cd backend
+python -m pip install -r requirements.txt
+python src/server.py
 ```
 
-### Backend (standalone)
+### Frontend Setup
 ```bash
-cd backend && python -m src.scrapers.run     # Scrape official sources
-cd backend && python -m src.scrapers.verify  # Review → mark verified
-cd backend && python -m src.ingest.ingest_scraped  # Ingest into SQLite
+cd frontend
+npm install
+npm run android
 ```
 
-## Data Pipeline
+### Test Suite Execution
+```bash
+# Run 32 Backend Unit Tests
+PYTHONPATH=backend/src python backend/src/run_tests.py
 
-1. **Scrape** — `src/scrapers/parivahan.py`, `state_transport.py` fetch from Parivahan/state transport sites
-2. **Review** — `src/scrapers/verify.py` promotes `draft` → `verified` with reviewer metadata
-3. **Ingest** — `src/ingest/ingest_scraped.py` upserts into SQLite, recomputes integrity checkpoints
-4. **Verify** — `src/security.py` SHA-256 checksums detect database tampering
+# Run 11 End-to-End System Tests
+PYTHONPATH=backend/src python backend/src/tests/test_e2e_full_system.py
 
-## Data Sources
+# Run Frontend TypeCheck
+cd frontend && npx tsc --noEmit
+```
 
-11 annotated official sources including:
-- Parivahan (Ministry of Road Transport & Highways)
-- data.gov.in (Open Government Data Platform)
-- Tamil Nadu Transport Department
-- Karnataka Transport Department
+---
 
-## License
+## License & Data Sourcing
 
-MIT
+- All legal and accident data are sourced strictly from public MoRTH gazette notifications, state RTO releases, and OpenStreetMap (ODbL).

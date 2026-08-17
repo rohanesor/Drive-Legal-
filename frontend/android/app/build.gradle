@@ -1,11 +1,5 @@
 /**
- * Android app module build configuration
- * 
- * Key configurations:
- * - Applies Chaquopy plugin to embed Python runtime in the Android app
- * - Configures Python packages (faiss, onnxruntime, pywhispercpp)
- * - Sets up React Native autolinking
- * - Enables large heap for ML model memory requirements
+ * Android app module build configuration for Vazhi
  */
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
@@ -29,9 +23,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.drivelegal"
+    namespace "com.vazhi"
     defaultConfig {
-        applicationId "com.drivelegal"
+        applicationId "com.vazhi"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

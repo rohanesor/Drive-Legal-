@@ -1,4 +1,4 @@
-name: DriveLegal AWS Deployment CI/CD
+name: Vazhi AWS Deployment CI/CD
 
 on:
   push:
