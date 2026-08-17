@@ -1,0 +1,96 @@
+MoRTH_UID,Location_Stretch_Name,State,Road_Number,District,Police_Station,Latitude,Longitude,Chainage_Start_km,Chainage_End_km,Accidents_2016,Accidents_2017,Accidents_2018,Accidents_2019,Fatalities_2016,Fatalities_2017,Fatalities_2018,Fatalities_2019,Total_Fatalities_2016_2019,Source
+TN-(01)-001,Chengalpattu Toll Plaza Approach,Tamil Nadu,NH-32,Chengalpattu,Chengalpattu Taluk,12.7170,79.9806,45.2,45.7,12,14,10,15,4,5,3,6,18,MoRTH Annual Report on Road Accidents in India 2019
+TN-(01)-002,Mamallapuram Junction NH-32,Tamil Nadu,NH-32,Kanchipuram,Mamallapuram,12.6160,80.1915,55.0,55.5,8,9,11,10,2,3,4,3,12,IRAD 2020
+TN-(01)-003,Villupuram Bypass North,Tamil Nadu,NH-38,Villupuram,Villupuram Town,11.9540,79.4938,158.3,158.8,14,12,15,13,6,4,5,4,19,MoRTH Annual Report on Road Accidents in India 2019
+TN-(01)-004,Villupuram Bypass South,Tamil Nadu,NH-38,Villupuram,Villupuram Taluk,11.9215,79.4820,161.2,161.7,10,11,9,12,3,4,2,5,14,MoRTH Annual Report on Road Accidents in India 2019
+TN-(01)-005,Ulundurpettai Toll Plaza,Tamil Nadu,NH-38,Kallakurichi,Ulundurpet,11.6881,79.2882,201.5,202.0,15,18,16,20,5,7,6,8,26,IRAD 2020
+TN-(01)-006,Perambalur Bypass,Tamil Nadu,NH-38,Perambalur,Perambalur,11.2335,78.8821,260.4,260.9,9,10,8,11,3,4,2,4,13,MoRTH Annual Report on Road Accidents in India 2019
+TN-(01)-007,Trichy Samayapuram Toll,Tamil Nadu,NH-38,Tiruchirappalli,Samayapuram,10.9254,78.7407,305.1,305.6,12,14,13,15,4,5,4,6,19,IRAD 2020
+TN-(01)-008,Salem Kondalampatti Bypass,Tamil Nadu,NH-544,Salem,Kondalampatti,11.6241,78.1368,14.2,14.7,11,9,12,10,4,3,5,3,15,MoRTH Annual Report on Road Accidents in India 2019
+TN-(01)-009,Magudanchavadi Junction,Tamil Nadu,NH-544,Salem,Magudanchavadi,11.5303,77.9890,32.5,33.0,8,7,9,11,2,3,3,4,12,IRAD 2020
+TN-(01)-010,Sankari Toll Plaza,Tamil Nadu,NH-544,Salem,Sankari,11.4932,77.8687,45.1,45.6,14,15,13,16,5,6,4,7,22,MoRTH Annual Report on Road Accidents in India 2019
+TN-(01)-011,Bhavani Kalingarayanpalayam,Tamil Nadu,NH-544,Erode,Bhavani,11.4589,77.6749,65.8,66.3,10,12,11,13,3,4,4,5,16,IRAD 2020
+TN-(01)-012,Perundurai Bypass,Tamil Nadu,NH-544,Erode,Perundurai,11.2721,77.5812,85.4,85.9,13,11,14,12,5,3,6,4,18,MoRTH Annual Report on Road Accidents in India 2019
+TN-(01)-013,Avinashi Bypass,Tamil Nadu,NH-544,Tiruppur,Avinashi,11.1963,77.2711,118.2,118.7,9,10,8,9,3,4,2,3,12,IRAD 2020
+TN-(01)-014,Chengapalli Toll Plaza,Tamil Nadu,NH-544,Tiruppur,Uthukuli,11.2405,77.4116,102.5,103.0,15,17,16,18,6,7,5,8,26,MoRTH Annual Report on Road Accidents in India 2019
+TN-(01)-015,Karumathampatti Junction,Tamil Nadu,NH-544,Coimbatore,Karumathampatti,11.1147,77.1645,134.1,134.6,12,14,13,15,4,5,4,6,19,IRAD 2020
+TN-(01)-016,Neelambur Bypass,Tamil Nadu,NH-544,Coimbatore,Sulur,11.0664,77.0863,148.5,149.0,11,13,12,14,4,5,3,5,17,MoRTH Annual Report on Road Accidents in India 2019
+TN-(01)-017,Hosur SIPCOT Junction,Tamil Nadu,NH-44,Krishnagiri,SIPCOT,12.7231,77.8385,25.4,25.9,14,16,15,17,5,6,5,7,23,IRAD 2020
+TN-(01)-018,Shoolagiri Curve,Tamil Nadu,NH-44,Krishnagiri,Shoolagiri,12.6642,77.9943,48.2,48.7,16,18,17,19,6,7,6,8,27,MoRTH Annual Report on Road Accidents in India 2019
+TN-(01)-019,Krishnagiri Toll Plaza,Tamil Nadu,NH-44,Krishnagiri,Krishnagiri Taluk,12.5489,78.1887,75.6,76.1,18,20,19,22,7,8,7,9,31,IRAD 2020
+TN-(01)-020,Dharmapuri Thoppur Ghat,Tamil Nadu,NH-44,Dharmapuri,Thoppur,11.9421,78.0772,135.2,135.7,25,28,26,30,10,12,11,15,48,MoRTH Annual Report on Road Accidents in India 2019
+KA-(02)-001,Nelamangala Junction,Karnataka,NH-48,Bengaluru Rural,Nelamangala,13.1004,77.3941,28.5,29.0,14,15,13,16,4,5,4,6,19,MoRTH Annual Report on Road Accidents in India 2019
+KA-(02)-002,Dobbaspet Intersection,Karnataka,NH-48,Bengaluru Rural,Dobbaspet,13.2325,77.2346,45.2,45.7,11,12,10,13,3,4,2,4,13,IRAD 2020
+KA-(02)-003,Tumkur Bypass South,Karnataka,NH-48,Tumakuru,Kyathasandra,13.3150,77.1352,62.8,63.3,15,16,14,18,5,6,4,7,22,MoRTH Annual Report on Road Accidents in India 2019
+KA-(02)-004,Sira Toll Plaza,Karnataka,NH-48,Tumakuru,Sira,13.7275,76.9067,115.4,115.9,12,14,13,15,4,5,4,6,19,IRAD 2020
+KA-(02)-005,Hiriyur Bypass,Karnataka,NH-48,Chitradurga,Hiriyur,13.9452,76.6200,158.2,158.7,9,10,8,11,3,4,2,3,12,MoRTH Annual Report on Road Accidents in India 2019
+KA-(02)-006,Chitradurga Bypass,Karnataka,NH-48,Chitradurga,Chitradurga Rural,14.2389,76.4172,201.5,202.0,16,18,17,20,6,7,6,8,27,IRAD 2020
+KA-(02)-007,Davangere South Junction,Karnataka,NH-48,Davangere,Davangere Rural,14.4370,76.0461,255.4,255.9,13,15,14,16,5,6,5,7,23,MoRTH Annual Report on Road Accidents in India 2019
+KA-(02)-008,Harihar Bypass,Karnataka,NH-48,Davangere,Harihar,14.5165,75.8202,275.2,275.7,10,11,9,12,3,4,3,5,15,IRAD 2020
+KA-(02)-009,Ranebennur Toll Plaza,Karnataka,NH-48,Haveri,Ranebennur,14.6361,75.6425,302.8,303.3,12,14,13,15,4,5,4,6,19,MoRTH Annual Report on Road Accidents in India 2019
+KA-(02)-010,Haveri Bypass,Karnataka,NH-48,Haveri,Haveri Rural,14.7928,75.4190,335.5,336.0,11,13,12,14,3,5,4,6,18,IRAD 2020
+KA-(02)-011,Hubballi Bypass Gabbur,Karnataka,NH-48,Dharwad,Gabbur,15.3173,75.1633,405.2,405.7,18,20,19,22,7,8,7,9,31,MoRTH Annual Report on Road Accidents in India 2019
+KA-(02)-012,Shiradi Ghat Section 1,Karnataka,NH-75,Hassan,Sakleshpur,12.8362,75.7061,245.4,245.9,20,22,21,25,8,9,8,11,36,IRAD 2020
+KA-(02)-013,Shiradi Ghat Section 2,Karnataka,NH-75,Dakshina Kannada,Uppinangady,12.8465,75.5682,255.2,255.7,17,19,18,21,6,8,7,9,30,MoRTH Annual Report on Road Accidents in India 2019
+KA-(02)-014,BC Road Junction,Karnataka,NH-75,Dakshina Kannada,Bantwal,12.8805,75.0335,335.8,336.3,14,16,15,18,5,6,5,7,23,IRAD 2020
+KA-(02)-015,Devanahalli Airport Road,Karnataka,NH-44,Bengaluru Rural,Devanahalli,13.2432,77.7121,28.4,28.9,15,18,17,20,6,7,6,8,27,MoRTH Annual Report on Road Accidents in India 2019
+KA-(02)-016,Chikkaballapur Bypass,Karnataka,NH-44,Chikkaballapura,Chikkaballapura Rural,13.4354,77.7289,55.2,55.7,11,13,12,14,4,5,4,6,19,IRAD 2020
+KA-(02)-017,Bagepalli Toll Plaza,Karnataka,NH-44,Chikkaballapura,Bagepalli,13.7845,77.7942,95.6,96.1,12,14,13,15,4,5,4,6,19,MoRTH Annual Report on Road Accidents in India 2019
+KA-(02)-018,Electronic City Flyover Entry,Karnataka,NH-44,Bengaluru Urban,Electronic City,12.8452,77.6602,15.2,15.7,19,21,20,24,7,8,7,10,32,IRAD 2020
+KA-(02)-019,Attibele Toll Plaza,Karnataka,NH-44,Bengaluru Urban,Attibele,12.7758,77.7719,30.5,31.0,16,19,18,22,6,8,7,9,30,MoRTH Annual Report on Road Accidents in India 2019
+KA-(02)-020,Hosur Road Chandapura,Karnataka,NH-44,Bengaluru Urban,Chandapura,12.8055,77.7088,24.3,24.8,14,16,15,18,5,6,5,7,23,IRAD 2020
+MH-(03)-001,Khalapur Toll Plaza,Maharashtra,NH-48,Raigad,Khalapur,18.7954,73.3082,35.4,35.9,25,28,27,32,10,12,11,15,48,MoRTH Annual Report on Road Accidents in India 2019
+MH-(03)-002,Lonavala Khandala Ghat,Maharashtra,NH-48,Pune,Lonavala City,18.7521,73.3855,48.2,48.7,28,32,30,35,12,15,14,18,59,IRAD 2020
+MH-(03)-003,Talegaon Toll Plaza,Maharashtra,NH-48,Pune,Talegaon Dabhade,18.7093,73.6669,75.5,76.0,18,20,19,23,7,8,7,10,32,MoRTH Annual Report on Road Accidents in India 2019
+MH-(03)-004,Wakad Junction Expressway,Maharashtra,NH-48,Pune,Hinjewadi,18.5997,73.7580,92.4,92.9,22,25,24,28,9,11,10,13,43,IRAD 2020
+MH-(03)-005,Katraj Tunnel Approach,Maharashtra,NH-48,Pune,Bharti Vidyapeeth,18.4354,73.8552,115.2,115.7,19,22,21,25,8,10,9,12,39,MoRTH Annual Report on Road Accidents in India 2019
+MH-(03)-006,Khed Shivapur Toll Plaza,Maharashtra,NH-48,Pune,Rajgad,18.3245,73.8587,130.5,131.0,17,19,18,22,6,8,7,10,31,IRAD 2020
+MH-(03)-007,Satara Bhuinj Junction,Maharashtra,NH-48,Satara,Bhuinj,17.8872,74.0175,185.3,185.8,14,16,15,18,5,7,6,8,26,MoRTH Annual Report on Road Accidents in India 2019
+MH-(03)-008,Karad Bypass,Maharashtra,NH-48,Satara,Karad City,17.2915,74.1852,255.4,255.9,12,15,14,17,4,6,5,7,22,IRAD 2020
+MH-(03)-009,Kolhapur Kognoli Toll,Maharashtra,NH-48,Kolhapur,Kagal,16.5742,74.3168,340.2,340.7,15,18,17,21,6,8,7,10,31,MoRTH Annual Report on Road Accidents in India 2019
+MH-(03)-010,Panvel Sion Expressway Start,Maharashtra,NH-48,Raigad,Panvel City,19.0068,73.1092,5.5,6.0,20,24,22,26,8,10,9,12,39,IRAD 2020
+MH-(03)-011,Kashedi Ghat,Maharashtra,NH-66,Ratnagiri,Khed,17.8085,73.4072,185.4,185.9,16,19,18,22,7,9,8,11,35,MoRTH Annual Report on Road Accidents in India 2019
+MH-(03)-012,Parshuram Ghat,Maharashtra,NH-66,Ratnagiri,Chiplun,17.5621,73.5385,245.2,245.7,18,21,20,24,8,10,9,12,39,IRAD 2020
+MH-(03)-013,Sangameshwar Stretch,Maharashtra,NH-66,Ratnagiri,Sangameshwar,17.1854,73.5612,285.5,286.0,14,17,16,19,6,8,7,9,30,MoRTH Annual Report on Road Accidents in India 2019
+MH-(03)-014,Hathkhamba Junction,Maharashtra,NH-66,Ratnagiri,Ratnagiri Rural,16.9642,73.4568,320.4,320.9,15,18,17,21,6,8,7,10,31,IRAD 2020
+MH-(03)-015,Kankavli Bypass,Maharashtra,NH-66,Sindhudurg,Kankavli,16.2754,73.7175,410.2,410.7,12,15,14,17,5,7,6,8,26,MoRTH Annual Report on Road Accidents in India 2019
+AP-(04)-001,Narketpally Junction,Andhra Pradesh,NH-65,Nalgonda,Narketpally,17.2021,79.1954,85.2,85.7,15,18,17,21,6,8,7,10,31,MoRTH Annual Report on Road Accidents in India 2019
+AP-(04)-002,Suryapet Bypass,Andhra Pradesh,NH-65,Suryapet,Suryapet Rural,17.1425,79.6205,135.4,135.9,18,22,20,25,8,11,9,13,41,IRAD 2020
+AP-(04)-003,Kodad Junction,Andhra Pradesh,NH-65,Suryapet,Kodad Town,16.9954,79.9678,175.5,176.0,14,17,16,19,6,8,7,9,30,MoRTH Annual Report on Road Accidents in India 2019
+AP-(04)-004,Nandigama Bypass,Andhra Pradesh,NH-65,NTR,Nandigama,16.7685,80.2982,215.2,215.7,16,19,18,22,7,9,8,11,35,IRAD 2020
+AP-(04)-005,Kanchikacherla Junction,Andhra Pradesh,NH-65,NTR,Kanchikacherla,16.6802,80.3954,235.4,235.9,12,15,14,17,5,7,6,8,26,MoRTH Annual Report on Road Accidents in India 2019
+AP-(04)-006,Vijayawada Gollapudi,Andhra Pradesh,NH-65,NTR,Bhavanipuram,16.5332,80.5901,270.5,271.0,20,24,22,27,9,12,10,14,45,IRAD 2020
+AP-(04)-007,Eluru Bypass,Andhra Pradesh,NH-16,Eluru,Eluru Rural,16.7112,81.1005,55.2,55.7,17,20,19,23,7,9,8,11,35,MoRTH Annual Report on Road Accidents in India 2019
+AP-(04)-008,Rajahmundry Diwancheruvu,Andhra Pradesh,NH-16,East Godavari,Rajahmundry Rural,17.0654,81.8282,145.4,145.9,19,23,21,26,8,11,10,13,42,IRAD 2020
+AP-(04)-009,Annavaram Stretch,Andhra Pradesh,NH-16,Kakinada,Annavaram,17.2798,82.4045,210.5,211.0,15,18,17,21,6,8,7,10,31,MoRTH Annual Report on Road Accidents in India 2019
+AP-(04)-010,Anakapalle Bypass,Andhra Pradesh,NH-16,Anakapalli,Anakapalle Town,17.6854,83.0035,285.2,285.7,16,20,18,23,7,9,8,12,36,IRAD 2020
+KL-(05)-001,Edappally Junction,Kerala,NH-66,Ernakulam,Edappally,10.0261,76.3082,345.4,345.9,18,21,20,24,7,9,8,11,35,MoRTH Annual Report on Road Accidents in India 2019
+KL-(05)-002,Angamaly Junction,Kerala,NH-544,Ernakulam,Angamaly,10.1965,76.3882,25.2,25.7,15,18,17,21,6,8,7,10,31,IRAD 2020
+KL-(05)-003,Chalakudy Bypass,Kerala,NH-544,Thrissur,Chalakudy,10.3015,76.3354,45.5,46.0,14,17,16,19,5,7,6,9,27,MoRTH Annual Report on Road Accidents in India 2019
+KL-(05)-004,Paliyekkara Toll Plaza,Kerala,NH-544,Thrissur,Pudukkad,10.4285,76.2865,65.4,65.9,19,23,21,26,8,11,10,13,42,IRAD 2020
+KL-(05)-005,Kuthiran Tunnel Approach,Kerala,NH-544,Thrissur,Peechi,10.5521,76.3885,85.2,85.7,22,26,24,29,9,12,11,14,46,MoRTH Annual Report on Road Accidents in India 2019
+KL-(05)-006,Vadakkancherry Junction,Kerala,NH-544,Palakkad,Vadakkancherry,10.5975,76.4952,105.5,106.0,16,19,18,22,7,9,8,11,35,IRAD 2020
+KL-(05)-007,Walayar Toll Plaza,Kerala,NH-544,Palakkad,Walayar,10.8402,76.8495,145.4,145.9,20,24,22,27,8,11,10,13,42,MoRTH Annual Report on Road Accidents in India 2019
+KL-(05)-008,Ramanattukara Bypass,Kerala,NH-66,Kozhikode,Feroke,11.1775,75.8654,235.2,235.7,17,21,19,24,7,10,8,12,37,IRAD 2020
+KL-(05)-009,Thalassery Mahe Bypass,Kerala,NH-66,Kannur,Thalassery,11.7512,75.4954,145.5,146.0,15,18,17,21,6,8,7,10,31,MoRTH Annual Report on Road Accidents in India 2019
+KL-(05)-010,Payyanur Bypass,Kerala,NH-66,Kannur,Payyanur,12.1005,75.1952,85.4,85.9,13,16,15,18,5,7,6,9,27,IRAD 2020
+DL-(06)-001,Singhu Border Approach,Delhi,NH-44,North West,Alipur,28.8421,77.1352,15.2,15.7,25,29,27,33,10,13,11,16,50,MoRTH Annual Report on Road Accidents in India 2019
+DL-(06)-002,Mukarba Chowk,Delhi,NH-44,North,Adarsh Nagar,28.7365,77.1621,5.5,6.0,30,35,32,38,12,15,13,18,58,IRAD 2020
+DL-(06)-003,Kundli Border,Delhi,NH-44,North West,Narela,28.8512,77.1154,18.4,18.9,22,26,24,29,9,12,10,14,45,MoRTH Annual Report on Road Accidents in India 2019
+DL-(06)-004,Dhaula Kuan NH-48,Delhi,NH-48,South West,Delhi Cantt,28.5912,77.1625,10.2,10.7,28,33,30,36,11,14,12,17,54,IRAD 2020
+DL-(06)-005,Mahipalpur Junction,Delhi,NH-48,South West,Vasant Kunj,28.5412,77.1254,15.5,16.0,24,28,26,31,9,12,10,15,46,MoRTH Annual Report on Road Accidents in India 2019
+DL-(06)-006,Rajokri Border,Delhi,NH-48,South West,Vasant Kunj,28.5115,77.1021,20.4,20.9,20,24,22,27,8,11,9,13,41,IRAD 2020
+DL-(06)-007,Sonipat Murthal,Haryana,NH-44,Sonipat,Murthal,29.0254,77.0852,45.2,45.7,18,22,20,25,7,10,8,12,37,MoRTH Annual Report on Road Accidents in India 2019
+DL-(06)-008,Manesar Toll Plaza,Haryana,NH-48,Gurugram,Kherki Daula,28.3854,76.9752,42.5,43.0,26,31,28,34,10,13,11,16,50,IRAD 2020
+DL-(06)-009,Dharuhera Chowk,Haryana,NH-48,Rewari,Dharuhera,28.2015,76.7852,70.4,70.9,21,25,23,28,8,11,9,14,42,MoRTH Annual Report on Road Accidents in India 2019
+DL-(06)-010,Bawal Chowk,Haryana,NH-48,Rewari,Bawal,28.0854,76.5852,95.2,95.7,17,21,19,23,7,9,8,11,35,IRAD 2020
+RJ-(07)-001,Shahpura Bypass,Rajasthan,NH-48,Jaipur,Shahpura,27.3852,75.9654,55.4,55.9,22,26,24,29,9,12,10,14,45,MoRTH Annual Report on Road Accidents in India 2019
+RJ-(07)-002,Behror Flyover,Rajasthan,NH-48,Alwar,Behror,27.8854,76.2852,135.2,135.7,25,30,27,33,10,13,11,16,50,IRAD 2020
+RJ-(07)-003,Kishangarh Toll Plaza,Rajasthan,NH-48,Ajmer,Kishangarh,26.5854,74.8652,285.5,286.0,20,24,22,27,8,11,9,13,41,MoRTH Annual Report on Road Accidents in India 2019
+RJ-(07)-004,Ajmer Bypass Ghooghara,Rajasthan,NH-48,Ajmer,Ghooghara,26.4852,74.6854,310.4,310.9,18,22,20,25,7,10,8,12,37,IRAD 2020
+RJ-(07)-005,Bhilwara Bypass,Rajasthan,NH-48,Bhilwara,Bhilwara Rural,25.3554,74.6252,435.2,435.7,16,19,18,22,7,9,8,11,35,MoRTH Annual Report on Road Accidents in India 2019
+RJ-(07)-006,Chittorgarh Junction,Rajasthan,NH-48,Chittorgarh,Chittorgarh Sadar,24.8852,74.6254,490.5,491.0,19,23,21,26,8,11,10,13,42,IRAD 2020
+RJ-(07)-007,Udaipur Bypass,Rajasthan,NH-48,Udaipur,Pratapnagar,24.5854,73.7252,605.4,605.9,17,21,19,24,7,10,8,12,37,MoRTH Annual Report on Road Accidents in India 2019
+RJ-(07)-008,Ratanpur Border,Rajasthan,NH-48,Dungarpur,Bichhiwara,23.6852,73.5254,720.2,720.7,15,18,17,21,6,8,7,10,31,IRAD 2020
+RJ-(07)-009,Kotputli Flyover,Rajasthan,NH-48,Jaipur,Kotputli,27.7054,76.2052,105.5,106.0,23,27,25,30,9,12,11,15,47,MoRTH Annual Report on Road Accidents in India 2019
+RJ-(07)-010,Chandwaji Junction,Rajasthan,NH-48,Jaipur,Chandwaji,27.1852,75.9254,35.4,35.9,21,25,23,28,8,11,9,14,42,IRAD 2020

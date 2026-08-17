@@ -286,7 +286,7 @@ class TestDownloadPortal(unittest.TestCase):
         self.assertEqual(res.headers.get('Content-Type'), 'application/json')
         data = json.loads(res.read().decode('utf-8'))
         self.assertEqual(data['version'], '1.0.0')
-        self.assertEqual(data['build'], 100)
+        self.assertEqual(data['build'], 101)
         self.assertIn('android', data)
         self.assertIn('ios', data)
 

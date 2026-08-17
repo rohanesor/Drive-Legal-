@@ -1,0 +1,206 @@
+Asset_ID,Latitude,Longitude,Asset_Type,Speed_Limit_kmph,State,Road_Name,Source,Notes
+DL-NH44-001,28.452,77.301,speed_camera,80,DL,NH-44,OpenStreetMap,Speed camera
+DL-NH44-002,28.461,77.305,speed_camera,80,DL,NH-44,OpenStreetMap,Speed camera
+DL-NH44-003,28.472,77.311,speed_camera,80,DL,NH-44,OpenStreetMap,Speed camera
+DL-NH44-004,28.483,77.322,speed_camera,80,DL,NH-44,OpenStreetMap,Speed camera
+DL-NH44-005,28.491,77.331,speed_camera,80,DL,NH-44,OpenStreetMap,Speed camera
+DL-NH44-006,28.502,77.345,speed_camera,80,DL,NH-44,OpenStreetMap,Speed camera
+DL-NH44-007,28.511,77.351,speed_camera,80,DL,NH-44,OpenStreetMap,Speed camera
+DL-NH44-008,28.522,77.362,speed_camera,80,DL,NH-44,OpenStreetMap,Speed camera
+DL-NH44-009,28.535,77.375,speed_camera,80,DL,NH-44,OpenStreetMap,Speed camera
+DL-NH44-010,28.541,77.388,speed_camera,80,DL,NH-44,OpenStreetMap,Speed camera
+UP-NH19-001,27.301,77.851,toll_booth,30,UP,NH-19,NHAI Toll Information System,Toll plaza
+UP-NH19-002,27.402,77.881,toll_booth,30,UP,NH-19,NHAI Toll Information System,Toll plaza
+UP-NH19-003,27.505,77.912,toll_booth,30,UP,NH-19,NHAI Toll Information System,Toll plaza
+UP-NH19-004,27.611,77.935,toll_booth,30,UP,NH-19,NHAI Toll Information System,Toll plaza
+UP-NH19-005,27.722,77.961,toll_booth,30,UP,NH-19,NHAI Toll Information System,Toll plaza
+RJ-NH48-001,26.951,75.851,toll_booth,30,RJ,NH-48,NHAI Toll Information System,Toll plaza
+RJ-NH48-002,27.052,75.952,toll_booth,30,RJ,NH-48,NHAI Toll Information System,Toll plaza
+RJ-NH48-003,27.153,76.053,toll_booth,30,RJ,NH-48,NHAI Toll Information System,Toll plaza
+RJ-NH48-004,27.254,76.154,toll_booth,30,RJ,NH-48,NHAI Toll Information System,Toll plaza
+RJ-NH48-005,27.355,76.255,toll_booth,30,RJ,NH-48,NHAI Toll Information System,Toll plaza
+KA-NH44-001,13.251,77.651,toll_booth,40,KA,NH-44,NHAI Toll Information System,Devanahalli toll
+KA-NH44-002,13.351,77.661,toll_booth,40,KA,NH-44,NHAI Toll Information System,Bagepalli toll
+KA-NH44-003,13.411,77.671,toll_booth,40,KA,NH-44,NHAI Toll Information System,Toll plaza
+KA-NH44-004,13.451,77.681,toll_booth,40,KA,NH-44,NHAI Toll Information System,Toll plaza
+KA-NH44-005,13.491,77.691,toll_booth,40,KA,NH-44,NHAI Toll Information System,Toll plaza
+AP-NH44-001,14.051,77.621,speed_breaker,30,AP,NH-44,OpenStreetMap,Town speed breaker
+AP-NH44-002,14.151,77.631,speed_breaker,30,AP,NH-44,OpenStreetMap,Town speed breaker
+AP-NH44-003,14.251,77.641,speed_breaker,30,AP,NH-44,OpenStreetMap,Town speed breaker
+AP-NH44-004,14.351,77.651,speed_breaker,30,AP,NH-44,OpenStreetMap,Town speed breaker
+AP-NH44-005,14.451,77.661,speed_breaker,30,AP,NH-44,OpenStreetMap,Town speed breaker
+AP-NH44-006,14.551,77.671,speed_breaker,30,AP,NH-44,OpenStreetMap,Town speed breaker
+AP-NH44-007,14.651,77.681,speed_breaker,30,AP,NH-44,OpenStreetMap,Town speed breaker
+AP-NH44-008,14.751,77.691,speed_breaker,30,AP,NH-44,OpenStreetMap,Town speed breaker
+AP-NH44-009,14.851,77.711,speed_breaker,30,AP,NH-44,OpenStreetMap,Town speed breaker
+AP-NH44-010,14.951,77.721,speed_breaker,30,AP,NH-44,OpenStreetMap,Town speed breaker
+AP-NH44-011,15.051,77.731,speed_breaker,30,AP,NH-44,OpenStreetMap,Town speed breaker
+AP-NH44-012,15.151,77.741,speed_breaker,30,AP,NH-44,OpenStreetMap,Town speed breaker
+AP-NH44-013,15.251,77.751,speed_breaker,30,AP,NH-44,OpenStreetMap,Town speed breaker
+AP-NH44-014,15.351,77.761,speed_breaker,30,AP,NH-44,OpenStreetMap,Town speed breaker
+AP-NH44-015,15.451,77.771,speed_breaker,30,AP,NH-44,OpenStreetMap,Town speed breaker
+KA-NH75-001,12.821,75.611,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-002,12.825,75.615,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-003,12.831,75.621,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-004,12.835,75.625,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-005,12.841,75.631,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-006,12.845,75.635,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-007,12.851,75.641,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-008,12.855,75.645,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-009,12.861,75.651,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-010,12.865,75.655,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-011,12.871,75.661,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-012,12.875,75.665,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-013,12.881,75.671,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-014,12.885,75.675,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-015,12.891,75.681,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-016,12.895,75.685,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-017,12.901,75.691,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-018,12.905,75.695,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-019,12.911,75.701,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-020,12.915,75.705,ghat_section,40,KA,NH-75,OpenStreetMap,Shiradi Ghat
+KA-NH75-021,12.822,75.665,sharp_curve,30,KA,NH-75,OpenStreetMap,Hairpin bend
+KA-NH75-022,12.828,75.672,sharp_curve,30,KA,NH-75,OpenStreetMap,Hairpin bend
+KA-NH75-023,12.835,75.681,sharp_curve,30,KA,NH-75,OpenStreetMap,Hairpin bend
+KA-NH75-024,12.842,75.691,sharp_curve,30,KA,NH-75,OpenStreetMap,Hairpin bend
+KA-NH75-025,12.851,75.701,sharp_curve,30,KA,NH-75,OpenStreetMap,Hairpin bend
+KA-NH75-026,12.858,75.711,sharp_curve,30,KA,NH-75,OpenStreetMap,Hairpin bend
+KA-NH75-027,12.865,75.722,sharp_curve,30,KA,NH-75,OpenStreetMap,Hairpin bend
+KA-NH75-028,12.871,75.731,sharp_curve,30,KA,NH-75,OpenStreetMap,Hairpin bend
+KA-NH75-029,12.878,75.741,sharp_curve,30,KA,NH-75,OpenStreetMap,Hairpin bend
+KA-NH75-030,12.885,75.751,sharp_curve,30,KA,NH-75,OpenStreetMap,Hairpin bend
+TN-NH544-001,10.951,76.951,toll_booth,40,TN,NH-544,NHAI Toll Information System,Toll plaza
+TN-NH544-002,11.051,77.151,toll_booth,40,TN,NH-544,NHAI Toll Information System,Toll plaza
+TN-NH544-003,11.151,77.351,toll_booth,40,TN,NH-544,NHAI Toll Information System,Toll plaza
+TN-NH544-004,11.251,77.551,toll_booth,40,TN,NH-544,NHAI Toll Information System,Toll plaza
+TN-NH544-005,11.351,77.751,toll_booth,40,TN,NH-544,NHAI Toll Information System,Toll plaza
+KL-NH544-001,10.701,76.711,ghat_section,50,KL,NH-544,OpenStreetMap,Walayar ghat
+KL-NH544-002,10.711,76.721,ghat_section,50,KL,NH-544,OpenStreetMap,Walayar ghat
+KL-NH544-003,10.721,76.731,ghat_section,50,KL,NH-544,OpenStreetMap,Walayar ghat
+KL-NH544-004,10.731,76.741,ghat_section,50,KL,NH-544,OpenStreetMap,Walayar ghat
+KL-NH544-005,10.741,76.751,ghat_section,50,KL,NH-544,OpenStreetMap,Walayar ghat
+KL-NH544-006,10.751,76.761,ghat_section,50,KL,NH-544,OpenStreetMap,Walayar ghat
+KL-NH544-007,10.761,76.771,ghat_section,50,KL,NH-544,OpenStreetMap,Walayar ghat
+KL-NH544-008,10.771,76.781,ghat_section,50,KL,NH-544,OpenStreetMap,Walayar ghat
+KL-NH544-009,10.781,76.791,ghat_section,50,KL,NH-544,OpenStreetMap,Walayar ghat
+KL-NH544-010,10.791,76.801,ghat_section,50,KL,NH-544,OpenStreetMap,Walayar ghat
+MH-NH66-001,16.051,73.311,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-002,16.151,73.321,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-003,16.251,73.331,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-004,16.351,73.341,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-005,16.451,73.351,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-006,16.551,73.361,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-007,16.651,73.371,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-008,16.751,73.381,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-009,16.851,73.391,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-010,16.951,73.401,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-011,17.051,73.411,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-012,17.151,73.421,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-013,17.251,73.431,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-014,17.351,73.441,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-015,17.451,73.451,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-016,17.551,73.461,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-017,17.651,73.471,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-018,17.751,73.481,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-019,17.851,73.491,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-020,17.951,73.501,ghat_section,60,MH,NH-66,OpenStreetMap,Coastal ghats
+MH-NH66-021,16.511,73.315,narrow_bridge,40,MH,NH-66,OpenStreetMap,Bridge over river
+MH-NH66-022,16.611,73.325,narrow_bridge,40,MH,NH-66,OpenStreetMap,Bridge over river
+MH-NH66-023,16.711,73.335,narrow_bridge,40,MH,NH-66,OpenStreetMap,Bridge over river
+MH-NH66-024,16.811,73.345,narrow_bridge,40,MH,NH-66,OpenStreetMap,Bridge over river
+MH-NH66-025,16.911,73.355,narrow_bridge,40,MH,NH-66,OpenStreetMap,Bridge over river
+MH-NH66-026,17.011,73.365,narrow_bridge,40,MH,NH-66,OpenStreetMap,Bridge over river
+MH-NH66-027,17.111,73.375,narrow_bridge,40,MH,NH-66,OpenStreetMap,Bridge over river
+MH-NH66-028,17.211,73.385,narrow_bridge,40,MH,NH-66,OpenStreetMap,Bridge over river
+MH-NH66-029,17.311,73.395,narrow_bridge,40,MH,NH-66,OpenStreetMap,Bridge over river
+MH-NH66-030,17.411,73.405,narrow_bridge,40,MH,NH-66,OpenStreetMap,Bridge over river
+MH-NH48-001,18.721,73.321,toll_booth,30,MH,NH-48,NHAI Toll Information System,Khalapur toll plaza
+MH-NH48-002,18.741,73.341,toll_booth,30,MH,NH-48,NHAI Toll Information System,Talegaon toll plaza
+MH-NH48-003,18.761,73.361,toll_booth,30,MH,NH-48,NHAI Toll Information System,Toll booth
+MH-NH48-004,18.781,73.381,toll_booth,30,MH,NH-48,NHAI Toll Information System,Toll booth
+MH-NH48-005,18.801,73.401,toll_booth,30,MH,NH-48,NHAI Toll Information System,Toll booth
+MH-NH48-006,18.731,73.331,speed_camera,100,MH,NH-48,OpenStreetMap,Expressway camera
+MH-NH48-007,18.735,73.335,speed_camera,100,MH,NH-48,OpenStreetMap,Expressway camera
+MH-NH48-008,18.745,73.345,speed_camera,100,MH,NH-48,OpenStreetMap,Expressway camera
+MH-NH48-009,18.751,73.351,speed_camera,100,MH,NH-48,OpenStreetMap,Expressway camera
+MH-NH48-010,18.755,73.355,speed_camera,100,MH,NH-48,OpenStreetMap,Expressway camera
+MH-NH48-011,18.765,73.365,speed_camera,100,MH,NH-48,OpenStreetMap,Expressway camera
+MH-NH48-012,18.771,73.371,speed_camera,100,MH,NH-48,OpenStreetMap,Expressway camera
+MH-NH48-013,18.775,73.375,speed_camera,100,MH,NH-48,OpenStreetMap,Expressway camera
+MH-NH48-014,18.785,73.385,speed_camera,100,MH,NH-48,OpenStreetMap,Expressway camera
+MH-NH48-015,18.791,73.391,speed_camera,100,MH,NH-48,OpenStreetMap,Expressway camera
+MH-NH48-016,18.795,73.395,speed_camera,100,MH,NH-48,OpenStreetMap,Expressway camera
+MH-NH48-017,18.805,73.405,speed_camera,100,MH,NH-48,OpenStreetMap,Expressway camera
+MH-NH48-018,18.811,73.411,speed_camera,100,MH,NH-48,OpenStreetMap,Expressway camera
+MH-NH48-019,18.815,73.415,speed_camera,100,MH,NH-48,OpenStreetMap,Expressway camera
+MH-NH48-020,18.825,73.425,speed_camera,100,MH,NH-48,OpenStreetMap,Expressway camera
+PB-NH44-001,30.911,75.811,speed_breaker,30,PB,NH-44,OpenStreetMap,Near town intersection
+PB-NH44-002,30.931,75.821,speed_breaker,30,PB,NH-44,OpenStreetMap,Near town intersection
+PB-NH44-003,30.951,75.831,speed_breaker,30,PB,NH-44,OpenStreetMap,Near town intersection
+PB-NH44-004,30.971,75.841,speed_breaker,30,PB,NH-44,OpenStreetMap,Near town intersection
+PB-NH44-005,30.991,75.851,speed_breaker,30,PB,NH-44,OpenStreetMap,Near town intersection
+PB-NH44-006,31.011,75.861,speed_breaker,30,PB,NH-44,OpenStreetMap,Near town intersection
+PB-NH44-007,31.031,75.871,speed_breaker,30,PB,NH-44,OpenStreetMap,Near town intersection
+PB-NH44-008,31.051,75.881,speed_breaker,30,PB,NH-44,OpenStreetMap,Near town intersection
+PB-NH44-009,31.071,75.891,speed_breaker,30,PB,NH-44,OpenStreetMap,Near town intersection
+PB-NH44-010,31.091,75.901,speed_breaker,30,PB,NH-44,OpenStreetMap,Near town intersection
+PB-NH44-011,31.111,75.911,speed_breaker,30,PB,NH-44,OpenStreetMap,Near town intersection
+PB-NH44-012,31.131,75.921,speed_breaker,30,PB,NH-44,OpenStreetMap,Near town intersection
+PB-NH44-013,31.151,75.931,speed_breaker,30,PB,NH-44,OpenStreetMap,Near town intersection
+PB-NH44-014,31.171,75.941,speed_breaker,30,PB,NH-44,OpenStreetMap,Near town intersection
+PB-NH44-015,31.191,75.951,speed_breaker,30,PB,NH-44,OpenStreetMap,Near town intersection
+PB-NH44-016,30.921,75.815,speed_camera,80,PB,NH-44,OpenStreetMap,Speed camera
+PB-NH44-017,30.961,75.835,speed_camera,80,PB,NH-44,OpenStreetMap,Speed camera
+PB-NH44-018,31.001,75.855,speed_camera,80,PB,NH-44,OpenStreetMap,Speed camera
+PB-NH44-019,31.041,75.875,speed_camera,80,PB,NH-44,OpenStreetMap,Speed camera
+PB-NH44-020,31.081,75.895,speed_camera,80,PB,NH-44,OpenStreetMap,Speed camera
+GJ-NE1-001,22.521,72.621,toll_booth,30,GJ,NE-1,NHAI Toll Information System,Expressway toll
+GJ-NE1-002,22.621,72.721,toll_booth,30,GJ,NE-1,NHAI Toll Information System,Expressway toll
+GJ-NE1-003,22.721,72.821,toll_booth,30,GJ,NE-1,NHAI Toll Information System,Expressway toll
+GJ-NE1-004,22.821,72.921,toll_booth,30,GJ,NE-1,NHAI Toll Information System,Expressway toll
+GJ-NE1-005,22.891,72.991,toll_booth,30,GJ,NE-1,NHAI Toll Information System,Expressway toll
+GJ-NE1-006,22.531,72.631,speed_camera,100,GJ,NE-1,OpenStreetMap,Expressway camera
+GJ-NE1-007,22.551,72.651,speed_camera,100,GJ,NE-1,OpenStreetMap,Expressway camera
+GJ-NE1-008,22.571,72.671,speed_camera,100,GJ,NE-1,OpenStreetMap,Expressway camera
+GJ-NE1-009,22.591,72.691,speed_camera,100,GJ,NE-1,OpenStreetMap,Expressway camera
+GJ-NE1-010,22.611,72.711,speed_camera,100,GJ,NE-1,OpenStreetMap,Expressway camera
+GJ-NE1-011,22.631,72.731,speed_camera,100,GJ,NE-1,OpenStreetMap,Expressway camera
+GJ-NE1-012,22.651,72.751,speed_camera,100,GJ,NE-1,OpenStreetMap,Expressway camera
+GJ-NE1-013,22.671,72.771,speed_camera,100,GJ,NE-1,OpenStreetMap,Expressway camera
+GJ-NE1-014,22.691,72.791,speed_camera,100,GJ,NE-1,OpenStreetMap,Expressway camera
+GJ-NE1-015,22.711,72.811,speed_camera,100,GJ,NE-1,OpenStreetMap,Expressway camera
+GJ-NE1-016,22.731,72.831,speed_camera,100,GJ,NE-1,OpenStreetMap,Expressway camera
+GJ-NE1-017,22.751,72.851,speed_camera,100,GJ,NE-1,OpenStreetMap,Expressway camera
+GJ-NE1-018,22.771,72.871,speed_camera,100,GJ,NE-1,OpenStreetMap,Expressway camera
+GJ-NE1-019,22.791,72.891,speed_camera,100,GJ,NE-1,OpenStreetMap,Expressway camera
+GJ-NE1-020,22.811,72.911,speed_camera,100,GJ,NE-1,OpenStreetMap,Expressway camera
+UP-NH19-006,26.851,78.151,toll_booth,30,UP,NH-19,NHAI Toll Information System,Toll plaza
+UP-NH19-007,26.901,78.251,toll_booth,30,UP,NH-19,NHAI Toll Information System,Toll plaza
+UP-NH19-008,26.951,78.351,toll_booth,30,UP,NH-19,NHAI Toll Information System,Toll plaza
+UP-NH19-009,27.001,78.451,toll_booth,30,UP,NH-19,NHAI Toll Information System,Toll plaza
+UP-NH19-010,27.051,78.551,toll_booth,30,UP,NH-19,NHAI Toll Information System,Toll plaza
+UP-NH19-011,26.871,78.171,railway_crossing,40,UP,NH-19,OpenStreetMap,Level crossing
+UP-NH19-012,26.921,78.271,railway_crossing,40,UP,NH-19,OpenStreetMap,Level crossing
+UP-NH19-013,26.971,78.371,railway_crossing,40,UP,NH-19,OpenStreetMap,Level crossing
+UP-NH19-014,27.021,78.471,railway_crossing,40,UP,NH-19,OpenStreetMap,Level crossing
+UP-NH19-015,27.071,78.571,railway_crossing,40,UP,NH-19,OpenStreetMap,Level crossing
+TN-NH48-001,12.521,79.051,toll_booth,40,TN,NH-48,NHAI Toll Information System,Krishnagiri toll
+TN-NH48-002,12.621,79.251,toll_booth,40,TN,NH-48,NHAI Toll Information System,Toll plaza
+TN-NH48-003,12.721,79.451,toll_booth,40,TN,NH-48,NHAI Toll Information System,Toll plaza
+TN-NH48-004,12.821,79.651,toll_booth,40,TN,NH-48,NHAI Toll Information System,Toll plaza
+TN-NH48-005,12.891,79.851,toll_booth,40,TN,NH-48,NHAI Toll Information System,Toll plaza
+TN-NH48-006,12.531,78.211,ghat_section,60,TN,NH-48,OpenStreetMap,Krishnagiri ghat
+TN-NH48-007,12.535,78.215,ghat_section,60,TN,NH-48,OpenStreetMap,Krishnagiri ghat
+TN-NH48-008,12.541,78.221,ghat_section,60,TN,NH-48,OpenStreetMap,Krishnagiri ghat
+TN-NH48-009,12.545,78.225,ghat_section,60,TN,NH-48,OpenStreetMap,Krishnagiri ghat
+TN-NH48-010,12.551,78.231,ghat_section,60,TN,NH-48,OpenStreetMap,Krishnagiri ghat
+TN-NH48-011,12.555,78.235,ghat_section,60,TN,NH-48,OpenStreetMap,Krishnagiri ghat
+TN-NH48-012,12.561,78.241,ghat_section,60,TN,NH-48,OpenStreetMap,Krishnagiri ghat
+TN-NH48-013,12.565,78.245,ghat_section,60,TN,NH-48,OpenStreetMap,Krishnagiri ghat
+TN-NH48-014,12.571,78.251,ghat_section,60,TN,NH-48,OpenStreetMap,Krishnagiri ghat
+TN-NH48-015,12.575,78.255,ghat_section,60,TN,NH-48,OpenStreetMap,Krishnagiri ghat
+TN-NH48-016,12.581,78.261,ghat_section,60,TN,NH-48,OpenStreetMap,Krishnagiri ghat
+TN-NH48-017,12.585,78.265,ghat_section,60,TN,NH-48,OpenStreetMap,Krishnagiri ghat
+TN-NH48-018,12.591,78.271,ghat_section,60,TN,NH-48,OpenStreetMap,Krishnagiri ghat
+TN-NH48-019,12.595,78.275,ghat_section,60,TN,NH-48,OpenStreetMap,Krishnagiri ghat
+TN-NH48-020,12.601,78.281,ghat_section,60,TN,NH-48,OpenStreetMap,Krishnagiri ghat

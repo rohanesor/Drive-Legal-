@@ -1,0 +1,94 @@
+# project_config.yaml
+# Data sourcing & scraping policy for India Road Safety Dataset project
+# Drop this into the repo root and have scrape.py / build scripts read from it.
+
+data_sourcing:
+  proprietary_access: false
+  allowed_sources:
+    - "MoRTH published black spot reports (morth.nic.in, NHAI regional PDFs)"
+    - "State Gazette notifications (MV Act / compounding fine amendments)"
+    - "State transport department (RTO) official notifications"
+    - "OpenStreetMap / Overpass API (open, no key required)"
+  disallowed_sources:
+    - "Any proprietary/licensed accident or insurance datasets (none available)"
+    - "Bulk scraping of echallan.parivahan.gov.in (see scraping_policy)"
+  note: >
+    All accident and fine data must trace back to a public government
+    document. Every row in the output CSVs should carry a Source field
+    citing the specific report/notification it came from.
+
+state_priority:
+  # order = fetch priority
+  - code: TN
+    name: Tamil Nadu
+    status: pending
+  - code: KA
+    name: Karnataka
+    status: pending
+  - code: AP
+    name: Andhra Pradesh
+    status: pending
+  - code: KL
+    name: Kerala
+    status: pending
+  - code: MH
+    name: Maharashtra
+    status: pending
+  - code: DL
+    name: Delhi
+    status: pending
+  - code: RJ
+    name: Rajasthan
+    status: pending
+    note: "Partial MoRTH black-spot sheet already located, low-hanging fruit"
+  - code: UP
+    name: Uttar Pradesh
+    status: pending
+  - code: GJ
+    name: Gujarat
+    status: pending
+  - code: TS
+    name: Telangana
+    status: pending
+
+poi_api_keys:
+  google_places: null        # not held; user must supply
+  mappls_mapmyindia: null    # not held; user must supply
+  zomato: null                # not held; user must supply
+  openchargemap: null         # not held; user must supply if EV-charger POIs needed
+  overpass_osm: "no key required — open API"
+  note: >
+    No premium API keys are held by the assistant. If any of the above
+    are required, populate this section manually or via environment
+    variables (do NOT commit real keys to this file).
+
+scraping_policy:
+  morth_nic_in:
+    allowed: true
+    method: "direct fetch of published PDF/report pages"
+    reason: "Public ministry reports intended for distribution"
+  state_gazette_portals:
+    allowed: true
+    method: "direct fetch of notification PDFs"
+    reason: "Public legal notifications, aggregate policy data"
+  echallan_parivahan_gov_in:
+    allowed: false
+    reason: >
+      Portal is designed for per-vehicle citizen lookups, not bulk export.
+      Likely rate-limited/ToS-protected, and bulk pulls risk touching
+      personal data (registration numbers tied to individuals) rather
+      than aggregate fine schedules. Use Gazette / state MV Act
+      notifications instead to get fine amounts per offence.
+  automation_note: >
+    No persistent/background scraper is operated by the assistant within
+    this chat. Source discovery and single-document fetches are done
+    live per request. Any standalone scrape.py running outside this
+    conversation is the user's own infrastructure — assistant can help
+    identify and vet source URLs but does not execute long-running
+    scrapes against live government portals.
+
+output_schema_files:
+  black_spots: "black_spots_india.csv"
+  black_spots_template: "black_spots_template_other_states.csv"
+  road_conditions: "road_conditions_india.csv"
+  rto_fines: "rto_fines_india.csv"
