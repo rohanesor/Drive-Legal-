@@ -3,234 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DriveLegal - Android Auto</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Vazhi on Android Auto — Driver Co-Pilot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-color: #070d19;
-            --card-bg: #0f172a;
-            --accent-cyan: #00e5ff;
-            --accent-blue: #2563eb;
-            --text-primary: #ffffff;
-            --text-secondary: #a3a3a3;
-            --border-color: rgba(255, 255, 255, 0.08);
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem 1rem;
-        }
-
-        .container {
-            max-width: 800px;
-            width: 100%;
-        }
-
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            color: var(--accent-cyan);
-            text-decoration: none;
-            font-weight: 600;
-            margin-bottom: 2rem;
-            transition: var(--transition);
-        }
-
-        .back-link:hover {
-            opacity: 0.8;
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
-            padding: 3rem;
-            margin-bottom: 2rem;
-        }
-
-        .header-section {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            margin-bottom: 2.5rem;
-        }
-
-        .icon {
-            font-size: 3.5rem;
-        }
-
-        h1 {
-            font-size: 2.25rem;
-            font-weight: 800;
-            letter-spacing: -0.04em;
-        }
-
-        .alert-banner {
-            background: rgba(0, 229, 255, 0.05);
-            border: 1px solid rgba(0, 229, 255, 0.15);
-            border-radius: 14px;
-            padding: 1.25rem;
-            margin-bottom: 2.5rem;
-            font-weight: 600;
-            color: var(--accent-cyan);
-            text-align: center;
-        }
-
-        h2 {
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin-bottom: 1.25rem;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 0.5rem;
-            margin-top: 2rem;
-        }
-
-        ul, ol {
-            padding-left: 1.5rem;
-            margin-bottom: 2rem;
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-            line-height: 1.7;
-        }
-
-        li {
-            margin-bottom: 0.5rem;
-        }
-
-        .btn-download {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            padding: 1.25rem;
-            border-radius: 14px;
-            font-weight: 700;
-            font-size: 1.1rem;
-            text-decoration: none;
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
-            color: #000;
-            cursor: pointer;
-            transition: var(--transition);
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 15px rgba(0, 229, 255, 0.15);
-        }
-
-        .btn-download:hover {
-            opacity: 0.9;
-            transform: translateY(-2px);
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .info-item {
-            background-color: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.25rem;
-        }
-
-        .info-item label {
-            display: block;
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            margin-bottom: 0.25rem;
-            text-transform: uppercase;
-        }
-
-        .info-item span {
-            font-weight: 600;
-        }
-
-        @media (max-width: 768px) {
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0A0F1D; color: #FFFFFF; text-align: center; padding: 4rem 1rem; }
+        .card { background: #131C31; border: 1px solid #2A3B5C; border-radius: 20px; max-width: 550px; margin: 2rem auto; padding: 2.5rem; text-align: left; }
+        .btn { display: inline-block; background: linear-gradient(135deg, #00FFC2, #00E5FF); color: #0A0F1D; font-weight: 700; padding: 1rem 2rem; border-radius: 12px; text-decoration: none; font-size: 1.1rem; margin-top: 1.5rem; width: 100%; text-align: center; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <a href="/download" class="back-link">← Back to Portal</a>
-
-        <div class="card">
-            <div class="header-section">
-                <div class="icon">🚗</div>
-                <div>
-                    <h1>Android Auto Integration</h1>
-                    <p style="color: var(--text-secondary); margin-top: 0.25rem;">In-Car Safety Assistant</p>
-                </div>
-            </div>
-
-            <div class="alert-banner">
-                Android Auto-style driving mode is included in the core DriveLegal Android app.
-            </div>
-
-            <div class="info-grid">
-                <div class="info-item">
-                    <label>Car Mode Status</label>
-                    <span>Included in Main App</span>
-                </div>
-                <div class="info-item">
-                    <label>Min Android Version</label>
-                    <span>Android 8.0 (API 26)</span>
-                </div>
-                <div class="info-item">
-                    <label>Active App Version</label>
-                    <span id="app-ver">Loading...</span>
-                </div>
-                <div class="info-item">
-                    <label>Feature Type</label>
-                    <span>In-App Cockpit / Driving HUD Mode</span>
-                </div>
-            </div>
-
-            <a href="/download/android" class="btn-download">Get DriveLegal Android App</a>
-
-            <h2>Setup Instructions</h2>
-            <ol>
-                <li>Download and install the latest DriveLegal Android APK on your phone.</li>
-                <li>Open the app and switch to <strong>Car Mode</strong> from the navigation menu or bottom bar.</li>
-                <li>Mount your phone in a dashboard cradle for high-visibility hands-free HUD interface.</li>
-                <li>Use voice controls or big-button touch controls to ask traffic legal questions while driving.</li>
-            </ol>
-
-            <h2>Car Mode Features</h2>
-            <ul>
-                <li><strong>Hands-Free Voice Controls</strong>: Built-in native speech recognition and Text-To-Speech for minimum distraction.</li>
-                <li><strong>Predictive Zone Alerts</strong>: Automatic audio alerts when approaching high-risk zones, speed limit changes, or school zones.</li>
-            </ul>
+    <div class="card">
+        <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem; color: #00FFC2; text-align: center;">Android Auto Integration</h1>
+        <p style="color: #94A3B8; margin-bottom: 1.5rem; text-align: center;">Bring Vazhi to Your Vehicle Display</p>
+        <div style="background: rgba(0,255,194,0.15); color: #00FFC2; display: inline-block; padding: 0.4rem 1rem; border-radius: 20px; font-weight: 700; margin-bottom: 1.5rem;">
+            ● Available in Android App
         </div>
+        <p style="color: #94A3B8; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1rem;">
+            Android Auto is built directly into the official Vazhi Android application via <code style="color:#00E5FF;">VazhiCarAppService</code>.
+        </p>
+        <p style="color: #94A3B8; font-size: 0.95rem; line-height: 1.6;">
+            <strong>Setup Instructions:</strong><br>
+            1. Install the Vazhi Android APK on your smartphone.<br>
+            2. Connect your phone to your car using USB cable or Wireless Android Auto.<br>
+            3. Select <strong>Vazhi Navigation</strong> from your car's Android Auto launcher.
+        </p>
+        <a href="/download/files/vazhi-v1.0.0.apk" class="btn">Download Android APK</a>
     </div>
-
-    <script>
-        fetch('/releases/latest.json')
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('app-ver').innerText = 'v' + data.version + ' (' + data.build + ')';
-            })
-            .catch(err => {
-                console.error("Error loading release manifest:", err);
-                document.getElementById('app-ver').innerText = 'v1.0.0 (100)';
-            });
-    </script>
 </body>
 </html>

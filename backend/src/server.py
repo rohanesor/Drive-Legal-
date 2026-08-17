@@ -108,7 +108,7 @@ class VazhiServer(BaseHTTPRequestHandler):
         elif clean_path == '/download/releases':
             self.serve_static_file('releases.html', 'text/html', write_body)
             
-        elif clean_path == '/releases/latest.json':
+        elif clean_path == '/releases/latest.json' or clean_path == '/api/releases':
             self.serve_static_file('latest.json', 'application/json', write_body)
             
         elif clean_path == '/releases/history.json':

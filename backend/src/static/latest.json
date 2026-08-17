@@ -3,19 +3,29 @@
   "build": 101,
   "releaseDate": "2026-08-18",
   "android": {
-    "apk": "/download/files/DriveLegal-v1.0.0.apk",
-    "aab": "/download/files/DriveLegal-v1.0.0.aab",
+    "version": "1.0.0",
+    "build": 101,
+    "url": "/download/files/vazhi-v1.0.0.apk",
+    "apk": "/download/files/vazhi-v1.0.0.apk",
+    "aab": "/download/files/vazhi-v1.0.0.aab",
+    "size": "34.8 MB",
     "sha256": "08a0230161e05e298de7c1822ad5c57ac1bb58ec537215e3ff40b77389e9df9b",
     "minOs": "Android 8.0 (API 26)",
-    "architecture": "arm64-v8a"
+    "architecture": "arm64-v8a",
+    "status": "available"
   },
   "ios": {
+    "version": "1.0.0",
     "status": "coming_soon",
-    "note": "iOS version is coming soon. DriveLegal is currently available for Android."
+    "note": "Vazhi for iPhone is coming soon to the Apple App Store."
   },
   "androidAuto": {
-    "supported": true,
-    "note": "Android Auto-style driving mode is included in the Android app."
+    "status": "available",
+    "note": "Android Auto driver-safe navigation interface is built directly into the Vazhi Android app."
   },
-  "releaseNotes": "Vazhi v1.0.0-b101: AI-Native Routing & Conversational Driving Co-Pilot. Route comparison engine, trip intent parser, waypoint confirmation modals, and navigation context synchronization."
+  "carPlay": {
+    "status": "coming_soon",
+    "note": "CarPlay integration ready; pending Apple Developer Enterprise entitlement."
+  },
+  "releaseNotes": "Vazhi v1.0.0: Intelligent Driving Co-Pilot. Featuring MapLibre 3D Vector Maps, 8-language zero-latency voice alerts, 1,400 RTO district legal intelligence, Valhalla & BRouter multi-engine routing, and Android Auto integration."
 }

@@ -3,176 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DriveLegal - iOS Distribution</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Vazhi for iPhone / iOS — Release Status</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-color: #070d19;
-            --card-bg: #0f172a;
-            --accent-cyan: #00e5ff;
-            --accent-blue: #2563eb;
-            --text-primary: #ffffff;
-            --text-secondary: #a3a3a3;
-            --border-color: rgba(255, 255, 255, 0.08);
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem 1rem;
-        }
-
-        .container {
-            max-width: 700px;
-            width: 100%;
-        }
-
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            color: var(--accent-cyan);
-            text-decoration: none;
-            font-weight: 600;
-            margin-bottom: 2rem;
-            transition: var(--transition);
-        }
-
-        .back-link:hover {
-            opacity: 0.8;
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
-            padding: 3rem;
-        }
-
-        .header-section {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            margin-bottom: 2.5rem;
-        }
-
-        .icon {
-            font-size: 3.5rem;
-        }
-
-        h1 {
-            font-size: 2.25rem;
-            font-weight: 800;
-            letter-spacing: -0.04em;
-        }
-
-        p.description {
-            color: var(--text-secondary);
-            font-size: 1rem;
-            line-height: 1.6;
-            margin-bottom: 2.5rem;
-        }
-
-        .actions-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.5rem;
-            margin-bottom: 2.5rem;
-        }
-
-        .btn-action {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1.25rem;
-            border-radius: 14px;
-            font-weight: 700;
-            font-size: 1.1rem;
-            text-decoration: none;
-            cursor: pointer;
-            transition: var(--transition);
-            text-align: center;
-        }
-
-        .btn-cyan {
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
-            color: #000;
-            box-shadow: 0 4px 15px rgba(0, 229, 255, 0.15);
-        }
-
-        .btn-cyan:hover {
-            opacity: 0.9;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 229, 255, 0.25);
-        }
-
-        .btn-outline {
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-        }
-
-        .btn-outline:hover {
-            background-color: rgba(255, 255, 255, 0.05);
-            border-color: var(--text-secondary);
-        }
-
-        .info-box {
-            background-color: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 1.5rem;
-            font-size: 0.9rem;
-            line-height: 1.6;
-            color: var(--text-secondary);
-        }
-
-        .info-box h3 {
-            color: var(--text-primary);
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0A0F1D; color: #FFFFFF; text-align: center; padding: 4rem 1rem; }
+        .card { background: #131C31; border: 1px solid #2A3B5C; border-radius: 20px; max-width: 500px; margin: 2rem auto; padding: 2.5rem; }
+        .btn { display: inline-block; background: #1D2A47; color: #94A3B8; font-weight: 700; padding: 1rem 2rem; border-radius: 12px; text-decoration: none; font-size: 1.1rem; margin-top: 1.5rem; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <a href="/download" class="back-link">← Back to Portal</a>
-
-        <div class="card">
-            <div class="header-section">
-                <div class="icon">🍎</div>
-                <div>
-                    <h1>DriveLegal for iOS</h1>
-                    <p style="color: var(--text-secondary); margin-top: 0.25rem;">Beta & App Store Distribution</p>
-                </div>
-            </div>
-
-            <p class="description">
-                iOS version is coming soon. DriveLegal is currently available for Android.
-            </p>
-
-            <div class="actions-grid">
-                <a href="/download/android" class="btn-action btn-cyan">Get Android App</a>
-            </div>
-
-            <div class="info-box">
-                <h3>iOS Availability</h3>
-                <p>
-                    The DriveLegal iOS app is currently in active development. When ready for internal testing, builds will be made available via TestFlight and published to the Apple App Store.
-                </p>
-            </div>
+    <div class="card">
+        <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem; color: #00E5FF;">Vazhi for iPhone</h1>
+        <p style="color: #94A3B8; margin-bottom: 1.5rem;">Your Intelligent Driving Co-Pilot</p>
+        <div style="background: rgba(148,163,184,0.15); color: #94A3B8; display: inline-block; padding: 0.4rem 1rem; border-radius: 20px; font-weight: 600;">
+            Coming Soon to App Store
         </div>
+        <p style="color: #94A3B8; margin-top: 1.5rem; font-size: 0.95rem; line-height: 1.6;">
+            Vazhi for iPhone is undergoing final Apple App Store review. Check back soon or download the Android version today.
+        </p>
+        <a href="/download" class="btn">Return to Download Center</a>
     </div>
 </body>
 </html>

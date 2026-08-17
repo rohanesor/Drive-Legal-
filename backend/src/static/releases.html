@@ -3,217 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DriveLegal - Release History</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Vazhi — Release History & Metadata</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-color: #070d19;
-            --card-bg: #0f172a;
-            --accent-cyan: #00e5ff;
-            --accent-blue: #2563eb;
-            --text-primary: #ffffff;
-            --text-secondary: #a3a3a3;
-            --border-color: rgba(255, 255, 255, 0.08);
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem 1rem;
-        }
-
-        .container {
-            max-width: 900px;
-            width: 100%;
-        }
-
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            color: var(--accent-cyan);
-            text-decoration: none;
-            font-weight: 600;
-            margin-bottom: 2rem;
-            transition: var(--transition);
-        }
-
-        .back-link:hover {
-            opacity: 0.8;
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
-            padding: 3rem;
-            overflow-x: auto;
-        }
-
-        h1 {
-            font-size: 2.25rem;
-            font-weight: 800;
-            letter-spacing: -0.04em;
-            margin-bottom: 2rem;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 0.95rem;
-        }
-
-        th {
-            color: var(--text-secondary);
-            font-weight: 600;
-            padding: 1.25rem 1rem;
-            border-bottom: 1px solid var(--border-color);
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 0.05em;
-        }
-
-        td {
-            padding: 1.25rem 1rem;
-            border-bottom: 1px solid var(--border-color);
-            color: var(--text-primary);
-        }
-
-        tr:hover td {
-            background-color: rgba(255, 255, 255, 0.02);
-        }
-
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .badge-success {
-            background-color: rgba(0, 230, 118, 0.1);
-            color: #00e676;
-            border: 1px solid rgba(0, 230, 118, 0.2);
-        }
-
-        .badge-pending {
-            background-color: rgba(255, 214, 0, 0.1);
-            color: #ffd600;
-            border: 1px solid rgba(255, 214, 0, 0.2);
-        }
-
-        .download-link {
-            color: var(--accent-cyan);
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .download-link:hover {
-            text-decoration: underline;
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0A0F1D; color: #FFFFFF; padding: 3rem 1rem; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: #131C31; border: 1px solid #2A3B5C; border-radius: 16px; padding: 2rem; margin-bottom: 1.5rem; }
+        .title { font-size: 1.5rem; font-weight: 700; color: #00FFC2; margin-bottom: 0.5rem; }
+        .date { color: #94A3B8; font-size: 0.9rem; margin-bottom: 1rem; }
+        .notes { color: #FFFFFF; font-size: 0.95rem; line-height: 1.6; }
     </style>
 </head>
 <body>
     <div class="container">
-        <a href="/download" class="back-link">← Back to Portal</a>
-
+        <h1 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 2rem; color: #FFFFFF;">Vazhi Release History</h1>
         <div class="card">
-            <h1>Version Release History</h1>
-
-            <table id="releases-table">
-                <thead>
-                    <tr>
-                        <th>Version</th>
-                        <th>Build</th>
-                        <th>Release Date</th>
-                        <th>Android</th>
-                        <th>iOS</th>
-                        <th>Android Auto</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="releases-body">
-                    <!-- Dynamic Rows Loaded Here -->
-                    <tr>
-                        <td colspan="7" style="text-align: center; color: var(--text-secondary);">Loading release history...</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="title">Vazhi v1.0.0 (Build 101)</div>
+            <div class="date">Released: 2026-08-18 | Channel: Stable</div>
+            <div class="notes">
+                ● MapLibre 3D Vector Map Engine with speed-adaptive camera horizon pitch lock.<br>
+                ● 8-language zero-latency proactive voice safety alerts.<br>
+                ● 1,400 RTO district legal intelligence & MV Act fine lookup.<br>
+                ● Native Android Auto integration via VazhiCarAppService.<br>
+                ● BRouter on-device offline routing client.<br>
+                ● Single NavigationSession source of truth across mobile & head units.
+            </div>
         </div>
     </div>
-
-    <script>
-        fetch('/releases/history.json')
-            .then(res => res.json())
-            .then(data => {
-                const body = document.getElementById('releases-body');
-                body.innerHTML = '';
-                
-                data.forEach(rel => {
-                    const tr = document.createElement('tr');
-                    
-                    const versionTd = document.createElement('td');
-                    versionTd.innerHTML = `<strong>v${rel.version}</strong>`;
-                    
-                    const buildTd = document.createElement('td');
-                    buildTd.innerText = rel.build;
-                    
-                    const dateTd = document.createElement('td');
-                    dateTd.innerText = rel.releaseDate;
-                    
-                    const androidTd = document.createElement('td');
-                    androidTd.innerHTML = rel.android.apk ? `<a href="${rel.android.apk}" class="download-link">Available</a>` : 'N/A';
-                    
-                    const iosTd = document.createElement('td');
-                    iosTd.innerText = rel.ios && rel.ios.status === 'coming_soon' ? 'Coming Soon' : (rel.ios && rel.ios.appStore ? 'App Store' : 'N/A');
-                    
-                    const autoTd = document.createElement('td');
-                    autoTd.innerText = rel.androidAuto.supported ? 'Supported' : 'No';
-                    
-                    const statusTd = document.createElement('td');
-                    statusTd.innerHTML = `<span class="badge badge-success">Released</span>`;
-                    
-                    tr.appendChild(versionTd);
-                    tr.appendChild(buildTd);
-                    tr.appendChild(dateTd);
-                    tr.appendChild(androidTd);
-                    tr.appendChild(iosTd);
-                    tr.appendChild(autoTd);
-                    tr.appendChild(statusTd);
-                    
-                    body.appendChild(tr);
-                });
-            })
-            .catch(err => {
-                console.error("Error loading release history:", err);
-                const body = document.getElementById('releases-body');
-                body.innerHTML = `
-                    <tr>
-                        <td><strong>v1.0.0</strong></td>
-                        <td>100</td>
-                        <td>2026-08-16</td>
-                        <td><a href="/download/files/DriveLegal-v1.0.0.apk" class="download-link">Available</a></td>
-                        <td>App Store</td>
-                        <td>Supported</td>
-                        <td><span class="badge badge-success">Released</span></td>
-                    </tr>
-                `;
-            });
-    </script>
 </body>
 </html>

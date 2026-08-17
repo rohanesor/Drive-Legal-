@@ -248,22 +248,22 @@ class TestDownloadPortal(unittest.TestCase):
         res = urllib.request.urlopen(url)
         self.assertEqual(res.status, 200)
         html = res.read().decode('utf-8')
-        self.assertIn("DriveLegal", html)
-        self.assertIn("Smarter driving. Safer journeys.", html)
+        self.assertIn("VAZHI", html)
+        self.assertIn("Your Intelligent Driving Co-Pilot", html)
 
     def test_download_android_page(self):
         url = f"http://127.0.0.1:{self.port}/download/android"
         res = urllib.request.urlopen(url)
         self.assertEqual(res.status, 200)
         html = res.read().decode('utf-8')
-        self.assertIn("DriveLegal for Android", html)
+        self.assertIn("Vazhi for Android", html)
 
     def test_download_ios_page(self):
         url = f"http://127.0.0.1:{self.port}/download/ios"
         res = urllib.request.urlopen(url)
         self.assertEqual(res.status, 200)
         html = res.read().decode('utf-8')
-        self.assertIn("DriveLegal for iOS", html)
+        self.assertIn("Vazhi for iPhone", html)
 
     def test_download_android_auto_page(self):
         url = f"http://127.0.0.1:{self.port}/download/android-auto"
@@ -277,7 +277,7 @@ class TestDownloadPortal(unittest.TestCase):
         res = urllib.request.urlopen(url)
         self.assertEqual(res.status, 200)
         html = res.read().decode('utf-8')
-        self.assertIn("Version Release History", html)
+        self.assertIn("Vazhi Release History", html)
 
     def test_releases_latest_json(self):
         url = f"http://127.0.0.1:{self.port}/releases/latest.json"
