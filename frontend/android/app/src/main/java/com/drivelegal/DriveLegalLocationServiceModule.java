@@ -66,7 +66,7 @@ public class DriveLegalLocationServiceModule extends ReactContextBaseJavaModule 
         };
 
         IntentFilter filter = new IntentFilter("com.drivelegal.LOCATION_UPDATE");
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             reactContext.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
         } else {
             reactContext.registerReceiver(receiver, filter);

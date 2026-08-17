@@ -67,32 +67,49 @@ const AppContent = () => {
 const App = () => {
   useEffect(() => {
     // Initialize connection manager
-    connectionManager.start();
+    try {
+      connectionManager.start();
+    } catch (e) {
+      console.warn('Failed to start connectionManager:', e);
+    }
 
     // Initialize push notifications
-    notificationService.configure();
-    notificationService.createChannels();
+    try {
+      notificationService.configure();
+      notificationService.createChannels();
+    } catch (e) {
+      console.warn('Failed to initialize notificationService:', e);
+    }
 
     // Start listeners and location service if enabled
-    setupLocationListener();
+    try {
+      setupLocationListener();
+    } catch (e) {
+      console.warn('Failed to setupLocationListener:', e);
+    }
+
     const checkAndStartBackgroundService = async () => {
-      const state = store.getState();
-      if (state.settings.locationAlertsEnabled) {
-        try {
+      try {
+        const state = store.getState();
+        if (state.settings?.locationAlertsEnabled) {
           await startLocationService();
-        } catch (e) {
-          console.error(
-            'Failed to autostart background GPS service on launch:',
-            e,
-          );
         }
+      } catch (e) {
+        console.error(
+          'Failed to autostart background GPS service on launch:',
+          e,
+        );
       }
     };
     checkAndStartBackgroundService();
 
     return () => {
-      removeLocationListener();
-      connectionManager.stop();
+      try {
+        removeLocationListener();
+        connectionManager.stop();
+      } catch (e) {
+        console.warn('Cleanup error on app unmount:', e);
+      }
     };
   }, []);
 
