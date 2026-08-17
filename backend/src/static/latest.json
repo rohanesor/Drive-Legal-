@@ -5,7 +5,7 @@
   "android": {
     "apk": "/download/files/DriveLegal-v1.0.0.apk",
     "aab": "/download/files/DriveLegal-v1.0.0.aab",
-    "sha256": "3f635ec7d93a574490cb69c1642b45a47fb1f769cc8562e641806dd2ebccebaf",
+    "sha256": "53c4ab29e8323fce847dcd7dd6119b3ea5a129bd04181998cb7772c08c34c203",
     "minOs": "Android 8.0 (API 26)",
     "architecture": "arm64-v8a"
   },
