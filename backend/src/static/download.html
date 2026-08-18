@@ -273,15 +273,15 @@
                         <div class="meta-line">Download Size: <span class="meta-val" id="apk-size">34.8 MB</span></div>
                         <div class="meta-line">Min System: <span class="meta-val">Android 8.0 (API 26)</span></div>
                         <div class="hash-code">
-                            SHA-256: <span id="apk-sha256">08a0230161e05e298de7c1822ad5c57ac1bb58ec537215e3ff40b77389e9df9b</span>
+                            SHA-256: <span id="apk-sha256">0CFCBD078C325383111E6836DA72DB2F40415D202E6F97CD28BC90FE88B077FB</span>
                         </div>
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 0.8rem; margin-top: 1rem;">
                         <a href="https://vazhi.duckdns.org/download/files/vazhi-v1.0.0.apk" class="btn-glow" style="text-align: center;" id="apk-download-btn">
-                            Download APK (v1.0.0 via Domain)
+                            Download APK (v1.0.0)
                         </a>
-                        <a href="http://98.84.205.228:8000/download/files/vazhi-v1.0.0.apk" class="btn-outline" style="text-align: center; font-size: 0.95rem; padding: 0.8rem;" id="apk-download-ip-btn">
-                            Direct IP Mirror (http://98.84.205.228:8000)
+                        <a href="https://vazhi.duckdns.org/download/files/vazhi-v1.0.0.apk" class="btn-outline" style="text-align: center; font-size: 0.95rem; padding: 0.8rem;" id="apk-download-ip-btn">
+                            Direct HTTPS Mirror (vazhi.duckdns.org)
                         </a>
                     </div>
                 </div>
@@ -319,9 +319,10 @@
                         <div class="platform-title">Android Auto</div>
                         <div class="status-pill status-stable">● Available</div>
                     </div>
-                    <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6;">
+                    <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem; line-height: 1.6;">
                         Included directly inside the official Vazhi Android APK. Connect smartphone via USB cable or wireless Android Auto to project turn-by-turn guidance and driver safety alerts.
                     </p>
+                    <a href="/download/android-auto" class="btn-outline" style="text-align: center;">View Android Auto Guide</a>
                 </div>
 
                 <div class="card-glow">
@@ -329,24 +330,26 @@
                         <div class="platform-title">Apple CarPlay</div>
                         <div class="status-pill status-soon">Coming Soon</div>
                     </div>
-                    <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6;">
+                    <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem; line-height: 1.6;">
                         CarPlay bridge delegate architecture is ready in the codebase and undergoing Apple Developer Enterprise Navigation Entitlement signing.
                     </p>
+                    <button class="btn-outline" disabled style="opacity: 0.5; width: 100%;">CarPlay Setup (Coming Soon)</button>
                 </div>
             </div>
         </div>
 
         <!-- QR Code Section -->
         <div class="qr-section">
-            <div style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem;">Scan to Download on Mobile</div>
-            <p style="color: var(--text-secondary); font-size: 1rem; margin-bottom: 1.8rem;">Point your phone camera to open the Official Vazhi Download Portal.</p>
-            <div style="background: #FFFFFF; display: inline-block; padding: 1.2rem; border-radius: 16px;">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=https://vazhi.duckdns.org/download" alt="Scan to Download Vazhi" width="170" height="170">
+            <h3 style="font-size: 1.4rem; margin-bottom: 0.8rem; color: #FFF;">Scan to Download on Mobile</h3>
+            <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.5rem;">Point your phone camera to download the Vazhi APK directly to your device.</p>
+            <div style="background: #FFF; padding: 1rem; display: inline-block; border-radius: 12px;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https://vazhi.duckdns.org/download/files/vazhi-v1.0.0.apk" alt="Vazhi Mobile Download QR Code" style="width: 160px; height: 160px; display: block;">
             </div>
         </div>
 
         <footer>
-            Vazhi (வழி) — Intelligent Driving & Navigation Co-Pilot &copy; 2026. All rights reserved.
+            <p>© 2026 Vazhi Navigation Platform. All rights reserved.</p>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem; color: #64748B;">Intelligent Navigation · Road Safety · Legal Intelligence · 3D Vector Maps</p>
         </footer>
     </div>
 
@@ -382,18 +385,18 @@
             renderer.setSize(canvas.clientWidth, canvas.clientHeight);
         });
 
-        // Dynamic Release Metadata Fetch
-        fetch('/api/releases')
+        // Dynamic Release Metadata Fetch from /releases/latest.json
+        fetch('/releases/latest.json')
             .then(res => res.json())
             .then(data => {
-                if (data && data.android) {
+                if (data) {
                     if (data.version) document.getElementById('apk-version').innerText = 'v' + data.version;
                     if (data.build) document.getElementById('apk-build').innerText = data.build;
-                    if (data.android.size) document.getElementById('apk-size').innerText = data.android.size;
-                    if (data.android.sha256) document.getElementById('apk-sha256').innerText = data.android.sha256;
-                    if (data.android.url) {
+                    if (data.size) document.getElementById('apk-size').innerText = data.size;
+                    if (data.sha256) document.getElementById('apk-sha256').innerText = data.sha256;
+                    if (data.apk) {
                         const btn = document.getElementById('apk-download-btn');
-                        btn.href = data.android.url;
+                        btn.href = data.apk;
                         btn.innerText = 'Download APK (v' + (data.version || '1.0.0') + ')';
                     }
                 }
