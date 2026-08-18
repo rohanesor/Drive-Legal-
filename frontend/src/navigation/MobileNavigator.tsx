@@ -27,7 +27,7 @@ export const MobileNavigator = () => {
       <Stack.Screen
         name="Navigation"
         component={NavigationScreen}
-        options={{ title: 'Vazhi Navigation' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Chat"

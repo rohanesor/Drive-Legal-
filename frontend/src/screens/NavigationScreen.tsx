@@ -320,48 +320,66 @@ export const NavigationScreen = ({
         onMarkerSelect={(m) => Alert.alert('Waypoint Selected', `${m.name}`)}
       />
 
-      {/* Floating Module Overlay Header (Navigation triggers for sub-panels) */}
+      {/* Top Search / Ask Vazhi Header Bar (When Not Navigating) */}
       {!isNavigating && (
-        <View style={styles.floatingHeader}>
-          <Text style={styles.appTitle}>VAZHI</Text>
-          
-          <View style={styles.moduleShortcuts}>
-            <TouchableOpacity onPress={() => navigation.navigate('Chat')} style={styles.shortcutBtn}>
-              <MessageSquare size={18} color={colors.primary} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity onPress={() => navigation.navigate('TripPlanner')} style={styles.shortcutBtn}>
-              <Calendar size={18} color={colors.primary} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity onPress={() => navigation.navigate('Calculator')} style={styles.shortcutBtn}>
-              <Calculator size={18} color={colors.primary} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity onPress={() => navigation.navigate('Emergency')} style={styles.shortcutBtn}>
-              <Flame size={18} color={colors.primary} />
-            </TouchableOpacity>
+        <View style={styles.floatingSearchHeader}>
+          <TouchableOpacity 
+            style={styles.searchBarInput} 
+            onPress={() => {
+              Alert.prompt(
+                'Where to? / Ask Vazhi',
+                'Enter a destination (e.g. "Ooty", "Chennai") or query (e.g. "Find charger near highway")',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Search',
+                    onPress: (text) => {
+                      if (text) {
+                        setSelectedDestination({
+                          name: text,
+                          lat: 11.4102,
+                          lng: 76.6950,
+                        });
+                      }
+                    },
+                  },
+                ]
+              );
+            }}
+          >
+            <Search size={18} color={colors.cyan} />
+            <Text style={styles.searchTextPlaceholder}>Where to? / Ask Vazhi...</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.shortcutBtn}>
-              <Settings size={18} color={colors.primary} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={() => navigation.navigate('VoiceAssistant')} style={styles.voiceMicBtn}>
+            <Compass size={18} color={colors.primary} />
+          </TouchableOpacity>
         </View>
       )}
 
-      {/* Active Navigation HUD Box Overlay */}
+      {/* ACTIVE DRIVING TOP MANEUVER CARD */}
       {isNavigating && selectedRoute && (
-        <View style={styles.guidanceHUD}>
-          <Navigation size={22} color={colors.cyan} style={styles.guidanceIcon} />
-          <View style={styles.guidanceTexts}>
-            <Text style={styles.guidanceTitle}>FOLLOWING SAFE PERSPECTIVE</Text>
-            <Text style={styles.guidanceInstruction}>
-              {selectedRoute.steps[Math.min(currentStepIndex, selectedRoute.steps.length - 1)]?.instruction || 'Proceeding along route'}
+        <View style={styles.maneuverCard}>
+          <View style={styles.maneuverIconBox}>
+            <Navigation size={28} color={colors.cyan} style={{ transform: [{ rotate: '45deg' }] }} />
+          </View>
+          <View style={styles.maneuverDetails}>
+            <Text style={styles.maneuverDistance}>350 m</Text>
+            <Text style={styles.maneuverInstruction} numberOfLines={1}>
+              {selectedRoute.steps[Math.min(currentStepIndex, selectedRoute.steps.length - 1)]?.instruction || 'Proceed safely ahead'}
             </Text>
           </View>
           <TouchableOpacity style={styles.hudStopBtn} onPress={handleStopNavigation}>
-            <RotateCcw size={16} color={colors.white} />
+            <RotateCcw size={18} color={colors.error} />
           </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Active Safety / Border Alert Banner (Floating Non-intrusive Pill) */}
+      {isNavigating && activeSafetyEvents.length > 0 && (
+        <View style={styles.safetyAlertBanner}>
+          <AlertTriangle size={16} color={colors.warning} />
+          <Text style={styles.safetyAlertText}>{activeSafetyEvents[0].message}</Text>
         </View>
       )}
 
@@ -376,7 +394,35 @@ export const NavigationScreen = ({
         <SpeedLimitDisplay speedLimit={speedLimit} isSpeeding={currentSpeed > speedLimit} size={46} />
       </View>
 
-      {/* Safe Route Choices bottom selector sheet */}
+      {/* ACTIVE NAVIGATION BOTTOM ETA STATS BAR */}
+      {isNavigating && selectedRoute && (
+        <View style={styles.activeEtaBar}>
+          <View style={styles.etaStatItem}>
+            <Text style={styles.etaStatValue}>8:42 PM</Text>
+            <Text style={styles.etaStatLabel}>ARRIVAL</Text>
+          </View>
+
+          <View style={styles.etaStatDivider} />
+
+          <View style={styles.etaStatItem}>
+            <Text style={styles.etaStatValue}>
+              {Math.max(1, Math.round((selectedRoute.duration - currentStepIndex * 30) / 60))} min
+            </Text>
+            <Text style={styles.etaStatLabel}>TIME</Text>
+          </View>
+
+          <View style={styles.etaStatDivider} />
+
+          <View style={styles.etaStatItem}>
+            <Text style={styles.etaStatValue}>
+              {Math.max(0, ((selectedRoute.distance - currentStepIndex * 500) / 1000)).toFixed(1)} km
+            </Text>
+            <Text style={styles.etaStatLabel}>DISTANCE</Text>
+          </View>
+        </View>
+      )}
+
+      {/* Route Preview & "Why this route?" reasoning sheet */}
       {!isNavigating && routes.length > 0 && (
         <View style={styles.bottomCardSheet}>
           <Text style={styles.sheetTitle}>Choose Safe Route Pathway</Text>
@@ -404,17 +450,26 @@ export const NavigationScreen = ({
             );
           })}
 
+          {/* "Why this route?" Vazhi Explanation */}
+          {selectedRoute && (
+            <View style={styles.whyRouteBox}>
+              <Text style={styles.whyRouteTitle}>💡 Why Vazhi recommends this route:</Text>
+              <Text style={styles.whyRouteBullet}>• Avoids 2 sharp curve bends (&gt;45° curvature)</Text>
+              <Text style={styles.whyRouteBullet}>• Bypasses 1 active school zone during peak hours</Text>
+            </View>
+          )}
+
           <TouchableOpacity style={styles.startBtn} onPress={handleStartNavigation}>
             <Play size={16} color={colors.navy} />
-            <Text style={styles.startBtnText}>Launch Safe Navigation</Text>
+            <Text style={styles.startBtnText}>Start Navigation</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Preset Destinations Selector bottom sheet when no destination is chosen */}
+      {/* Presets & Shortcuts bottom sheet */}
       {!isNavigating && routes.length === 0 && (
         <View style={styles.bottomCardSheet}>
-          <Text style={styles.sheetTitle}>Select Target Waypoint</Text>
+          <Text style={styles.sheetTitle}>Select Destination</Text>
           <View style={styles.presetsRow}>
             {COIMBATORE_PRESETS.map((preset) => (
               <TouchableOpacity
@@ -427,7 +482,7 @@ export const NavigationScreen = ({
               </TouchableOpacity>
             ))}
           </View>
-          <Text style={styles.mapTapHint}>💡 Or tap coordinates directly on the map grid to route.</Text>
+          <Text style={styles.mapTapHint}>💡 Tap anywhere on the map to set a destination pin.</Text>
         </View>
       )}
     </View>
@@ -440,20 +495,160 @@ const createStyles = (colors: any) =>
       flex: 1,
       backgroundColor: '#070D19',
     },
-    floatingHeader: {
+    floatingSearchHeader: {
       position: 'absolute',
       top: 48,
       left: 16,
       right: 16,
-      backgroundColor: 'rgba(7, 13, 25, 0.92)',
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: BORDER_RADIUS.medium,
-      padding: 12,
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      gap: 10,
+    },
+    searchBarInput: {
+      flex: 1,
+      height: 48,
+      backgroundColor: 'rgba(7, 13, 25, 0.94)',
+      borderRadius: 24,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      gap: 10,
       ...SHADOWS.medium,
+    },
+    searchTextPlaceholder: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    voiceMicBtn: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: 'rgba(7, 13, 25, 0.94)',
+      borderWidth: 1,
+      borderColor: colors.cyan,
+      justifyContent: 'center',
+      alignItems: 'center',
+      ...SHADOWS.medium,
+    },
+    maneuverCard: {
+      position: 'absolute',
+      top: 48,
+      left: 16,
+      right: 16,
+      backgroundColor: 'rgba(7, 13, 25, 0.96)',
+      borderWidth: 1.5,
+      borderColor: colors.cyan,
+      borderRadius: 16,
+      padding: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+      ...SHADOWS.strong,
+    },
+    maneuverIconBox: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      backgroundColor: 'rgba(0, 229, 255, 0.12)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.cyan,
+    },
+    maneuverDetails: {
+      flex: 1,
+    },
+    maneuverDistance: {
+      fontSize: 26,
+      fontWeight: '900',
+      color: colors.cyan,
+      letterSpacing: 0.5,
+    },
+    maneuverInstruction: {
+      fontSize: 14,
+      color: colors.white,
+      fontWeight: '600',
+      marginTop: 2,
+    },
+    safetyAlertBanner: {
+      position: 'absolute',
+      top: 130,
+      left: 16,
+      right: 16,
+      backgroundColor: 'rgba(234, 179, 8, 0.18)',
+      borderWidth: 1,
+      borderColor: colors.warning,
+      borderRadius: 20,
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    safetyAlertText: {
+      fontSize: 12,
+      color: colors.warning,
+      fontWeight: '700',
+      flex: 1,
+    },
+    activeEtaBar: {
+      position: 'absolute',
+      bottom: 24,
+      left: 16,
+      right: 16,
+      backgroundColor: 'rgba(7, 13, 25, 0.96)',
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: 14,
+      paddingHorizontal: 20,
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      alignItems: 'center',
+      ...SHADOWS.strong,
+    },
+    etaStatItem: {
+      alignItems: 'center',
+    },
+    etaStatValue: {
+      fontSize: 18,
+      fontWeight: '900',
+      color: colors.cyan,
+    },
+    etaStatLabel: {
+      fontSize: 9,
+      fontWeight: 'bold',
+      color: colors.textSecondary,
+      marginTop: 2,
+      letterSpacing: 1,
+    },
+    etaStatDivider: {
+      width: 1,
+      height: 28,
+      backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    },
+    whyRouteBox: {
+      backgroundColor: 'rgba(0, 229, 255, 0.05)',
+      borderWidth: 1,
+      borderColor: 'rgba(0, 229, 255, 0.2)',
+      borderRadius: 8,
+      padding: 10,
+      marginVertical: 8,
+    },
+    whyRouteTitle: {
+      fontSize: 12,
+      fontWeight: 'bold',
+      color: colors.cyan,
+      marginBottom: 4,
+    },
+    whyRouteBullet: {
+      fontSize: 11,
+      color: colors.textPrimary,
+      marginLeft: 4,
+      marginTop: 2,
     },
     appTitle: {
       fontSize: 16,

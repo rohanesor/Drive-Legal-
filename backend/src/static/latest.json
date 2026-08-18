@@ -12,7 +12,7 @@
     "apk": "https://vazhi.duckdns.org/download/files/vazhi-v1.0.0.apk",
     "aab": "https://vazhi.duckdns.org/download/files/vazhi-v1.0.0.aab",
     "size": "34.8 MB",
-    "sha256": "3095798685112295CB0B713901DD7D4F785150949BC67EFE0E315FB6219DD921",
+    "sha256": "A36E4FEA56CA87065E67EAFAA5C74E763AD43E3D76548528DD442B4349F3403D",
     "minOs": "Android 8.0 (API 26)",
     "architecture": "arm64-v8a",
     "status": "available"
