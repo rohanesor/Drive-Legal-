@@ -389,8 +389,6 @@ class VazhiServer(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({'status': 'error', 'message': 'Not Found'}).encode('utf-8'))
 
-DriveLegalServer = VazhiServer
-
 def run(port=8000):
     server_address = ('', port)
     httpd = HTTPServer(server_address, VazhiServer)
@@ -404,7 +402,7 @@ def run(port=8000):
 if __name__ == '__main__':
     # Ensure database is initialized and seeded on server startup if not present
     db_dir = os.path.join(os.path.dirname(__file__), 'data')
-    db_path = os.path.join(db_dir, 'drivelegal.db')
+    db_path = os.path.join(db_dir, 'vazhi.db')
     if not os.path.exists(db_path):
         try:
             print("Database not found. Initializing and seeding...", flush=True)
@@ -419,3 +417,6 @@ if __name__ == '__main__':
 
     port = int(os.environ.get('PORT', 8000))
     run(port)
+
+# Backward compatibility alias for test suite
+DriveLegalServer = VazhiServer

@@ -12,7 +12,7 @@ export interface Provenance {
   derivedFrom: string[];
 }
 
-export interface DriveLegalEvent<T = any> {
+export interface VazhiEvent<T = any> {
   // BaseEvent compatibility
   id: string;
   type: string;
@@ -141,3 +141,5 @@ export interface ActionExecutedPayload {
   result: string;
   executedAt: number;
 }
+
+export type DriveLegalEvent = VazhiEvent;

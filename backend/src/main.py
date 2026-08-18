@@ -32,11 +32,8 @@ def handle_query(json_payload: str) -> str:
 
         if action == 'health':
             try:
-                import sqlite3
-                import os
-                db_dir = os.path.dirname(os.path.abspath(__file__))
-                db_path = os.path.join(db_dir, 'data', 'drivelegal.db')
-                conn = sqlite3.connect(db_path)
+                from database import get_connection
+                conn = get_connection()
                 c = conn.cursor()
                 c.execute("SELECT count(*) FROM laws")
                 laws = c.fetchone()[0]

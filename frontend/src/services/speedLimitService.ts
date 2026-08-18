@@ -117,7 +117,7 @@ export const speedLimitService = {
 
       console.log(`[SpeedLimitService] Querying OSM: ${url}`);
       const response = await fetch(url, {
-        headers: { 'User-Agent': 'DriveLegal/1.2' },
+        headers: { 'User-Agent': 'Vazhi/1.2' },
       });
 
       if (!response.ok) {

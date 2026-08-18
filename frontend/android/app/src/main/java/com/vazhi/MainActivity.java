@@ -17,7 +17,7 @@ public class MainActivity extends ReactActivity {
     @Override
     protected String getMainComponentName() {
         // Must match AppRegistry.registerComponent name in index.js
-        return "DriveLegal";
+        return "Vazhi";
     }
 
     @Override

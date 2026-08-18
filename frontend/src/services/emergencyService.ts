@@ -121,7 +121,7 @@ export const fetchOSMReverseGeocode = async (
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=12&addressdetails=1`;
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'DriveLegalRoadSOS/1.0',
+        'User-Agent': 'VazhiRoadSOS/1.0',
       },
     });
     const data = (await response.json()) as {
@@ -195,7 +195,7 @@ export const discoverNearbyEmergencies = async (
       body: `data=${encodeURIComponent(query)}`,
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'DriveLegalRoadSOS/1.0',
+        'User-Agent': 'VazhiRoadSOS/1.0',
       },
     });
 

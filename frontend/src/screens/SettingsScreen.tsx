@@ -444,7 +444,7 @@ export const SettingsScreen = ({
               <ShieldCheck size={24} color={colors.cyan} />
             </View>
             <View>
-              <Text style={styles.aboutAppName}>DriveLegal</Text>
+              <Text style={styles.aboutAppName}>Vazhi</Text>
               <View style={styles.versionRow}>
                 <View style={styles.versionBadge}>
                   <Text style={styles.versionText}>v1.0.0</Text>

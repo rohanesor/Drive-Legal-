@@ -9,7 +9,7 @@ services:
       - "8000:8000"
     environment:
       - PORT=8000
-      - DRIVELEGAL_ENV=PRODUCTION
+      - VAZHI_ENV=PRODUCTION
       - DATABASE_URL=postgresql://drivelegal_user:${DB_PASSWORD}@db:5432/drivelegal_sync
       - REDIS_URL=redis://redis:6379/0
     depends_on:

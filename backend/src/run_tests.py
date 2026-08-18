@@ -134,6 +134,11 @@ class TestResponseGeneration(unittest.TestCase):
 class TestPipeline(unittest.TestCase):
     """Test the full query pipeline."""
 
+    @classmethod
+    def setUpClass(cls):
+        initialize_database()
+        seed_database()
+
     def test_handle_query_speeding(self):
         """Test querying about speeding."""
         payload = json.dumps({

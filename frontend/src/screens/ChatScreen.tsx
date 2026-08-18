@@ -572,7 +572,7 @@ export const ChatScreen = ({
               <Text
                 style={{ color: '#94A3B8', fontSize: 10, letterSpacing: 0.5 }}
               >
-                ROADMIND AI MAP INTELLIGENCE
+                VAZHI AI MAP INTELLIGENCE
               </Text>
             </View>
           </Animated.View>

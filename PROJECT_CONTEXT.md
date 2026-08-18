@@ -1,7 +1,7 @@
-# DriveLegal — Project Context
+# Vazhi — Project Context
 
 ## Project Overview
-DriveLegal is an offline-first, AI-powered traffic law assistant for Indian citizens. It runs locally on mobile devices and supports both standard Mobile view and a dashboard-driven Car Mode (intended for in-vehicle mounting or Android Auto support).
+Vazhi is an offline-first, AI-powered traffic law assistant for Indian citizens. It runs locally on mobile devices and supports both standard Mobile view and a dashboard-driven Car Mode (intended for in-vehicle mounting or Android Auto support).
 
 ---
 

@@ -1,7 +1,7 @@
 /**
- * DriveLegal API Service
+ * Vazhi API Service
  *
- * Centralized HTTP client for the DriveLegal backend.
+ * Centralized HTTP client for the Vazhi backend.
  * All requests go through POST /query with an action field,
  * except health checks which use GET /health.
  *

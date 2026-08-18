@@ -890,7 +890,7 @@ export const VoiceAssistantScreen = ({
               style={[styles.spinningRing, { transform: [{ rotate: spin }] }]}
             />
             <Text style={styles.understandingText}>
-              RoadMind RAG Analyzer...
+              Vazhi RAG Analyzer...
             </Text>
           </View>
         )}

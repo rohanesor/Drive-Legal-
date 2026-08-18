@@ -128,7 +128,7 @@ class PredictiveEngine {
           }
         } else {
           // In Mobile Mode: show native dialog
-          Alert.alert('DriveLegal Alert', result.message, [
+          Alert.alert('Vazhi Alert', result.message, [
             { text: 'Dismiss', style: 'cancel' },
             {
               text: 'Learn More',

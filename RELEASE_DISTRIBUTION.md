@@ -1,6 +1,6 @@
-# DriveLegal Release Distribution & Download Architecture
+# Vazhi Release Distribution & Download Architecture
 
-This document provides a comprehensive overview of the DriveLegal release distribution system, build pipelines, and download verification workflows.
+This document provides a comprehensive overview of the Vazhi release distribution system, build pipelines, and download verification workflows.
 
 ---
 
@@ -54,7 +54,7 @@ To protect production stability, we enforce a strict **Build → Test → Packag
 All releases are versioned and stored in the static file system of the EC2 production instance (with optional S3 synchronization backup enabled):
 
 ```text
-/home/ubuntu/DriveLegal/backend/src/static/
+/home/ubuntu/Vazhi/backend/src/static/
 ├── download.html        # Landing Portal page
 ├── android.html         # Android Download Details
 ├── ios.html             # iOS App Store & TestFlight Guide
@@ -63,8 +63,8 @@ All releases are versioned and stored in the static file system of the EC2 produ
 ├── latest.json          # Machine-readable release metadata
 ├── releases.json        # Dynamic release history list
 └── files/               # Binary Packages
-    ├── DriveLegal-v1.0.0.apk
-    └── DriveLegal-v1.0.0.aab
+    ├── Vazhi-v1.0.0.apk
+    └── Vazhi-v1.0.0.aab
 ```
 
 ---
@@ -72,7 +72,7 @@ All releases are versioned and stored in the static file system of the EC2 produ
 ## 🛡️ Distribution Rules & Guidelines
 
 ### 1. Android Distribution
-- Direct installation via universal debug and release APKs hosted at `/download/files/DriveLegal-v{version}.apk`.
+- Direct installation via universal debug and release APKs hosted at `/download/files/Vazhi-v{version}.apk`.
 - Verification via SHA-256 checksums displayed on the download details page.
 
 ### 2. iOS Distribution
@@ -92,13 +92,13 @@ All releases are versioned and stored in the static file system of the EC2 produ
 1. Update `latest.json` with the new version details, file URL, and computed SHA-256 checksum.
 2. Update the historical release entries list in `releases.json`.
 3. Copy the built APK/AAB to the EC2 server path:
-   `scp -i private_key.pem app-release.apk ubuntu@98.84.205.228:/home/ubuntu/DriveLegal/backend/src/static/files/DriveLegal-vX.Y.Z.apk`
+   `scp -i private_key.pem app-release.apk ubuntu@98.84.205.228:/home/ubuntu/Vazhi/backend/src/static/files/Vazhi-vX.Y.Z.apk`
 
 ### How to Verify a Release
 1. Run local tests: `python backend/src/run_tests.py`
-2. Perform remote health check: `curl -f https://drivelegal.duckdns.org/health`
+2. Perform remote health check: `curl -f https://vazhi.duckdns.org/health`
 3. Verify download status code returns HTTP 200:
-   `curl -I https://drivelegal.duckdns.org/download/files/DriveLegal-v1.0.0.apk`
+   `curl -I https://vazhi.duckdns.org/download/files/Vazhi-v1.0.0.apk`
 
 ### How to Recover from a Failed Deployment
 1. Connect via SSH to the server.
