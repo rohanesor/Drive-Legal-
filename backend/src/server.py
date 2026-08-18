@@ -81,19 +81,18 @@ class VazhiServer(BaseHTTPRequestHandler):
         if clean_path == '':
             clean_path = '/'
 
-        if clean_path == '/health' or clean_path == '/':
+        if clean_path == '/health':
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.send_header('X-Request-ID', req_id)
-            this_headers_done = True
             self.end_headers()
             if write_body:
                 health_response = handle_query(json.dumps({'action': 'health'}))
                 self.wfile.write(health_response.encode('utf-8'))
             latency_ms = round((time.time() - start_time) * 1000, 2)
             print(json.dumps({"request_id": req_id, "method": self.command, "path": clean_path, "status": 200, "latency_ms": latency_ms}), flush=True)
-            
-        elif clean_path == '/download':
+
+        elif clean_path == '/' or clean_path == '/download':
             self.serve_static_file('download.html', 'text/html', write_body)
             
         elif clean_path == '/download/android':
