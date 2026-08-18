@@ -441,21 +441,29 @@ export const NavigationScreen = ({
                     {(route.distance / 1000).toFixed(1)} km · {Math.round(route.duration / 60)} mins
                   </Text>
                 </View>
-                <View style={[styles.safetyBadge, { backgroundColor: route.safetyScore >= 90 ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)' }]}>
-                  <Text style={[styles.safetyText, { color: route.safetyScore >= 90 ? colors.success : colors.warning }]}>
-                    ★ {route.safetyScore}% Safe
+                <View style={[styles.safetyBadge, { backgroundColor: route.safetyScore >= 85 ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)' }]}>
+                  <Text style={[styles.safetyText, { color: route.safetyScore >= 85 ? colors.success : colors.warning }]}>
+                    ★ {route.safetyScore}/100 Score
                   </Text>
                 </View>
               </TouchableOpacity>
             );
           })}
 
-          {/* "Why this route?" Vazhi Explanation */}
+          {/* Data-driven "Why this route?" Vazhi Explanation */}
           {selectedRoute && (
             <View style={styles.whyRouteBox}>
               <Text style={styles.whyRouteTitle}>💡 Why Vazhi recommends this route:</Text>
-              <Text style={styles.whyRouteBullet}>• Avoids 2 sharp curve bends (&gt;45° curvature)</Text>
-              <Text style={styles.whyRouteBullet}>• Bypasses 1 active school zone during peak hours</Text>
+              <Text style={styles.whyRouteBullet}>
+                • {(selectedRoute.distance / 1000).toFixed(1)} km corridor · Estimated {Math.round(selectedRoute.duration / 60)} mins driving time
+              </Text>
+              {selectedRoute.riskFactors && selectedRoute.riskFactors.length > 0 ? (
+                selectedRoute.riskFactors.slice(0, 2).map((factor, fIdx) => (
+                  <Text key={fIdx} style={styles.whyRouteBullet}>• {factor}</Text>
+                ))
+              ) : (
+                <Text style={styles.whyRouteBullet}>• Direct route with high geometry safety alignment</Text>
+              )}
             </View>
           )}
 
