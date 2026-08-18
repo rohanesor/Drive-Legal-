@@ -8,6 +8,11 @@ apply plugin: "com.facebook.react"
 // React Native autolinking - generates PackageList.java and adds native module dependencies
 apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
 
+project.ext.react = [
+    root: "../../",
+    entryFile: "../../index.js",
+]
+
 react {
     root = file("../../")
     entryFile = file("../../index.js")
