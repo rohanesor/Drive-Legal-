@@ -1,11 +1,11 @@
 /**
- * DriveLegal — Application Configuration
+ * Vazhi — Application Configuration
  *
  * Single source of truth for all app-level configuration.
  * The production API URL must ONLY exist here.
  */
 export const CONFIG = {
-  API_BASE_URL: 'https://drivelegal.duckdns.org',
+  API_BASE_URL: 'https://vazhi.duckdns.org',
   REQUEST_TIMEOUT_MS: 15000,
   MAX_RETRIES: 2,
   RETRY_BASE_DELAY_MS: 1000,
