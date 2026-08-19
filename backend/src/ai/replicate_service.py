@@ -53,8 +53,7 @@ class ReplicateService:
         url = "https://api.replicate.com/v1/models/openai/gpt-5-pro/predictions"
         headers = {
             "Authorization": f"Token {token}",
-            "Content-Type": "application/json",
-            "Prefer": "wait"
+            "Content-Type": "application/json"
         }
         
         payload = {
@@ -66,10 +65,8 @@ class ReplicateService:
 
         try:
             req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers, method='POST')
-            with urllib.request.urlopen(req, timeout=45) as resp:
+            with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read().decode('utf-8'))
-                
-                # Check status or poll if needed
                 prediction_id = data.get('id')
                 status = data.get('status')
                 
@@ -77,11 +74,8 @@ class ReplicateService:
                     output = data.get('output', '')
                     res_text = "".join(output) if isinstance(output, list) else str(output)
                     return {"status": "success", "model": "openai/gpt-5-pro", "response": res_text}
-                elif status in ['starting', 'processing']:
-                    # Poll for completion if not wait-resolved
-                    return ReplicateService.poll_prediction(prediction_id, token)
                 else:
-                    return {"status": "error", "message": f"Prediction status: {status}", "error_detail": data.get('error')}
+                    return ReplicateService.poll_prediction(prediction_id, token)
         except urllib.error.HTTPError as e:
             err_body = e.read().decode('utf-8') if e.fp else str(e)
             return {"status": "error", "message": f"HTTP Error {e.code}: {e.reason}", "detail": err_body}
