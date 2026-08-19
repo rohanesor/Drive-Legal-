@@ -40,7 +40,7 @@ class ReplicateService:
         return token
 
     @staticmethod
-    def generate_gpt5_response(prompt: str, system_prompt: str = "") -> Dict[str, Any]:
+    def generate_gpt5_response(prompt: str, system_prompt: str = "", async_mode: bool = False) -> Dict[str, Any]:
         """
         Runs openai/gpt-5-pro using Replicate HTTP REST API.
         """
@@ -72,6 +72,9 @@ class ReplicateService:
                 prediction_id = data.get('id')
                 status = data.get('status')
                 
+                if async_mode:
+                    return {"status": "processing", "model": "openai/gpt-5-pro", "prediction_id": prediction_id}
+
                 if status == 'succeeded':
                     output = data.get('output', '')
                     res_text = "".join(output) if isinstance(output, list) else str(output)
@@ -81,6 +84,33 @@ class ReplicateService:
         except urllib.error.HTTPError as e:
             err_body = e.read().decode('utf-8') if e.fp else str(e)
             return {"status": "error", "message": f"HTTP Error {e.code}: {e.reason}", "detail": err_body}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    @staticmethod
+    def get_prediction_status(prediction_id: str) -> Dict[str, Any]:
+        """
+        Fetches single prediction status from Replicate API.
+        """
+        token = ReplicateService.get_token()
+        if not token:
+            return {"status": "error", "message": "REPLICATE_API_TOKEN missing."}
+
+        url = f"https://api.replicate.com/v1/predictions/{prediction_id}"
+        headers = {"Authorization": f"Token {token}"}
+        try:
+            req = urllib.request.Request(url, headers=headers, method='GET')
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+                status = data.get('status')
+                if status == 'succeeded':
+                    output = data.get('output', '')
+                    res_text = "".join(output) if isinstance(output, list) else str(output)
+                    return {"status": "success", "prediction_status": "succeeded", "response": res_text}
+                elif status in ['starting', 'processing']:
+                    return {"status": "processing", "prediction_status": status, "prediction_id": prediction_id}
+                else:
+                    return {"status": "error", "prediction_status": status, "detail": data.get('error')}
         except Exception as e:
             return {"status": "error", "message": str(e)}
 

@@ -113,6 +113,26 @@ class VazhiServer(BaseHTTPRequestHandler):
         elif clean_path == '/releases/history.json':
             self.serve_static_file('releases.json', 'application/json', write_body)
             
+        elif clean_path.startswith('/replicate/prediction'):
+            try:
+                from urllib.parse import parse_qs, urlparse
+                query_params = parse_qs(urlparse(self.path).query)
+                pred_id = query_params.get('id', [''])[0]
+                from ai.replicate_service import ReplicateService
+                result = ReplicateService.get_prediction_status(pred_id)
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                if write_body:
+                    self.wfile.write(json.dumps(result).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                if write_body:
+                    self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
+
         elif self.path.startswith('/download/files/'):
             filename = os.path.basename(self.path)
             static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
@@ -223,7 +243,8 @@ class VazhiServer(BaseHTTPRequestHandler):
                 from ai.replicate_service import ReplicateService
                 prompt = body.get("prompt", "")
                 system_prompt = body.get("system_prompt", "")
-                result = ReplicateService.generate_gpt5_response(prompt, system_prompt)
+                async_mode = body.get("async_mode", False)
+                result = ReplicateService.generate_gpt5_response(prompt, system_prompt, async_mode)
                 
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
