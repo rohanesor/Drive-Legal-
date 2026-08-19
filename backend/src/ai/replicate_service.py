@@ -20,7 +20,9 @@ class ReplicateService:
                 os.path.join(base_dir, '..', '..', '.env'),
                 os.path.join(base_dir, '..', '.env'),
                 os.path.join(os.getcwd(), '.env'),
-                os.path.join(os.getcwd(), 'backend', '.env')
+                os.path.join(os.getcwd(), 'backend', '.env'),
+                '/home/ubuntu/DriveLegal/backend/.env',
+                '/app/.env'
             ]
             for env_file in candidate_paths:
                 if os.path.exists(env_file):
