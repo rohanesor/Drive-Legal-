@@ -15,16 +15,26 @@ class ReplicateService:
     def get_token() -> str:
         token = os.environ.get('REPLICATE_API_TOKEN', '').strip()
         if not token:
-            env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
-            if os.path.exists(env_file):
-                try:
-                    with open(env_file, 'r', encoding='utf-8') as f:
-                        for line in f:
-                            if line.startswith('REPLICATE_API_TOKEN='):
-                                token = line.split('=', 1)[1].strip().strip('"').strip("'")
-                                break
-                except Exception:
-                    pass
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            candidate_paths = [
+                os.path.join(base_dir, '..', '..', '.env'),
+                os.path.join(base_dir, '..', '.env'),
+                os.path.join(os.getcwd(), '.env'),
+                os.path.join(os.getcwd(), 'backend', '.env')
+            ]
+            for env_file in candidate_paths:
+                if os.path.exists(env_file):
+                    try:
+                        with open(env_file, 'r', encoding='utf-8') as f:
+                            for line in f:
+                                if line.startswith('REPLICATE_API_TOKEN='):
+                                    token = line.split('=', 1)[1].strip().strip('"').strip("'")
+                                    if token:
+                                        break
+                    except Exception:
+                        pass
+                if token:
+                    break
         return token
 
     @staticmethod
