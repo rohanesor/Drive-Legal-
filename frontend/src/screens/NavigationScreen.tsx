@@ -364,7 +364,9 @@ export const NavigationScreen = ({
             <Navigation size={28} color={colors.cyan} style={{ transform: [{ rotate: '45deg' }] }} />
           </View>
           <View style={styles.maneuverDetails}>
-            <Text style={styles.maneuverDistance}>350 m</Text>
+            <Text style={styles.maneuverDistance}>
+              {selectedRoute.steps[Math.min(currentStepIndex, selectedRoute.steps.length - 1)]?.distance || 150} m
+            </Text>
             <Text style={styles.maneuverInstruction} numberOfLines={1}>
               {selectedRoute.steps[Math.min(currentStepIndex, selectedRoute.steps.length - 1)]?.instruction || 'Proceed safely ahead'}
             </Text>
@@ -398,7 +400,9 @@ export const NavigationScreen = ({
       {isNavigating && selectedRoute && (
         <View style={styles.activeEtaBar}>
           <View style={styles.etaStatItem}>
-            <Text style={styles.etaStatValue}>8:42 PM</Text>
+            <Text style={styles.etaStatValue}>
+              {new Date(Date.now() + Math.max(1, Math.round((selectedRoute.duration - currentStepIndex * 30))) * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Text>
             <Text style={styles.etaStatLabel}>ARRIVAL</Text>
           </View>
 
