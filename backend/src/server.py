@@ -214,6 +214,48 @@ class VazhiServer(BaseHTTPRequestHandler):
                 self.send_header('Content-Type', 'application/json')
                 self.send_header('X-Request-ID', req_id)
                 self.end_headers()
+        elif self.path == '/replicate/gpt5-pro':
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length).decode('utf-8')
+                body = json.loads(post_data)
+                
+                from ai.replicate_service import ReplicateService
+                prompt = body.get("prompt", "")
+                system_prompt = body.get("system_prompt", "")
+                result = ReplicateService.generate_gpt5_response(prompt, system_prompt)
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(json.dumps(result).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
+
+        elif self.path == '/replicate/gemini-tts':
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length).decode('utf-8')
+                body = json.loads(post_data)
+                
+                from ai.replicate_service import ReplicateService
+                text = body.get("text", "")
+                voice = body.get("voice", "Algenib")
+                result = ReplicateService.generate_gemini_tts(text, voice)
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('X-Request-ID', req_id)
+                self.end_headers()
+                self.wfile.write(json.dumps(result).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
                 self.wfile.write(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
 
         elif self.path == '/navigation/map_match':
