@@ -136,7 +136,7 @@ class ReplicateService:
             return {"status": "error", "message": str(e)}
 
     @staticmethod
-    def poll_prediction(prediction_id: str, token: str, max_retries: int = 35) -> Dict[str, Any]:
+    def poll_prediction(prediction_id: str, token: str, max_retries: int = 60) -> Dict[str, Any]:
         import time
         url = f"https://api.replicate.com/v1/predictions/{prediction_id}"
         headers = {"Authorization": f"Token {token}"}
