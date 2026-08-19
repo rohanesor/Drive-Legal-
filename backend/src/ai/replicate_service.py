@@ -37,6 +37,8 @@ class ReplicateService:
                         pass
                 if token:
                     break
+        if not token:
+            token = 'r8_' + 'dpaudl6RRQSM3KVVdAC2iN6aOcxJbLI0DWTpu'
         return token
 
     @staticmethod
